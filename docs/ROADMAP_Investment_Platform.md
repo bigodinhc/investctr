@@ -74,7 +74,7 @@ Paralelismo Fase 1.1:
 | 1.2.8 | Implementar CRUD accounts | [S] | 2h | 1.2.6, 1.2.7 | ✅ |
 | 1.2.9 | Implementar CRUD assets | [S] | 1h | 1.2.6, 1.2.7 | ✅ |
 | 1.2.10 | Dockerfile + docker-compose.yml | [P] | 1h | 1.2.1 | ✅ |
-| 1.2.11 | Deploy backend Railway (inicial) | [S] | 30min | 1.2.10 | ⬜ |
+| 1.2.11 | Deploy backend Railway (inicial) | [S] | 30min | 1.2.10 | ✅ |
 
 ```
 Paralelismo Fase 1.2:
