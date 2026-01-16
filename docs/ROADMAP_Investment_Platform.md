@@ -113,7 +113,7 @@ Paralelismo Fase 1.2:
 | 1.3.8 | Página de Registro | [P] | 1h | 1.3.6 | ✅ |
 | 1.3.9 | Configurar API client (axios/fetch) | [P] | 30min | 1.3.1 | ✅ |
 | 1.3.10 | Página de Contas (CRUD) | [S] | 2h | 1.3.5, 1.2.8 | ✅ |
-| 1.3.11 | Deploy frontend Vercel (inicial) | [S] | 30min | 1.1.8, 1.3.7 | ⬜ |
+| 1.3.11 | Deploy frontend Vercel (inicial) | [S] | 30min | 1.1.8, 1.3.7 | ✅ |
 
 ```
 Paralelismo Fase 1.3:
