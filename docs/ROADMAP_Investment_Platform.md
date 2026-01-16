@@ -105,14 +105,14 @@ Paralelismo Fase 1.2:
 |---|--------|------|-------|------|--------|
 | 1.3.1 | Criar projeto Next.js 14 (App Router) | [B] | 30min | - | ✅ |
 | 1.3.2 | Configurar TailwindCSS | [S] | 15min | 1.3.1 | ✅ |
-| 1.3.3 | Instalar + configurar shadcn/ui | [S] | 30min | 1.3.2 | ⬜ |
+| 1.3.3 | Instalar + configurar shadcn/ui | [S] | 30min | 1.3.2 | ✅ |
 | 1.3.4 | Configurar Supabase client | [S] | 30min | 1.1.1, 1.3.1 | ✅ |
 | 1.3.5 | Criar layout base (Sidebar + Header) | [S] | 2h | 1.3.3 | ✅ |
 | 1.3.6 | Implementar AuthContext + proteção de rotas | [S] | 2h | 1.3.4 | ✅ |
 | 1.3.7 | Página de Login | [S] | 1h | 1.3.6 | ✅ |
 | 1.3.8 | Página de Registro | [P] | 1h | 1.3.6 | ✅ |
-| 1.3.9 | Configurar API client (axios/fetch) | [P] | 30min | 1.3.1 | ⬜ |
-| 1.3.10 | Página de Contas (CRUD) | [S] | 2h | 1.3.5, 1.2.8 | ⬜ |
+| 1.3.9 | Configurar API client (axios/fetch) | [P] | 30min | 1.3.1 | ✅ |
+| 1.3.10 | Página de Contas (CRUD) | [S] | 2h | 1.3.5, 1.2.8 | ✅ |
 | 1.3.11 | Deploy frontend Vercel (inicial) | [S] | 30min | 1.1.8, 1.3.7 | ⬜ |
 
 ```
