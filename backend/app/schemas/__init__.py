@@ -17,12 +17,23 @@ from app.schemas.asset import (
     AssetWithPrice,
 )
 from app.schemas.base import BaseSchema, IDMixin, PaginatedResponse, TimestampMixin
+from app.schemas.document import (
+    DocumentCreate,
+    DocumentParseResponse,
+    DocumentResponse,
+    DocumentsListResponse,
+    DocumentUpload,
+    DocumentWithData,
+    ParsedDocumentData,
+    ParsedTransaction,
+)
 from app.schemas.enums import (
     AccountType,
     AssetType,
     CashFlowType,
     Currency,
     DocumentType,
+    ParsingStatus,
     PositionType,
     TransactionType,
 )
@@ -53,4 +64,14 @@ __all__ = [
     "AssetResponse",
     "AssetsListResponse",
     "AssetWithPrice",
+    # Document
+    "DocumentCreate",
+    "DocumentUpload",
+    "DocumentResponse",
+    "DocumentsListResponse",
+    "DocumentWithData",
+    "DocumentParseResponse",
+    "ParsedDocumentData",
+    "ParsedTransaction",
+    "ParsingStatus",
 ]

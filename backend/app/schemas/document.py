@@ -1,0 +1,108 @@
+"""
+Document schemas for request/response validation.
+"""
+
+from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from pydantic import Field
+
+from app.schemas.base import BaseSchema, IDMixin
+from app.schemas.enums import DocumentType, ParsingStatus
+
+
+class DocumentBase(BaseSchema):
+    """Base document schema with common fields."""
+
+    doc_type: DocumentType = Field(..., description="Type of document")
+    account_id: UUID | None = Field(None, description="Associated account ID")
+
+
+class DocumentUpload(BaseSchema):
+    """Schema for document upload request."""
+
+    doc_type: DocumentType = Field(..., description="Type of document")
+    account_id: UUID | None = Field(None, description="Associated account ID")
+
+
+class DocumentCreate(DocumentBase):
+    """Schema for creating a document record."""
+
+    file_name: str = Field(..., min_length=1, max_length=255)
+    file_path: str = Field(..., min_length=1, max_length=500)
+    file_size: int | None = Field(None, ge=0)
+
+
+class DocumentResponse(DocumentBase, IDMixin):
+    """Document response schema."""
+
+    file_name: str
+    file_path: str
+    file_size: int | None
+    parsing_status: ParsingStatus
+    parsing_error: str | None = None
+    parsed_at: datetime | None = None
+    created_at: datetime
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "doc_type": "statement",
+                "account_id": "123e4567-e89b-12d3-a456-426614174001",
+                "file_name": "extrato_jan_2026.pdf",
+                "file_path": "documents/user123/extrato_jan_2026.pdf",
+                "file_size": 245678,
+                "parsing_status": "pending",
+                "parsing_error": None,
+                "parsed_at": None,
+                "created_at": "2026-01-16T10:30:00Z",
+            }
+        }
+
+
+class DocumentWithData(DocumentResponse):
+    """Document response with parsed data."""
+
+    raw_extracted_data: dict[str, Any] | None = None
+
+
+class DocumentsListResponse(BaseSchema):
+    """Response for listing documents."""
+
+    items: list[DocumentResponse]
+    total: int
+
+
+class ParsedTransaction(BaseSchema):
+    """Schema for a transaction extracted from a document."""
+
+    date: str = Field(..., description="Transaction date (YYYY-MM-DD)")
+    type: str = Field(..., description="Transaction type (buy, sell, dividend, etc)")
+    ticker: str = Field(..., description="Asset ticker symbol")
+    quantity: float | None = Field(None, description="Quantity traded")
+    price: float | None = Field(None, description="Unit price")
+    total: float | None = Field(None, description="Total value")
+    fees: float | None = Field(None, description="Fees/costs")
+    notes: str | None = Field(None, description="Additional notes")
+
+
+class ParsedDocumentData(BaseSchema):
+    """Schema for parsed document data from Claude."""
+
+    document_type: str
+    period: dict[str, str] | None = None
+    account_number: str | None = None
+    transactions: list[ParsedTransaction] = []
+    summary: dict[str, float] | None = None
+
+
+class DocumentParseResponse(BaseSchema):
+    """Response after parsing a document."""
+
+    document_id: UUID
+    status: ParsingStatus
+    transactions_count: int = 0
+    data: ParsedDocumentData | None = None
+    error: str | None = None
