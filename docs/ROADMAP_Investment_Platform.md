@@ -67,7 +67,7 @@ Paralelismo Fase 1.1:
 | 1.2.1 | Criar estrutura FastAPI (pastas, config) | [B] | 1h | - | ✅ |
 | 1.2.2 | Configurar SQLAlchemy + conexão Supabase | [S] | 1h | 1.1.1, 1.2.1 | ✅ |
 | 1.2.3 | Configurar Alembic (migrations) | [S] | 30min | 1.2.2 | ✅ |
-| 1.2.4 | Middleware de Auth (JWT Supabase) | [S] | 2h | 1.1.2, 1.2.1 | ⬜ |
+| 1.2.4 | Middleware de Auth (JWT Supabase) | [S] | 2h | 1.1.2, 1.2.1 | ✅ |
 | 1.2.5 | Setup Celery + Redis connection | [S] | 1h | 1.1.7, 1.2.1 | ✅ |
 | 1.2.6 | Criar modelos: Account, Asset | [S] | 1h | 1.2.2 | ✅ |
 | 1.2.7 | Criar schemas Pydantic: Account, Asset | [P] | 30min | 1.2.1 | ✅ |

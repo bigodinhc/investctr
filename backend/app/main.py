@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.config import settings
-from app.core.exceptions import AppException
+from app.core.exceptions import AppException, AuthenticationError
 from app.core.logging import get_logger, setup_logging
 from app.core.redis import close_redis, redis_health_check
 
@@ -61,6 +61,23 @@ def create_application() -> FastAPI:
     )
 
     # Exception handlers
+    @app.exception_handler(AuthenticationError)
+    async def auth_exception_handler(request: Request, exc: AuthenticationError) -> JSONResponse:
+        """Handle authentication errors with proper WWW-Authenticate header."""
+        logger.warning(
+            "authentication_failed",
+            message=exc.message,
+            path=request.url.path,
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": exc.message,
+                "details": exc.details,
+            },
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
         logger.warning(
