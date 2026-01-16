@@ -166,14 +166,14 @@ Paralelismo Fase 1.3:
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
 | 2.1.1 | Criar modelo Document | [S] | 30min | 1.2.2 | ✅ |
-| 2.1.2 | Criar schema Pydantic Document | [P] | 15min | - | ⬜ |
-| 2.1.3 | Endpoint POST /documents/upload | [S] | 2h | 2.1.1, 1.1.3 | ⬜ |
-| 2.1.4 | Integração Anthropic SDK (Claude) | [B] | 1h | - | ⬜ |
+| 2.1.2 | Criar schema Pydantic Document | [P] | 15min | - | ✅ |
+| 2.1.3 | Endpoint POST /documents/upload | [S] | 2h | 2.1.1, 1.1.3 | ✅ |
+| 2.1.4 | Integração Anthropic SDK (Claude) | [B] | 1h | - | ✅ |
 | 2.1.5 | Criar prompt template BTG Statement | [S] | 2h | 2.1.4 | ⬜ |
 | 2.1.6 | Criar prompt template BTG Trade Note | [P] | 2h | 2.1.4 | ⬜ |
 | 2.1.7 | Celery task: parse_document | [S] | 3h | 2.1.4, 1.2.5 | ⬜ |
 | 2.1.8 | Endpoint POST /documents/{id}/parse | [S] | 1h | 2.1.7 | ⬜ |
-| 2.1.9 | Endpoint GET /documents/{id} (status + result) | [S] | 1h | 2.1.1 | ⬜ |
+| 2.1.9 | Endpoint GET /documents/{id} (status + result) | [S] | 1h | 2.1.1 | ✅ |
 | 2.1.10 | Validação e normalização do JSON extraído | [S] | 2h | 2.1.7 | ⬜ |
 
 ```
