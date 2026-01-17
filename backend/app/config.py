@@ -52,8 +52,14 @@ class Settings(BaseSettings):
     lseg_username: str | None = None
     lseg_password: str | None = None
 
-    # CORS
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    # CORS - accepts comma-separated string or JSON array
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "https://investctr.vercel.app",
+            "https://investctr-git-main-antonio-jrs-projects.vercel.app",
+        ]
+    )
 
     # Celery
     celery_broker_url: str | None = None
