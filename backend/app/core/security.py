@@ -100,8 +100,9 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
         raise AuthenticationError(f"Invalid token format: {e}")
 
     # Route based on algorithm
-    if alg in ("RS256", "RS384", "RS512"):
-        logger.info("attempting_rs256_verification")
+    # RSA algorithms (RS256, RS384, RS512) and EC algorithms (ES256, ES384, ES512) use JWKS
+    if alg in ("RS256", "RS384", "RS512", "ES256", "ES384", "ES512"):
+        logger.info("attempting_jwks_verification", algorithm=alg)
         jwks_client = get_jwks_client()
 
         if jwks_client:
@@ -115,7 +116,7 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
                     algorithms=[alg],
                     audience="authenticated",
                 )
-                logger.info("rs256_verification_successful")
+                logger.info("jwks_verification_successful", algorithm=alg)
                 return payload
 
             except jwt.ExpiredSignatureError:
@@ -124,7 +125,7 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
                 logger.error("invalid_audience", error=str(e), expected="authenticated")
                 raise AuthenticationError("Invalid token audience.")
             except Exception as e:
-                logger.error("rs256_verification_failed", error=str(e), error_type=type(e).__name__)
+                logger.error("jwks_verification_failed", algorithm=alg, error=str(e), error_type=type(e).__name__)
                 raise AuthenticationError(f"Token verification failed: {e}")
         else:
             raise AuthenticationError(
