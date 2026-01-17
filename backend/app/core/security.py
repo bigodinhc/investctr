@@ -71,11 +71,11 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
     try:
         secret = get_jwt_secret()
 
-        # Supabase uses HS256 by default
+        # Supabase uses HS256 by default, but may use other HS algorithms
         payload = jwt.decode(
             token,
             secret,
-            algorithms=["HS256"],
+            algorithms=["HS256", "HS384", "HS512"],
             options={
                 "verify_exp": True,
                 "verify_iat": True,
