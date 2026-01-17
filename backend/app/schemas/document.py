@@ -106,3 +106,21 @@ class DocumentParseResponse(BaseSchema):
     transactions_count: int = 0
     data: ParsedDocumentData | None = None
     error: str | None = None
+
+
+class DocumentParseRequest(BaseSchema):
+    """Request to parse a document."""
+
+    async_mode: bool = Field(
+        default=True,
+        description="If True, parsing runs in background via Celery. If False, waits for completion.",
+    )
+
+
+class ParseTaskResponse(BaseSchema):
+    """Response when parsing is triggered asynchronously."""
+
+    document_id: UUID
+    task_id: str
+    status: ParsingStatus
+    message: str

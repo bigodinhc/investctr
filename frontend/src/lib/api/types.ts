@@ -90,3 +90,69 @@ export interface PaginationParams {
   skip?: number;
   limit?: number;
 }
+
+// Document
+export type DocumentType = "statement" | "trade_note" | "income_report" | "other";
+export type ParsingStatus = "pending" | "processing" | "completed" | "failed";
+
+export interface Document {
+  id: string;
+  user_id: string;
+  doc_type: DocumentType;
+  account_id: string | null;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  parsing_status: ParsingStatus;
+  parsing_error: string | null;
+  parsed_at: string | null;
+  created_at: string;
+}
+
+export interface DocumentWithData extends Document {
+  raw_extracted_data: Record<string, unknown> | null;
+}
+
+export interface DocumentsListResponse {
+  items: Document[];
+  total: number;
+}
+
+export interface DocumentUpload {
+  doc_type: DocumentType;
+  account_id?: string;
+}
+
+export interface ParsedTransaction {
+  date: string;
+  type: string;
+  ticker: string;
+  quantity: number | null;
+  price: number | null;
+  total: number | null;
+  fees: number | null;
+  notes: string | null;
+}
+
+export interface ParsedDocumentData {
+  document_type: string;
+  period: { start: string; end: string } | null;
+  account_number: string | null;
+  transactions: ParsedTransaction[];
+  summary: Record<string, number> | null;
+}
+
+export interface DocumentParseResponse {
+  document_id: string;
+  status: ParsingStatus;
+  transactions_count: number;
+  data: ParsedDocumentData | null;
+  error: string | null;
+}
+
+export interface ParseTaskResponse {
+  document_id: string;
+  task_id: string;
+  status: ParsingStatus;
+  message: string;
+}

@@ -202,13 +202,13 @@ Paralelismo Fase 2.1:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 2.2.1 | Componente UploadZone (drag & drop) | [P] | 2h | 1.3.3 | ⬜ |
-| 2.2.2 | Página /documents (listagem) | [S] | 2h | 2.2.1 | ⬜ |
-| 2.2.3 | Integração upload com API | [S] | 1h | 2.1.3, 2.2.1 | ⬜ |
-| 2.2.4 | Polling de status do parsing | [S] | 1h | 2.1.9 | ⬜ |
-| 2.2.5 | Componente ParsePreview (tabela editável) | [S] | 3h | 2.2.4 | ⬜ |
-| 2.2.6 | Indicador de progresso / loading | [P] | 1h | 1.3.3 | ⬜ |
-| 2.2.7 | Toast de sucesso/erro | [P] | 30min | 1.3.3 | ⬜ |
+| 2.2.1 | Componente UploadZone (drag & drop) | [P] | 2h | 1.3.3 | ✅ |
+| 2.2.2 | Página /documents (listagem) | [S] | 2h | 2.2.1 | ✅ |
+| 2.2.3 | Integração upload com API | [S] | 1h | 2.1.3, 2.2.1 | ✅ |
+| 2.2.4 | Polling de status do parsing | [S] | 1h | 2.1.9 | ✅ |
+| 2.2.5 | Componente ParsePreview (tabela editável) | [S] | 3h | 2.2.4 | ✅ |
+| 2.2.6 | Indicador de progresso / loading | [P] | 1h | 1.3.3 | ✅ |
+| 2.2.7 | Toast de sucesso/erro | [P] | 30min | 1.3.3 | ✅ |
 
 ```
 Paralelismo Fase 2.2:

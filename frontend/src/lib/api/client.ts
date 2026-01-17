@@ -100,6 +100,39 @@ export class ApiClient {
 
     return this.handleResponse<T>(response);
   }
+
+  async uploadFile<T>(
+    endpoint: string,
+    file: File,
+    additionalData?: Record<string, string>
+  ): Promise<T> {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    if (additionalData) {
+      Object.entries(additionalData).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+    }
+
+    const headers: HeadersInit = {};
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    return this.handleResponse<T>(response);
+  }
 }
 
 // Default API client instance
