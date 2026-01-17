@@ -156,3 +156,201 @@ export interface ParseTaskResponse {
   status: ParsingStatus;
   message: string;
 }
+
+// Transaction Types
+export type TransactionType =
+  | "buy"
+  | "sell"
+  | "dividend"
+  | "jcp"
+  | "income"
+  | "amortization"
+  | "split"
+  | "subscription"
+  | "transfer_in"
+  | "transfer_out"
+  | "rental"
+  | "other";
+
+export type PositionType = "long" | "short";
+
+export interface Transaction {
+  id: string;
+  account_id: string;
+  asset_id: string;
+  document_id: string | null;
+  type: TransactionType;
+  quantity: string;
+  price: string;
+  total_value: string | null;
+  fees: string;
+  currency: string;
+  exchange_rate: string;
+  executed_at: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface TransactionWithAsset extends Transaction {
+  ticker: string;
+  asset_name: string;
+}
+
+export interface TransactionCreate {
+  account_id: string;
+  asset_id: string;
+  document_id?: string;
+  type: TransactionType;
+  quantity: string;
+  price: string;
+  fees?: string;
+  currency?: Currency;
+  exchange_rate?: string;
+  executed_at: string;
+  notes?: string;
+}
+
+export interface TransactionUpdate {
+  type?: TransactionType;
+  quantity?: string;
+  price?: string;
+  fees?: string;
+  executed_at?: string;
+  notes?: string;
+}
+
+export interface TransactionsListResponse {
+  items: Transaction[];
+  total: number;
+}
+
+export interface TransactionsWithAssetListResponse {
+  items: TransactionWithAsset[];
+  total: number;
+}
+
+export interface TransactionFilters extends PaginationParams {
+  account_id?: string;
+  asset_id?: string;
+  type_filter?: TransactionType;
+  start_date?: string;
+  end_date?: string;
+}
+
+// Commit Types
+export interface CommitTransactionItem {
+  date: string;
+  type: string;
+  ticker: string;
+  asset_name?: string;
+  asset_type?: string;
+  quantity?: number | null;
+  price?: number | null;
+  total?: number | null;
+  fees?: number | null;
+  notes?: string | null;
+}
+
+export interface CommitDocumentRequest {
+  account_id: string;
+  transactions: CommitTransactionItem[];
+}
+
+export interface CommitDocumentResponse {
+  document_id: string;
+  transactions_created: number;
+  assets_created: number;
+  positions_updated: number;
+  errors: string[];
+}
+
+// Position Types
+export interface Position {
+  id: string;
+  account_id: string;
+  asset_id: string;
+  quantity: string;
+  avg_price: string;
+  total_cost: string;
+  position_type: PositionType;
+  opened_at: string | null;
+  updated_at: string;
+}
+
+export interface PositionWithAsset extends Position {
+  ticker: string;
+  asset_name: string;
+  asset_type: AssetType;
+}
+
+export interface PositionWithMarketData extends PositionWithAsset {
+  current_price: string | null;
+  market_value: string | null;
+  unrealized_pnl: string | null;
+  unrealized_pnl_pct: string | null;
+  price_updated_at: string | null;
+  is_profitable: boolean | null;
+}
+
+export interface PositionsListResponse {
+  items: Position[];
+  total: number;
+}
+
+export interface PositionsWithMarketDataResponse {
+  items: PositionWithMarketData[];
+  total: number;
+  total_market_value: string;
+  total_cost: string;
+  total_unrealized_pnl: string;
+  total_unrealized_pnl_pct: string | null;
+}
+
+export interface ConsolidatedPosition {
+  asset_id: string;
+  ticker: string;
+  asset_name: string;
+  asset_type: AssetType;
+  total_quantity: string;
+  weighted_avg_price: string;
+  total_cost: string;
+  current_price: string | null;
+  market_value: string | null;
+  unrealized_pnl: string | null;
+  unrealized_pnl_pct: string | null;
+  accounts_count: number;
+}
+
+export interface ConsolidatedPositionsResponse {
+  items: ConsolidatedPosition[];
+  total: number;
+  total_market_value: string;
+  total_cost: string;
+  total_unrealized_pnl: string;
+  total_unrealized_pnl_pct: string | null;
+}
+
+export interface PositionSummary {
+  asset_type: AssetType;
+  positions_count: number;
+  total_cost: string;
+  market_value: string | null;
+  unrealized_pnl: string | null;
+  allocation_pct: string | null;
+}
+
+export interface PortfolioSummary {
+  total_positions: number;
+  total_cost: string;
+  total_market_value: string | null;
+  total_unrealized_pnl: string | null;
+  total_unrealized_pnl_pct: string | null;
+  by_asset_type: PositionSummary[];
+  last_updated: string | null;
+}
+
+export interface PositionFilters extends PaginationParams {
+  account_id?: string;
+  asset_type?: AssetType;
+  min_value?: string;
+}

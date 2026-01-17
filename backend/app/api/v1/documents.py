@@ -2,6 +2,8 @@
 Document management endpoints.
 """
 
+from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
@@ -10,7 +12,7 @@ from sqlalchemy import select
 from app.api.deps import AuthenticatedUser, DBSession, Pagination
 from app.config import settings
 from app.core.logging import get_logger
-from app.models import Document
+from app.models import Account, Asset, Document, Transaction
 from app.schemas.document import (
     DocumentParseRequest,
     DocumentResponse,
@@ -18,7 +20,9 @@ from app.schemas.document import (
     DocumentWithData,
     ParseTaskResponse,
 )
-from app.schemas.enums import DocumentType, ParsingStatus
+from app.schemas.enums import AssetType, DocumentType, ParsingStatus, TransactionType
+from app.schemas.transaction import CommitDocumentRequest, CommitDocumentResponse
+from app.services.position_service import PositionService
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -356,3 +360,306 @@ async def reparse_document(
         status=ParsingStatus.PENDING,
         message="Re-parsing task queued successfully",
     )
+
+
+@router.post("/{document_id}/commit", response_model=CommitDocumentResponse)
+async def commit_document_transactions(
+    user: AuthenticatedUser,
+    db: DBSession,
+    document_id: UUID,
+    request: CommitDocumentRequest,
+) -> CommitDocumentResponse:
+    """
+    Commit parsed document transactions to the database.
+
+    This endpoint takes the parsed transaction data (reviewed/edited by user)
+    and creates actual Transaction records. It also:
+    - Creates Assets if they don't exist (auto-discovery)
+    - Updates Position records for affected assets
+    - Links transactions to the source document
+
+    Args:
+        document_id: UUID of the parsed document
+        request: CommitDocumentRequest with account_id and transactions list
+
+    Returns:
+        CommitDocumentResponse with counts of created records
+
+    Raises:
+        404: Document not found
+        400: Document not parsed yet or account doesn't belong to user
+    """
+    # Validate document exists and belongs to user
+    query = (
+        select(Document)
+        .where(Document.id == document_id)
+        .where(Document.user_id == user.id)
+    )
+    result = await db.execute(query)
+    document = result.scalar_one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Document must be parsed first
+    if document.parsing_status != ParsingStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document must be successfully parsed before committing",
+        )
+
+    # Validate account belongs to user
+    account_query = (
+        select(Account)
+        .where(Account.id == request.account_id)
+        .where(Account.user_id == user.id)
+    )
+    account_result = await db.execute(account_query)
+    account = account_result.scalar_one_or_none()
+
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account not found or doesn't belong to user",
+        )
+
+    logger.info(
+        "commit_document_start",
+        document_id=str(document_id),
+        user_id=str(user.id),
+        account_id=str(request.account_id),
+        transaction_count=len(request.transactions),
+    )
+
+    errors: list[str] = []
+    transactions_created = 0
+    assets_created = 0
+    asset_ids_to_recalculate: set[UUID] = set()
+
+    # Process each transaction
+    for idx, txn_data in enumerate(request.transactions):
+        try:
+            # Get or create asset
+            asset = await _get_or_create_asset(
+                db=db,
+                ticker=txn_data.ticker,
+                asset_name=txn_data.asset_name,
+                asset_type_str=txn_data.asset_type,
+            )
+            if asset._created:
+                assets_created += 1
+
+            # Map transaction type
+            txn_type = _map_transaction_type(txn_data.type)
+
+            # Calculate values
+            quantity = txn_data.quantity or Decimal("0")
+            price = txn_data.price or Decimal("0")
+            total = txn_data.total or (quantity * price)
+            fees = txn_data.fees or Decimal("0")
+
+            # Infer price from total if not provided
+            if price == Decimal("0") and quantity > 0 and total > 0:
+                price = total / quantity
+
+            # Parse date
+            try:
+                executed_at = datetime.strptime(txn_data.date, "%Y-%m-%d")
+            except ValueError:
+                errors.append(f"Transaction {idx + 1}: Invalid date format '{txn_data.date}'")
+                continue
+
+            # Create transaction
+            transaction = Transaction(
+                account_id=request.account_id,
+                asset_id=asset.id,
+                document_id=document_id,
+                type=txn_type,
+                quantity=quantity,
+                price=price,
+                fees=fees,
+                executed_at=executed_at,
+                notes=txn_data.notes,
+            )
+
+            db.add(transaction)
+            transactions_created += 1
+            asset_ids_to_recalculate.add(asset.id)
+
+        except Exception as e:
+            errors.append(f"Transaction {idx + 1} ({txn_data.ticker}): {str(e)}")
+            logger.warning(
+                "commit_transaction_error",
+                document_id=str(document_id),
+                transaction_idx=idx,
+                ticker=txn_data.ticker,
+                error=str(e),
+            )
+
+    # Commit transactions
+    await db.commit()
+
+    # Recalculate positions for affected assets
+    position_service = PositionService(db)
+    positions_updated = 0
+
+    for asset_id in asset_ids_to_recalculate:
+        try:
+            await position_service.calculate_position(
+                account_id=request.account_id,
+                asset_id=asset_id,
+            )
+            positions_updated += 1
+        except Exception as e:
+            errors.append(f"Position recalc for asset {asset_id}: {str(e)}")
+            logger.error(
+                "position_recalc_error",
+                document_id=str(document_id),
+                asset_id=str(asset_id),
+                error=str(e),
+            )
+
+    await db.commit()
+
+    logger.info(
+        "commit_document_complete",
+        document_id=str(document_id),
+        transactions_created=transactions_created,
+        assets_created=assets_created,
+        positions_updated=positions_updated,
+        errors_count=len(errors),
+    )
+
+    return CommitDocumentResponse(
+        document_id=document_id,
+        transactions_created=transactions_created,
+        assets_created=assets_created,
+        positions_updated=positions_updated,
+        errors=errors,
+    )
+
+
+async def _get_or_create_asset(
+    db: DBSession,
+    ticker: str,
+    asset_name: str | None,
+    asset_type_str: str | None,
+) -> Asset:
+    """Get existing asset by ticker or create a new one."""
+    # Normalize ticker
+    ticker = ticker.upper().strip()
+
+    # Check if asset exists
+    query = select(Asset).where(Asset.ticker == ticker)
+    result = await db.execute(query)
+    asset = result.scalar_one_or_none()
+
+    if asset:
+        asset._created = False
+        return asset
+
+    # Determine asset type
+    asset_type = _infer_asset_type(ticker, asset_type_str)
+
+    # Create new asset
+    asset = Asset(
+        ticker=ticker,
+        name=asset_name or ticker,
+        asset_type=asset_type,
+    )
+    db.add(asset)
+    await db.flush()
+
+    asset._created = True
+    return asset
+
+
+def _infer_asset_type(ticker: str, asset_type_str: str | None) -> AssetType:
+    """Infer asset type from ticker pattern or explicit type string."""
+    # If explicitly provided, try to match
+    if asset_type_str:
+        type_map = {
+            "stock": AssetType.STOCK,
+            "acao": AssetType.STOCK,
+            "acoes": AssetType.STOCK,
+            "fii": AssetType.FII,
+            "fiagro": AssetType.FIAGRO,
+            "etf": AssetType.ETF,
+            "bdr": AssetType.BDR,
+            "reit": AssetType.REIT,
+            "bond": AssetType.BOND,
+            "renda_fixa": AssetType.BOND,
+            "fixed_income": AssetType.BOND,
+            "crypto": AssetType.CRYPTO,
+            "fund": AssetType.FUND,
+            "fundo": AssetType.FUND,
+            "option": AssetType.OPTION,
+            "opcao": AssetType.OPTION,
+            "future": AssetType.FUTURE,
+            "futuro": AssetType.FUTURE,
+        }
+        normalized = asset_type_str.lower().strip().replace(" ", "_")
+        if normalized in type_map:
+            return type_map[normalized]
+
+    # Infer from ticker pattern (Brazilian market conventions)
+    ticker_upper = ticker.upper()
+
+    # FIIs typically end in 11
+    if ticker_upper.endswith("11"):
+        return AssetType.FII
+
+    # BDRs typically end in 34 or 35
+    if ticker_upper.endswith("34") or ticker_upper.endswith("35"):
+        return AssetType.BDR
+
+    # ETFs typically end in 11 and have known prefixes
+    etf_prefixes = ["BOVA", "IVVB", "HASH", "SMAL", "FIND", "GOLD", "PIBB"]
+    for prefix in etf_prefixes:
+        if ticker_upper.startswith(prefix):
+            return AssetType.ETF
+
+    # Stocks typically end in 3, 4, 5, 6 for common shares
+    if len(ticker_upper) >= 5:
+        last_char = ticker_upper[-1]
+        if last_char in "3456":
+            return AssetType.STOCK
+
+    # Default to stock
+    return AssetType.STOCK
+
+
+def _map_transaction_type(type_str: str) -> TransactionType:
+    """Map string transaction type to enum."""
+    type_map = {
+        "buy": TransactionType.BUY,
+        "compra": TransactionType.BUY,
+        "sell": TransactionType.SELL,
+        "venda": TransactionType.SELL,
+        "dividend": TransactionType.DIVIDEND,
+        "dividendo": TransactionType.DIVIDEND,
+        "jcp": TransactionType.JCP,
+        "jscp": TransactionType.JCP,
+        "income": TransactionType.INCOME,
+        "rendimento": TransactionType.INCOME,
+        "amortization": TransactionType.AMORTIZATION,
+        "amortizacao": TransactionType.AMORTIZATION,
+        "split": TransactionType.SPLIT,
+        "desdobramento": TransactionType.SPLIT,
+        "subscription": TransactionType.SUBSCRIPTION,
+        "subscricao": TransactionType.SUBSCRIPTION,
+        "transfer_in": TransactionType.TRANSFER_IN,
+        "transferencia_entrada": TransactionType.TRANSFER_IN,
+        "transfer_out": TransactionType.TRANSFER_OUT,
+        "transferencia_saida": TransactionType.TRANSFER_OUT,
+        "rental": TransactionType.RENTAL,
+        "aluguel": TransactionType.RENTAL,
+        "other": TransactionType.OTHER,
+        "outro": TransactionType.OTHER,
+    }
+
+    normalized = type_str.lower().strip().replace(" ", "_")
+    return type_map.get(normalized, TransactionType.OTHER)

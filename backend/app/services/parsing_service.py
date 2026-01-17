@@ -15,7 +15,7 @@ from app.integrations.claude.parsers import (
     StatementParser,
     TradeNoteParser,
 )
-from app.integrations.supabase import download_file_from_storage
+from app.integrations.supabase import get_file_from_storage
 from app.models import Document
 from app.schemas.enums import DocumentType, ParsingStatus
 from app.services.validation import ValidationService
@@ -77,7 +77,7 @@ class ParsingService:
 
         try:
             # Download PDF from storage
-            pdf_content = await download_file_from_storage(
+            pdf_content = await get_file_from_storage(
                 bucket="documents",
                 path=document.file_path,
             )

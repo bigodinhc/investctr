@@ -169,12 +169,12 @@ Paralelismo Fase 1.3:
 | 2.1.2 | Criar schema Pydantic Document | [P] | 15min | - | ✅ |
 | 2.1.3 | Endpoint POST /documents/upload | [S] | 2h | 2.1.1, 1.1.3 | ✅ |
 | 2.1.4 | Integração Anthropic SDK (Claude) | [B] | 1h | - | ✅ |
-| 2.1.5 | Criar prompt template BTG Statement | [S] | 2h | 2.1.4 | ⬜ |
-| 2.1.6 | Criar prompt template BTG Trade Note | [P] | 2h | 2.1.4 | ⬜ |
-| 2.1.7 | Celery task: parse_document | [S] | 3h | 2.1.4, 1.2.5 | ⬜ |
-| 2.1.8 | Endpoint POST /documents/{id}/parse | [S] | 1h | 2.1.7 | ⬜ |
+| 2.1.5 | Criar prompt template BTG Statement | [S] | 2h | 2.1.4 | ✅ |
+| 2.1.6 | Criar prompt template BTG Trade Note | [P] | 2h | 2.1.4 | ✅ |
+| 2.1.7 | Celery task: parse_document | [S] | 3h | 2.1.4, 1.2.5 | ✅ |
+| 2.1.8 | Endpoint POST /documents/{id}/parse | [S] | 1h | 2.1.7 | ✅ |
 | 2.1.9 | Endpoint GET /documents/{id} (status + result) | [S] | 1h | 2.1.1 | ✅ |
-| 2.1.10 | Validação e normalização do JSON extraído | [S] | 2h | 2.1.7 | ⬜ |
+| 2.1.10 | Validação e normalização do JSON extraído | [S] | 2h | 2.1.7 | ✅ |
 
 ```
 Paralelismo Fase 2.1:
@@ -251,14 +251,14 @@ Paralelismo Fase 2.2:
 |---|--------|------|-------|------|--------|
 | 3.1.1 | Criar modelo Transaction | [S] | 30min | 1.2.2 | ✅ |
 | 3.1.2 | Criar modelo Position | [S] | 30min | 1.2.2 | ✅ |
-| 3.1.3 | Schemas Pydantic Transaction | [P] | 30min | - | ⬜ |
-| 3.1.4 | Schemas Pydantic Position | [P] | 30min | - | ⬜ |
-| 3.1.5 | Endpoint POST /documents/{id}/commit | [S] | 2h | 3.1.1, 2.1.10 | ⬜ |
-| 3.1.6 | Service: calculate_positions() | [B] | 3h | 3.1.1, 3.1.2 | ⬜ |
-| 3.1.7 | Trigger recálculo após insert/update/delete txn | [S] | 1h | 3.1.6 | ⬜ |
-| 3.1.8 | CRUD endpoints /transactions | [S] | 2h | 3.1.1 | ⬜ |
-| 3.1.9 | Endpoint GET /positions | [S] | 1h | 3.1.2, 3.1.6 | ⬜ |
-| 3.1.10 | Endpoint GET /positions/consolidated | [S] | 1h | 3.1.9 | ⬜ |
+| 3.1.3 | Schemas Pydantic Transaction | [P] | 30min | - | ✅ |
+| 3.1.4 | Schemas Pydantic Position | [P] | 30min | - | ✅ |
+| 3.1.5 | Endpoint POST /documents/{id}/commit | [S] | 2h | 3.1.1, 2.1.10 | ✅ |
+| 3.1.6 | Service: calculate_positions() | [B] | 3h | 3.1.1, 3.1.2 | ✅ |
+| 3.1.7 | Trigger recálculo após insert/update/delete txn | [S] | 1h | 3.1.6 | ✅ |
+| 3.1.8 | CRUD endpoints /transactions | [S] | 2h | 3.1.1 | ✅ |
+| 3.1.9 | Endpoint GET /positions | [S] | 1h | 3.1.2, 3.1.6 | ✅ |
+| 3.1.10 | Endpoint GET /positions/consolidated | [S] | 1h | 3.1.9 | ✅ |
 
 ```
 Paralelismo Fase 3.1:
@@ -289,12 +289,12 @@ Paralelismo Fase 3.1:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 3.2.1 | Botão "Confirmar Importação" no Preview | [S] | 1h | 2.2.5, 3.1.5 | ⬜ |
-| 3.2.2 | Página /transactions (DataTable) | [S] | 3h | 3.1.8 | ⬜ |
-| 3.2.3 | Filtros: período, conta, ativo | [S] | 2h | 3.2.2 | ⬜ |
-| 3.2.4 | Modal de edição de transação | [S] | 2h | 3.2.2 | ⬜ |
-| 3.2.5 | Página /positions | [S] | 2h | 3.1.9 | ⬜ |
-| 3.2.6 | Card de resumo por posição | [S] | 1h | 3.2.5 | ⬜ |
+| 3.2.1 | Botão "Confirmar Importação" no Preview | [S] | 1h | 2.2.5, 3.1.5 | ✅ |
+| 3.2.2 | Página /transactions (DataTable) | [S] | 3h | 3.1.8 | ✅ |
+| 3.2.3 | Filtros: período, conta, ativo | [S] | 2h | 3.2.2 | ✅ |
+| 3.2.4 | Modal de edição de transação | [S] | 2h | 3.2.2 | ✅ |
+| 3.2.5 | Página /positions | [S] | 2h | 3.1.9 | ✅ |
+| 3.2.6 | Card de resumo por posição | [S] | 1h | 3.2.5 | ✅ |
 
 ---
 

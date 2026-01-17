@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { FileText, Upload, Eye, Trash2, Play, AlertCircle, RefreshCw } from "lucide-react";
 import { useDocuments, useDocument, useParseResult, useParseDocument, useDeleteDocument } from "@/hooks/use-documents";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useCommitDocument } from "@/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { UploadZone, ParsePreview, DocumentStatusBadge } from "@/components/documents";
 import { toast } from "@/components/ui/use-toast";
-import type { Document, ParsedDocumentData } from "@/lib/api/types";
+import type { Document, ParsedTransaction } from "@/lib/api/types";
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   statement: "Extrato",
@@ -35,12 +44,15 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 
 export default function DocumentsPage() {
   const { data, isLoading, error, refetch } = useDocuments();
+  const { data: accountsData } = useAccounts();
   const parseDocument = useParseDocument();
   const deleteDocument = useDeleteDocument();
+  const commitDocument = useCommitDocument();
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [deletingDocument, setDeletingDocument] = useState<Document | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
 
   // Fetch selected document details
   const { data: selectedDocument } = useDocument(selectedDocumentId || "");
@@ -48,6 +60,9 @@ export default function DocumentsPage() {
     selectedDocumentId || "",
     !!selectedDocumentId && selectedDocument?.parsing_status !== "pending"
   );
+
+  // Set default account when accounts load
+  const accounts = accountsData?.items || [];
 
   const handleUploadSuccess = (documentId: string) => {
     toast({
@@ -92,13 +107,40 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleConfirmTransactions = (transactions: unknown[]) => {
-    // TODO: Implement commit endpoint in Phase 3
-    toast({
-      title: "Transações confirmadas",
-      description: `${transactions.length} transações serão importadas.`,
-    });
-    setSelectedDocumentId(null);
+  const handleConfirmTransactions = async (transactions: ParsedTransaction[]) => {
+    if (!selectedDocumentId) return;
+
+    if (!selectedAccountId) {
+      toast({
+        title: "Selecione uma conta",
+        description: "É necessário selecionar uma conta para importar as transações.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await commitDocument.mutateAsync({
+        documentId: selectedDocumentId,
+        data: {
+          account_id: selectedAccountId,
+          transactions: transactions.map((t) => ({
+            date: t.date,
+            type: t.type,
+            ticker: t.ticker,
+            quantity: t.quantity,
+            price: t.price,
+            total: t.total,
+            fees: t.fees,
+            notes: t.notes,
+          })),
+        },
+      });
+      setSelectedDocumentId(null);
+      setSelectedAccountId("");
+    } catch {
+      // Error is handled by the mutation hook
+    }
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -413,11 +455,44 @@ export default function DocumentsPage() {
               </div>
             </div>
           ) : parseResult?.data ? (
-            <ParsePreview
-              data={parseResult.data}
-              onConfirm={handleConfirmTransactions}
-              onCancel={() => setSelectedDocumentId(null)}
-            />
+            <div className="space-y-4">
+              {/* Account Selector */}
+              <div className="p-4 bg-background-elevated rounded-lg border border-border-subtle">
+                <label className="text-sm font-medium mb-2 block">
+                  Selecione a conta para importar as transações:
+                </label>
+                <Select
+                  value={selectedAccountId}
+                  onValueChange={setSelectedAccountId}
+                >
+                  <SelectTrigger className="w-full max-w-sm">
+                    <SelectValue placeholder="Selecione uma conta..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {accounts.length === 0 && (
+                  <p className="text-sm text-warning mt-2">
+                    Nenhuma conta encontrada. Crie uma conta primeiro.
+                  </p>
+                )}
+              </div>
+
+              <ParsePreview
+                data={parseResult.data}
+                onConfirm={handleConfirmTransactions}
+                onCancel={() => {
+                  setSelectedDocumentId(null);
+                  setSelectedAccountId("");
+                }}
+                isLoading={commitDocument.isPending}
+              />
+            </div>
           ) : null}
         </DialogContent>
       </Dialog>

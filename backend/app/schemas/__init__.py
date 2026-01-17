@@ -37,6 +37,30 @@ from app.schemas.enums import (
     PositionType,
     TransactionType,
 )
+from app.schemas.position import (
+    ConsolidatedPosition,
+    ConsolidatedPositionsResponse,
+    PortfolioSummary,
+    PositionResponse,
+    PositionsListResponse,
+    PositionSummary,
+    PositionsWithAssetListResponse,
+    PositionsWithMarketDataResponse,
+    PositionWithAsset,
+    PositionWithMarketData,
+)
+from app.schemas.transaction import (
+    CommitDocumentRequest,
+    CommitDocumentResponse,
+    CommitTransactionItem,
+    TransactionCreate,
+    TransactionCreateFromParsing,
+    TransactionResponse,
+    TransactionsListResponse,
+    TransactionsWithAssetListResponse,
+    TransactionUpdate,
+    TransactionWithAsset,
+)
 
 __all__ = [
     # Base
@@ -74,4 +98,26 @@ __all__ = [
     "ParsedDocumentData",
     "ParsedTransaction",
     "ParsingStatus",
+    # Transaction
+    "TransactionCreate",
+    "TransactionCreateFromParsing",
+    "TransactionUpdate",
+    "TransactionResponse",
+    "TransactionWithAsset",
+    "TransactionsListResponse",
+    "TransactionsWithAssetListResponse",
+    "CommitTransactionItem",
+    "CommitDocumentRequest",
+    "CommitDocumentResponse",
+    # Position
+    "PositionResponse",
+    "PositionWithAsset",
+    "PositionWithMarketData",
+    "PositionsListResponse",
+    "PositionsWithAssetListResponse",
+    "PositionsWithMarketDataResponse",
+    "ConsolidatedPosition",
+    "ConsolidatedPositionsResponse",
+    "PositionSummary",
+    "PortfolioSummary",
 ]
