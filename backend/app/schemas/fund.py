@@ -4,7 +4,7 @@ Fund schemas for request/response validation.
 Includes schemas for NAV, fund shares, and performance metrics.
 """
 
-from datetime import date, datetime
+import datetime as dt
 from decimal import Decimal
 from uuid import UUID
 
@@ -22,7 +22,7 @@ class NAVResponse(BaseSchema):
     """Response for current NAV calculation."""
 
     user_id: UUID = Field(..., description="User ID")
-    date: date = Field(..., description="Date of NAV calculation")
+    date: dt.date = Field(..., description="Date of NAV calculation")
     nav: Decimal = Field(..., description="Net Asset Value")
     total_market_value: Decimal = Field(..., description="Total market value of positions")
     total_cash: Decimal = Field(..., description="Total cash balance")
@@ -52,13 +52,13 @@ class FundShareResponse(BaseSchema, IDMixin):
     """Response for a single fund share record."""
 
     user_id: UUID = Field(..., description="User ID")
-    date: date = Field(..., description="Date of the record")
+    date: dt.date = Field(..., description="Date of the record")
     nav: Decimal = Field(..., description="Net Asset Value")
     shares_outstanding: Decimal = Field(..., description="Total shares outstanding")
     share_value: Decimal = Field(..., description="Value per share")
     daily_return: Decimal | None = Field(None, description="Daily return as decimal (0.01 = 1%)")
     cumulative_return: Decimal | None = Field(None, description="Cumulative return since inception")
-    created_at: datetime = Field(..., description="Record creation timestamp")
+    created_at: dt.datetime = Field(..., description="Record creation timestamp")
 
     class Config:
         json_schema_extra = {
@@ -153,7 +153,7 @@ class SharesOperationResponse(BaseSchema):
 class PortfolioHistoryItem(BaseSchema):
     """Single item in portfolio history."""
 
-    date: date = Field(..., description="Date of the snapshot")
+    date: dt.date = Field(..., description="Date of the snapshot")
     nav: Decimal = Field(..., description="Net Asset Value")
     total_cost: Decimal = Field(..., description="Total cost basis")
     realized_pnl: Decimal = Field(..., description="Realized P&L")
