@@ -9,3 +9,4 @@ export * from "./documents";
 export * from "./transactions";
 export * from "./positions";
 export * from "./cash-flows";
+export * from "./quotes";

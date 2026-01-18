@@ -3,6 +3,7 @@ Celery application configuration.
 """
 
 from celery import Celery
+from celery.schedules import crontab
 
 from app.config import settings
 
@@ -44,5 +45,23 @@ celery_app.conf.update(
 # Auto-discover tasks
 celery_app.autodiscover_tasks(["app.workers.tasks"])
 
-# Beat schedule (will be populated in schedules.py)
-celery_app.conf.beat_schedule = {}
+# Beat schedule for periodic tasks
+# Times are configured in BRT (America/Sao_Paulo timezone, configured above)
+celery_app.conf.beat_schedule = {
+    # Sync quotes 3x daily: 10:30, 14:00, 18:30 BRT
+    "sync-quotes-morning": {
+        "task": "sync_all_quotes",
+        "schedule": crontab(hour=10, minute=30),
+        "options": {"queue": "default"},
+    },
+    "sync-quotes-afternoon": {
+        "task": "sync_all_quotes",
+        "schedule": crontab(hour=14, minute=0),
+        "options": {"queue": "default"},
+    },
+    "sync-quotes-evening": {
+        "task": "sync_all_quotes",
+        "schedule": crontab(hour=18, minute=30),
+        "options": {"queue": "default"},
+    },
+}

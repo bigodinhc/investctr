@@ -4,8 +4,10 @@ import { useState } from "react";
 import {
   BarChart3,
   Building2,
+  Clock,
   Filter,
   Landmark,
+  Loader2,
   PieChart,
   RefreshCw,
   TrendingDown,
@@ -18,6 +20,7 @@ import {
   usePortfolioSummary,
   useRecalculatePositions,
 } from "@/hooks/use-positions";
+import { useSyncQuotes } from "@/hooks/use-quotes";
 import { useAccounts } from "@/hooks/use-accounts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +71,7 @@ export default function PositionsPage() {
   const { data: summaryData } = usePortfolioSummary(filters.account_id);
   const { data: accountsData } = useAccounts();
   const recalculatePositions = useRecalculatePositions();
+  const syncQuotes = useSyncQuotes();
 
   const accounts = accountsData?.items || [];
 
@@ -75,6 +79,33 @@ export default function PositionsPage() {
   const positions = viewMode === "detailed"
     ? positionsData?.items || []
     : consolidatedData?.items || [];
+
+  // Get the most recent price_updated_at from positions
+  const lastPriceUpdate = positions.reduce((latest, pos) => {
+    const position = pos as PositionWithMarketData;
+    if (position.price_updated_at) {
+      const posDate = new Date(position.price_updated_at);
+      if (!latest || posDate > latest) {
+        return posDate;
+      }
+    }
+    return latest;
+  }, null as Date | null);
+
+  const formatLastUpdate = (date: Date | null) => {
+    if (!date) return null;
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return "agora";
+    if (diffMins < 60) return `ha ${diffMins} min`;
+    if (diffHours < 24) return `ha ${diffHours}h`;
+    if (diffDays === 1) return "ontem";
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  };
 
   const hasFilters = Object.values(filters).some((v) => v);
 
@@ -144,24 +175,42 @@ export default function PositionsPage() {
             Visualize seu portfólio e posições atuais
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={hasFilters ? "default" : "outline"}
-            size="lg"
-            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-            {hasFilters && (
-              <Badge variant="gold" className="ml-2">
-                {Object.values(filters).filter((v) => v).length}
-              </Badge>
-            )}
-          </Button>
-          <Button variant="outline" size="lg" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          {/* Last update indicator */}
+          {lastPriceUpdate && (
+            <div className="flex items-center gap-1.5 text-sm text-foreground-muted mr-2">
+              <Clock className="h-4 w-4" />
+              <span>Cotacoes: {formatLastUpdate(lastPriceUpdate)}</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant={hasFilters ? "default" : "outline"}
+              size="lg"
+              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+              {hasFilters && (
+                <Badge variant="gold" className="ml-2">
+                  {Object.values(filters).filter((v) => v).length}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => syncQuotes.mutate()}
+              disabled={syncQuotes.isPending}
+            >
+              {syncQuotes.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {syncQuotes.isPending ? "Atualizando..." : "Atualizar Cotacoes"}
+            </Button>
+          </div>
         </div>
       </div>
 

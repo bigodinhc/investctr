@@ -25,7 +25,9 @@ from app.schemas.position import (
     PositionWithAsset,
     PositionWithMarketData,
 )
+from app.services.pnl_service import PnLService
 from app.services.position_service import PositionService
+from app.services.quote_service import QuoteService
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/positions", tags=["positions"])
@@ -45,6 +47,7 @@ async def list_positions(
 
     Returns positions with asset info and market data (if available).
     Supports filtering by account and asset type.
+    Includes current_price, unrealized_pnl, and unrealized_pnl_pct from quotes.
     """
     # Base query with joins
     query = (
@@ -65,7 +68,7 @@ async def list_positions(
         query = query.where(Asset.asset_type == asset_type)
 
     result = await db.execute(query)
-    positions = result.scalars().all()
+    positions = list(result.scalars().all())
 
     # Get total count
     count_query = (
@@ -83,21 +86,24 @@ async def list_positions(
     count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
 
-    # Calculate totals
-    total_cost = Decimal("0")
-    total_market_value = Decimal("0")
+    # Get current prices for all positions
+    asset_ids = [pos.asset_id for pos in positions]
+    quote_service = QuoteService(db)
+    current_prices = await quote_service.get_latest_prices(asset_ids) if asset_ids else {}
+
+    # Calculate unrealized P&L using PnLService
+    pnl_service = PnLService(db)
+    unrealized_summary = await pnl_service.calculate_unrealized_pnl(positions, current_prices)
+
+    # Build a lookup map for unrealized P&L by position_id
+    unrealized_by_position = {
+        entry.position_id: entry for entry in unrealized_summary.entries
+    }
+
+    # Build response items
     items = []
-
     for pos in positions:
-        # Get current price from quote if available
-        current_price = None
-        market_value = None
-        unrealized_pnl = None
-        unrealized_pnl_pct = None
-        price_updated_at = None
-
-        # TODO: Get from quotes table when market data integration is ready
-        # For now, market_value = None indicates no market data
+        pnl_entry = unrealized_by_position.get(pos.id)
 
         item = PositionWithMarketData(
             id=pos.id,
@@ -112,23 +118,13 @@ async def list_positions(
             ticker=pos.asset.ticker,
             asset_name=pos.asset.name,
             asset_type=pos.asset.asset_type,
-            current_price=current_price,
-            market_value=market_value,
-            unrealized_pnl=unrealized_pnl,
-            unrealized_pnl_pct=unrealized_pnl_pct,
-            price_updated_at=price_updated_at,
+            current_price=pnl_entry.current_price if pnl_entry else None,
+            market_value=pnl_entry.market_value if pnl_entry else None,
+            unrealized_pnl=pnl_entry.unrealized_pnl if pnl_entry else None,
+            unrealized_pnl_pct=pnl_entry.unrealized_pnl_pct if pnl_entry else None,
+            price_updated_at=None,  # TODO: Get from quote timestamp
         )
         items.append(item)
-        total_cost += pos.total_cost
-
-        if market_value is not None:
-            total_market_value += market_value
-
-    # Calculate total unrealized P&L
-    total_unrealized_pnl = total_market_value - total_cost if total_market_value > 0 else Decimal("0")
-    total_unrealized_pnl_pct = (
-        (total_unrealized_pnl / total_cost * 100) if total_cost > 0 and total_market_value > 0 else None
-    )
 
     # Filter by min_value after market data enrichment
     if min_value is not None:
@@ -137,10 +133,10 @@ async def list_positions(
     return PositionsWithMarketDataResponse(
         items=items,
         total=total,
-        total_market_value=total_market_value if total_market_value > 0 else total_cost,
-        total_cost=total_cost,
-        total_unrealized_pnl=total_unrealized_pnl,
-        total_unrealized_pnl_pct=total_unrealized_pnl_pct,
+        total_market_value=unrealized_summary.total_market_value if unrealized_summary.total_market_value > 0 else unrealized_summary.total_cost,
+        total_cost=unrealized_summary.total_cost,
+        total_unrealized_pnl=unrealized_summary.total_unrealized_pnl,
+        total_unrealized_pnl_pct=unrealized_summary.total_unrealized_pnl_pct,
     )
 
 
@@ -285,7 +281,7 @@ async def get_position(
     db: DBSession,
     position_id: UUID,
 ) -> PositionWithMarketData:
-    """Get a specific position by ID."""
+    """Get a specific position by ID with current market data."""
     query = (
         select(Position)
         .join(Position.account)
@@ -302,6 +298,24 @@ async def get_position(
             detail="Position not found",
         )
 
+    # Get current price
+    quote_service = QuoteService(db)
+    current_price = await quote_service.get_latest_price(position.asset_id)
+
+    # Calculate unrealized P&L
+    market_value = None
+    unrealized_pnl = None
+    unrealized_pnl_pct = None
+
+    if current_price is not None and position.quantity > 0:
+        market_value = position.quantity * current_price
+        unrealized_pnl = market_value - position.total_cost
+        unrealized_pnl_pct = (
+            (unrealized_pnl / position.total_cost * 100)
+            if position.total_cost > 0
+            else Decimal("0")
+        )
+
     return PositionWithMarketData(
         id=position.id,
         account_id=position.account_id,
@@ -315,11 +329,11 @@ async def get_position(
         ticker=position.asset.ticker,
         asset_name=position.asset.name,
         asset_type=position.asset.asset_type,
-        current_price=None,  # TODO: Get from quotes
-        market_value=None,
-        unrealized_pnl=None,
-        unrealized_pnl_pct=None,
-        price_updated_at=None,
+        current_price=current_price,
+        market_value=market_value,
+        unrealized_pnl=unrealized_pnl,
+        unrealized_pnl_pct=unrealized_pnl_pct,
+        price_updated_at=None,  # TODO: Get from quote timestamp
     )
 
 

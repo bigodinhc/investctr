@@ -320,11 +320,11 @@ Paralelismo Fase 3.1:
 | 4.1.2 | Integração yfinance (client) | [B] | 2h | - | ✅ |
 | 4.1.3 | Service: fetch_quotes(tickers) | [S] | 2h | 4.1.2 | ✅ |
 | 4.1.4 | Service: get_latest_prices() | [S] | 1h | 4.1.1 | ✅ |
-| 4.1.5 | Celery task: sync_all_quotes | [S] | 2h | 4.1.3, 1.2.5 | ⬜ |
-| 4.1.6 | Celery Beat schedule (3x dia) | [S] | 30min | 4.1.5 | ⬜ |
+| 4.1.5 | Celery task: sync_all_quotes | [S] | 2h | 4.1.3, 1.2.5 | ✅ |
+| 4.1.6 | Celery Beat schedule (3x dia) | [S] | 30min | 4.1.5 | ✅ |
 | 4.1.7 | Cache Redis para cotações recentes | [S] | 1h | 1.1.7 | ✅ |
 | 4.1.8 | Endpoint GET /quotes/{asset_id} | [S] | 1h | 4.1.1 | ✅ |
-| 4.1.9 | Endpoint POST /quotes/sync (manual) | [S] | 30min | 4.1.5 | ⬜ |
+| 4.1.9 | Endpoint POST /quotes/sync (manual) | [S] | 30min | 4.1.5 | ✅ |
 
 ---
 
@@ -332,10 +332,10 @@ Paralelismo Fase 3.1:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 4.2.1 | Service: calculate_unrealized_pnl() | [S] | 2h | 3.1.6, 4.1.4 | ⬜ |
+| 4.2.1 | Service: calculate_unrealized_pnl() | [S] | 2h | 3.1.6, 4.1.4 | ✅ |
 | 4.2.2 | Service: calculate_realized_pnl() | [P] | 2h | 3.1.1 | ✅ |
-| 4.2.3 | Atualizar GET /positions com P&L | [S] | 1h | 4.2.1 | ⬜ |
-| 4.2.4 | Endpoint GET /portfolio/summary | [S] | 2h | 4.2.1, 4.2.2 | ⬜ |
+| 4.2.3 | Atualizar GET /positions com P&L | [S] | 1h | 4.2.1 | ✅ |
+| 4.2.4 | Endpoint GET /portfolio/summary | [S] | 2h | 4.2.1, 4.2.2 | ✅ |
 
 ```
 Paralelismo Fase 4:
@@ -368,11 +368,11 @@ Paralelismo Fase 4:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 4.3.1 | Exibir preço atual em /positions | [S] | 1h | 4.1.4 | ⬜ |
-| 4.3.2 | Exibir P&L (valor + %) em /positions | [S] | 1h | 4.2.3 | ⬜ |
-| 4.3.3 | Indicador "última atualização" | [S] | 30min | 4.3.1 | ⬜ |
-| 4.3.4 | Botão "Atualizar cotações" | [S] | 30min | 4.1.9 | ⬜ |
-| 4.3.5 | Coloração verde/vermelho P&L | [P] | 30min | 4.3.2 | ⬜ |
+| 4.3.1 | Exibir preço atual em /positions | [S] | 1h | 4.1.4 | ✅ |
+| 4.3.2 | Exibir P&L (valor + %) em /positions | [S] | 1h | 4.2.3 | ✅ |
+| 4.3.3 | Indicador "última atualização" | [S] | 30min | 4.3.1 | ✅ |
+| 4.3.4 | Botão "Atualizar cotações" | [S] | 30min | 4.1.9 | ✅ |
+| 4.3.5 | Coloração verde/vermelho P&L | [P] | 30min | 4.3.2 | ✅ |
 
 ---
 

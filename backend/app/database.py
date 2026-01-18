@@ -86,3 +86,17 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
         finally:
             await session.close()
+
+
+def async_session_factory():
+    """
+    Get async session factory for use in Celery tasks.
+
+    Returns a context manager that provides an AsyncSession.
+
+    Usage:
+        async with async_session_factory() as session:
+            # Use session
+            pass
+    """
+    return get_session_maker()()

@@ -50,6 +50,35 @@ class RealizedPnLSummary:
     entries: list[RealizedPnLEntry]
 
 
+@dataclass
+class UnrealizedPnLEntry:
+    """Single unrealized P&L entry for a position."""
+
+    position_id: UUID
+    asset_id: UUID
+    ticker: str | None
+    quantity: Decimal
+    avg_price: Decimal
+    total_cost: Decimal
+    current_price: Decimal | None
+    market_value: Decimal | None
+    unrealized_pnl: Decimal | None
+    unrealized_pnl_pct: Decimal | None
+
+
+@dataclass
+class UnrealizedPnLSummary:
+    """Summary of unrealized P&L."""
+
+    total_market_value: Decimal
+    total_cost: Decimal
+    total_unrealized_pnl: Decimal
+    total_unrealized_pnl_pct: Decimal | None
+    positions_count: int
+    positions_with_prices: int
+    entries: list[UnrealizedPnLEntry]
+
+
 class PnLService:
     """Service for calculating P&L (Profit and Loss)."""
 
@@ -331,6 +360,100 @@ class PnLService:
 
         return result
 
+    async def calculate_unrealized_pnl(
+        self,
+        positions: list[Position],
+        current_prices: dict[UUID, Decimal],
+    ) -> UnrealizedPnLSummary:
+        """
+        Calculate unrealized P&L summary for open positions.
+
+        Uses formula: unrealized_pnl = (current_price - avg_price) * quantity
+        Which is equivalent to: market_value - total_cost
+
+        Args:
+            positions: List of Position objects with asset relationship loaded
+            current_prices: Dictionary mapping asset_id -> current price
+
+        Returns:
+            UnrealizedPnLSummary with detailed entries and totals
+        """
+        logger.info(
+            "calculate_unrealized_pnl_start",
+            positions_count=len(positions),
+            prices_count=len(current_prices),
+        )
+
+        entries: list[UnrealizedPnLEntry] = []
+        total_market_value = Decimal("0")
+        total_cost = Decimal("0")
+        positions_with_prices = 0
+
+        for pos in positions:
+            if pos.quantity <= 0:
+                continue
+
+            ticker = pos.asset.ticker if hasattr(pos, "asset") and pos.asset else None
+            current_price = current_prices.get(pos.asset_id)
+
+            if current_price is not None:
+                market_value = pos.quantity * current_price
+                unrealized_pnl = market_value - pos.total_cost
+                unrealized_pnl_pct = (
+                    (unrealized_pnl / pos.total_cost * 100)
+                    if pos.total_cost > 0
+                    else Decimal("0")
+                )
+                total_market_value += market_value
+                positions_with_prices += 1
+            else:
+                market_value = None
+                unrealized_pnl = None
+                unrealized_pnl_pct = None
+
+            total_cost += pos.total_cost
+
+            entry = UnrealizedPnLEntry(
+                position_id=pos.id,
+                asset_id=pos.asset_id,
+                ticker=ticker,
+                quantity=pos.quantity,
+                avg_price=pos.avg_price,
+                total_cost=pos.total_cost,
+                current_price=current_price,
+                market_value=market_value,
+                unrealized_pnl=unrealized_pnl,
+                unrealized_pnl_pct=unrealized_pnl_pct,
+            )
+            entries.append(entry)
+
+        # Calculate totals
+        total_unrealized_pnl = total_market_value - total_cost if positions_with_prices > 0 else Decimal("0")
+        total_unrealized_pnl_pct = (
+            (total_unrealized_pnl / total_cost * 100)
+            if total_cost > 0 and positions_with_prices > 0
+            else None
+        )
+
+        summary = UnrealizedPnLSummary(
+            total_market_value=total_market_value,
+            total_cost=total_cost,
+            total_unrealized_pnl=total_unrealized_pnl,
+            total_unrealized_pnl_pct=total_unrealized_pnl_pct,
+            positions_count=len(entries),
+            positions_with_prices=positions_with_prices,
+            entries=entries,
+        )
+
+        logger.info(
+            "calculate_unrealized_pnl_complete",
+            positions_count=len(entries),
+            positions_with_prices=positions_with_prices,
+            total_unrealized_pnl=str(total_unrealized_pnl),
+        )
+
+        return summary
+
 
 async def calculate_realized_pnl(
     db: AsyncSession,
@@ -361,4 +484,27 @@ async def calculate_realized_pnl(
         user_id=user_id,
         start_date=start_date,
         end_date=end_date,
+    )
+
+
+async def calculate_unrealized_pnl(
+    db: AsyncSession,
+    positions: list[Position],
+    current_prices: dict[UUID, Decimal],
+) -> UnrealizedPnLSummary:
+    """
+    Utility function to calculate unrealized P&L.
+
+    Args:
+        db: Database session
+        positions: List of Position objects with asset relationship loaded
+        current_prices: Dictionary mapping asset_id -> current price
+
+    Returns:
+        UnrealizedPnLSummary with P&L details
+    """
+    service = PnLService(db)
+    return await service.calculate_unrealized_pnl(
+        positions=positions,
+        current_prices=current_prices,
     )

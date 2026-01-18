@@ -355,6 +355,14 @@ export interface PositionFilters extends PaginationParams {
   min_value?: string;
 }
 
+// Quote Types
+export interface QuoteSyncResponse {
+  message: string;
+  assets_synced: number;
+  quotes_updated: number;
+  errors: string[];
+}
+
 // Cash Flow Types
 export type CashFlowType = "deposit" | "withdrawal";
 

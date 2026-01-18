@@ -7,6 +7,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -29,6 +30,123 @@ from app.services.quote_service import QuoteService
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/quotes", tags=["quotes"])
+
+
+# -------------------------------------------------------------------------
+# Sync Endpoint
+# -------------------------------------------------------------------------
+
+
+class SyncQuotesRequest(BaseModel):
+    """Request schema for syncing quotes."""
+
+    tickers: list[str] | None = Field(
+        default=None,
+        description="List of tickers to sync. If empty, syncs all active assets.",
+    )
+    start_date: date | None = Field(
+        default=None,
+        description="Start date for historical data (defaults to today)",
+    )
+    end_date: date | None = Field(
+        default=None,
+        description="End date for historical data (defaults to today)",
+    )
+
+
+class SyncQuotesResponse(BaseModel):
+    """Response schema for sync operation."""
+
+    quotes_updated: int = Field(..., description="Number of quotes synced")
+    tickers_processed: int = Field(..., description="Number of tickers processed")
+    message: str
+
+
+@router.post("/sync", response_model=SyncQuotesResponse)
+async def sync_quotes(
+    user: AuthenticatedUser,
+    db: DBSession,
+    request: SyncQuotesRequest | None = None,
+) -> SyncQuotesResponse:
+    """
+    Manually trigger quote synchronization.
+
+    If tickers are provided, only those tickers will be synced.
+    If no tickers are provided, all active assets (those with positions) will be synced.
+
+    This endpoint fetches quotes from Yahoo Finance and saves them to the database.
+    """
+    quote_service = QuoteService(db)
+
+    tickers_to_sync: list[str] = []
+
+    if request and request.tickers:
+        # Use provided tickers
+        tickers_to_sync = request.tickers
+        logger.info(
+            "sync_quotes_manual_tickers",
+            user_id=str(user.id),
+            tickers_count=len(tickers_to_sync),
+        )
+    else:
+        # Get all tickers from user's positions (active assets)
+        from app.models import Account, Position
+
+        query = (
+            select(Asset.ticker)
+            .join(Position, Asset.id == Position.asset_id)
+            .join(Account, Position.account_id == Account.id)
+            .where(Account.user_id == user.id)
+            .where(Position.quantity > 0)
+            .distinct()
+        )
+        result = await db.execute(query)
+        tickers_to_sync = [row[0] for row in result.fetchall()]
+
+        logger.info(
+            "sync_quotes_all_positions",
+            user_id=str(user.id),
+            tickers_count=len(tickers_to_sync),
+        )
+
+    if not tickers_to_sync:
+        return SyncQuotesResponse(
+            quotes_updated=0,
+            tickers_processed=0,
+            message="No tickers to sync. Add positions or provide tickers.",
+        )
+
+    # Fetch and save quotes
+    start_date = request.start_date if request else None
+    end_date = request.end_date if request else None
+
+    try:
+        saved_quotes = await quote_service.fetch_and_save_quotes(
+            tickers=tickers_to_sync,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        return SyncQuotesResponse(
+            quotes_updated=len(saved_quotes),
+            tickers_processed=len(tickers_to_sync),
+            message=f"Successfully synced {len(saved_quotes)} quotes for {len(tickers_to_sync)} tickers",
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.exception(
+            "sync_quotes_error",
+            user_id=str(user.id),
+            error=str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sync quotes: {str(e)}",
+        )
 
 
 @router.get("/{asset_id}", response_model=QuoteHistoryResponse)
