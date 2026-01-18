@@ -17,7 +17,7 @@ import {
 import {
   usePositions,
   useConsolidatedPositions,
-  usePortfolioSummary,
+  usePositionsSummary,
   useRecalculatePositions,
 } from "@/hooks/use-positions";
 import { useSyncQuotes } from "@/hooks/use-quotes";
@@ -53,6 +53,8 @@ const ASSET_TYPE_LABELS: Record<AssetType, { label: string; icon: typeof Buildin
   option: { label: "Opções", icon: TrendingUp },
   future: { label: "Futuros", icon: TrendingUp },
   currency: { label: "Moedas", icon: Landmark },
+  bond: { label: "Renda Fixa", icon: Landmark },
+  treasury: { label: "Tesouro", icon: Landmark },
   other: { label: "Outros", icon: BarChart3 },
 };
 
@@ -68,7 +70,7 @@ export default function PositionsPage() {
   const { data: consolidatedData, isLoading: isConsolidatedLoading } = useConsolidatedPositions(
     filters.asset_type
   );
-  const { data: summaryData } = usePortfolioSummary(filters.account_id);
+  const { data: summaryData } = usePositionsSummary(filters.account_id);
   const { data: accountsData } = useAccounts();
   const recalculatePositions = useRecalculatePositions();
   const syncQuotes = useSyncQuotes();

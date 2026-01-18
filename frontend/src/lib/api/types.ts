@@ -47,6 +47,8 @@ export type AssetType =
   | "option"
   | "future"
   | "currency"
+  | "bond"
+  | "treasury"
   | "other";
 
 export interface Asset {
@@ -407,4 +409,132 @@ export interface CashFlowsListResponse {
 
 export interface CashFlowFilters extends PaginationParams {
   account_id?: string;
+}
+
+// Portfolio Summary Types (from /api/v1/portfolio/summary)
+export interface AssetTypeSummary {
+  asset_type: AssetType;
+  positions_count: number;
+  total_cost: string;
+  market_value: string | null;
+  unrealized_pnl: string | null;
+  unrealized_pnl_pct: string | null;
+  allocation_pct: string | null;
+}
+
+export interface AccountSummary {
+  account_id: string;
+  account_name: string;
+  broker: string | null;
+  positions_count: number;
+  total_cost: string;
+  market_value: string | null;
+  unrealized_pnl: string | null;
+  unrealized_pnl_pct: string | null;
+  allocation_pct: string | null;
+}
+
+export interface PortfolioSummaryResponse {
+  total_positions: number;
+  total_value: string;
+  total_cost: string;
+  total_unrealized_pnl: string;
+  total_unrealized_pnl_pct: string | null;
+  total_realized_pnl: string;
+  by_asset_type: AssetTypeSummary[];
+  by_account: AccountSummary[];
+  accounts_count: number;
+  last_price_update: string | null;
+}
+
+// Fund Types
+export interface NAVResponse {
+  user_id: string;
+  date: string;
+  nav: string;
+  total_market_value: string;
+  total_cash: string;
+  positions_count: number;
+  positions_with_prices: number;
+}
+
+export interface FundShare {
+  id: string;
+  user_id: string;
+  date: string;
+  nav: string;
+  shares_outstanding: string;
+  share_value: string;
+  daily_return: string | null;
+  cumulative_return: string | null;
+  created_at: string;
+}
+
+export interface FundSharesListResponse {
+  items: FundShare[];
+  total: number;
+}
+
+export interface FundPerformance {
+  current_nav: string;
+  current_share_value: string;
+  shares_outstanding: string;
+  total_return: string | null;
+  daily_return: string | null;
+  mtd_return: string | null;
+  ytd_return: string | null;
+  one_year_return: string | null;
+  max_drawdown: string | null;
+  volatility: string | null;
+}
+
+export interface FundShareFilters {
+  start_date?: string;
+  end_date?: string;
+  limit?: number;
+}
+
+// Portfolio History Types
+export type PeriodType = "1M" | "3M" | "6M" | "1Y" | "YTD" | "MAX";
+
+export interface PortfolioHistoryItem {
+  date: string;
+  nav: string;
+  total_cost: string;
+  realized_pnl: string;
+  unrealized_pnl: string;
+}
+
+export interface PortfolioHistoryResponse {
+  items: PortfolioHistoryItem[];
+  total: number;
+  period_return: string | null;
+  start_nav: string | null;
+  end_nav: string | null;
+}
+
+export interface PortfolioHistoryFilters {
+  period?: PeriodType;
+  account_id?: string;
+  limit?: number;
+}
+
+// Portfolio Allocation Types
+export interface AllocationItem {
+  name: string;
+  value: string;
+  percentage: string;
+  color: string | null;
+}
+
+export interface AllocationResponse {
+  by_asset_type: AllocationItem[];
+  by_asset: AllocationItem[];
+  total_value: string;
+  positions_count: number;
+}
+
+export interface AllocationFilters {
+  account_id?: string;
+  top_assets?: number;
 }
