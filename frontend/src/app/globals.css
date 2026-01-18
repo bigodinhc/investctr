@@ -88,14 +88,15 @@
     /* Borders & Inputs */
     --border: 240 5% 18%;
     --border-hover: 240 5% 28%;
+    --border-subtle: 240 5% 14%;
     --input: 240 5% 18%;
     --ring: 12 95% 47%;
 
-    /* Blur intensities */
-    --blur-sm: 8px;
-    --blur-md: 16px;
-    --blur-lg: 24px;
-    --blur-xl: 40px;
+    /* Blur intensities - increased for more dramatic glass effect */
+    --blur-sm: 12px;
+    --blur-md: 24px;
+    --blur-lg: 36px;
+    --blur-xl: 56px;
   }
 }
 
@@ -173,36 +174,36 @@
   }
 }
 
-/* Glassmorphism utilities */
+/* Glassmorphism utilities - Maximum transparency for dramatic effect */
 @layer utilities {
-  /* Base glass card */
+  /* Base glass card - highly transparent */
   .glass-card {
-    background: hsl(var(--glass-bg) / 0.6);
+    background: hsl(var(--glass-bg) / 0.22);
     backdrop-filter: blur(var(--blur-md));
     -webkit-backdrop-filter: blur(var(--blur-md));
-    border: 1px solid hsl(var(--glass-border) / 0.08);
+    border: 1px solid hsl(var(--glass-border) / 0.1);
     border-radius: 1rem;
     box-shadow:
-      0 4px 30px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   /* Elevated glass (modals, dropdowns) */
   .glass-card-elevated {
-    background: hsl(var(--glass-bg) / 0.8);
+    background: hsl(var(--glass-bg) / 0.35);
     backdrop-filter: blur(var(--blur-xl));
     -webkit-backdrop-filter: blur(var(--blur-xl));
-    border: 1px solid hsl(var(--glass-border) / 0.08);
+    border: 1px solid hsl(var(--glass-border) / 0.12);
     border-radius: 1rem;
     box-shadow:
-      0 8px 40px rgba(0, 0, 0, 0.4),
-      0 0 80px hsl(var(--vermillion) / 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 8px 40px rgba(0, 0, 0, 0.25),
+      0 0 80px hsl(var(--vermillion) / 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
-  /* Subtle glass (nested cards) */
+  /* Subtle glass (nested cards) - ultra transparent */
   .glass-card-subtle {
-    background: hsl(var(--glass-bg) / 0.4);
+    background: hsl(var(--glass-bg) / 0.12);
     backdrop-filter: blur(var(--blur-sm));
     -webkit-backdrop-filter: blur(var(--blur-sm));
     border: 1px solid hsl(var(--glass-border) / 0.08);
@@ -211,15 +212,24 @@
 
   /* Glass with vermillion accent glow */
   .glass-card-accent {
-    background: hsl(var(--glass-bg) / 0.6);
+    background: hsl(var(--glass-bg) / 0.18);
     backdrop-filter: blur(var(--blur-md));
     -webkit-backdrop-filter: blur(var(--blur-md));
-    border: 1px solid hsl(var(--vermillion) / 0.2);
+    border: 1px solid hsl(var(--vermillion) / 0.3);
     border-radius: 1rem;
     box-shadow:
-      0 4px 30px rgba(0, 0, 0, 0.3),
-      0 0 60px hsl(var(--vermillion) / 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      0 0 70px hsl(var(--vermillion) / 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Extra transparent glass for layered effects */
+  .glass-card-ultra {
+    background: hsl(var(--glass-bg) / 0.08);
+    backdrop-filter: blur(var(--blur-lg));
+    -webkit-backdrop-filter: blur(var(--blur-lg));
+    border: 1px solid hsl(var(--glass-border) / 0.06);
+    border-radius: 1rem;
   }
 
   /* Vermillion glow effects */
@@ -245,13 +255,29 @@
   }
 }
 
-/* Background effects */
+/* Background effects - Vibrant for glass visibility */
 @layer utilities {
   .bg-gradient-mesh {
     background:
-      radial-gradient(ellipse at 20% 30%, hsl(var(--vermillion) / 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 70%, hsl(210 100% 50% / 0.05) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, hsl(240 8% 8%) 0%, hsl(240 10% 4%) 100%);
+      radial-gradient(ellipse at 15% 25%, hsl(var(--vermillion) / 0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 15%, hsl(280 80% 50% / 0.1) 0%, transparent 40%),
+      radial-gradient(ellipse at 75% 75%, hsl(210 100% 50% / 0.12) 0%, transparent 45%),
+      radial-gradient(ellipse at 25% 85%, hsl(var(--vermillion) / 0.1) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 50%, hsl(240 8% 5%) 0%, hsl(240 10% 2.5%) 100%);
+  }
+
+  /* Intense version for hero areas */
+  .bg-gradient-mesh-intense {
+    background:
+      radial-gradient(ellipse at 10% 20%, hsl(var(--vermillion) / 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse at 90% 10%, hsl(280 80% 50% / 0.15) 0%, transparent 35%),
+      radial-gradient(ellipse at 80% 80%, hsl(210 100% 50% / 0.18) 0%, transparent 40%),
+      radial-gradient(ellipse at 20% 90%, hsl(var(--vermillion) / 0.15) 0%, transparent 35%),
+      radial-gradient(ellipse at 50% 50%, hsl(240 8% 4%) 0%, hsl(240 10% 2%) 100%);
+  }
+
+  .bg-noise {
+    position: relative;
   }
 
   .bg-noise::after {
@@ -259,7 +285,7 @@
     position: absolute;
     inset: 0;
     background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    opacity: 0.03;
+    opacity: 0.025;
     pointer-events: none;
   }
 }
@@ -281,15 +307,15 @@
 @keyframes vermillion-pulse {
   0%, 100% {
     box-shadow:
-      0 4px 30px rgba(0, 0, 0, 0.3),
-      0 0 20px hsl(var(--vermillion) / 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      0 0 30px hsl(var(--vermillion) / 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   50% {
     box-shadow:
-      0 4px 30px rgba(0, 0, 0, 0.3),
-      0 0 40px hsl(var(--vermillion) / 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      0 0 60px hsl(var(--vermillion) / 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 }
 
