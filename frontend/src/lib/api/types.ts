@@ -354,3 +354,49 @@ export interface PositionFilters extends PaginationParams {
   asset_type?: AssetType;
   min_value?: string;
 }
+
+// Cash Flow Types
+export type CashFlowType = "deposit" | "withdrawal";
+
+export interface CashFlow {
+  id: string;
+  account_id: string;
+  type: CashFlowType;
+  amount: string;
+  currency: string;
+  exchange_rate: string;
+  executed_at: string;
+  shares_affected: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface CashFlowCreate {
+  account_id: string;
+  type: CashFlowType;
+  amount: string;
+  currency?: Currency;
+  exchange_rate?: string;
+  executed_at: string;
+  shares_affected?: string;
+  notes?: string;
+}
+
+export interface CashFlowUpdate {
+  type?: CashFlowType;
+  amount?: string;
+  currency?: Currency;
+  exchange_rate?: string;
+  executed_at?: string;
+  shares_affected?: string;
+  notes?: string;
+}
+
+export interface CashFlowsListResponse {
+  items: CashFlow[];
+  total: number;
+}
+
+export interface CashFlowFilters extends PaginationParams {
+  account_id?: string;
+}

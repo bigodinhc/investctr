@@ -1,0 +1,233 @@
+"""
+Quote management endpoints.
+"""
+
+from datetime import date
+from decimal import Decimal
+from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
+from app.api.deps import AuthenticatedUser, DBSession, Pagination
+from app.core.logging import get_logger
+from app.models import Asset, Quote
+from app.schemas.quote import (
+    LatestPriceResponse,
+    LatestPricesResponse,
+    QuoteHistoryResponse,
+    QuoteResponse,
+)
+from app.services.cache_service import (
+    get_cached_price,
+    get_cached_prices,
+    set_cached_price,
+    set_cached_prices,
+)
+from app.services.quote_service import QuoteService
+
+logger = get_logger(__name__)
+router = APIRouter(prefix="/quotes", tags=["quotes"])
+
+
+@router.get("/{asset_id}", response_model=QuoteHistoryResponse)
+async def get_quote_history(
+    user: AuthenticatedUser,
+    db: DBSession,
+    asset_id: UUID,
+    start_date: date | None = Query(None, description="Start date filter (inclusive)"),
+    end_date: date | None = Query(None, description="End date filter (inclusive)"),
+    limit: int = Query(365, ge=1, le=1000, description="Maximum quotes to return"),
+) -> QuoteHistoryResponse:
+    """
+    Get quote history for an asset.
+
+    Returns historical price data ordered by date descending.
+    Supports filtering by date range and limiting results.
+    """
+    # Verify asset exists
+    asset_query = select(Asset).where(Asset.id == asset_id)
+    asset_result = await db.execute(asset_query)
+    asset = asset_result.scalar_one_or_none()
+
+    if not asset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Asset not found",
+        )
+
+    # Get quote history
+    quote_service = QuoteService(db)
+    quotes = await quote_service.get_price_history(
+        asset_id=asset_id,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+    )
+
+    return QuoteHistoryResponse(
+        items=[QuoteResponse.model_validate(q) for q in quotes],
+        total=len(quotes),
+        asset_id=asset_id,
+        ticker=asset.ticker,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+@router.get("/{asset_id}/latest", response_model=LatestPriceResponse)
+async def get_latest_price(
+    user: AuthenticatedUser,
+    db: DBSession,
+    asset_id: UUID,
+    use_cache: bool = Query(True, description="Try to get price from cache first"),
+) -> LatestPriceResponse:
+    """
+    Get the latest price for an asset.
+
+    If use_cache is True (default), attempts to retrieve from Redis cache first.
+    Falls back to database if not cached.
+    """
+    # Verify asset exists
+    asset_query = select(Asset).where(Asset.id == asset_id)
+    asset_result = await db.execute(asset_query)
+    asset = asset_result.scalar_one_or_none()
+
+    if not asset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Asset not found",
+        )
+
+    cached = False
+    price: Decimal | None = None
+    quote_date: date | None = None
+    source: str = "database"
+
+    # Try cache first
+    if use_cache:
+        cached_price = await get_cached_price(asset_id)
+        if cached_price is not None:
+            price = cached_price
+            cached = True
+            source = "cache"
+            # Get date from most recent quote for response
+            quote_service = QuoteService(db)
+            quotes = await quote_service.get_price_history(asset_id, limit=1)
+            if quotes:
+                quote_date = quotes[0].date
+
+    # Fallback to database
+    if price is None:
+        quote_service = QuoteService(db)
+        quotes = await quote_service.get_price_history(asset_id, limit=1)
+
+        if not quotes:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No quotes found for this asset",
+            )
+
+        quote = quotes[0]
+        price = quote.adjusted_close if quote.adjusted_close else quote.close
+        quote_date = quote.date
+        source = quote.source
+
+        # Cache the price for future requests
+        if use_cache:
+            await set_cached_price(asset_id, price)
+
+    return LatestPriceResponse(
+        asset_id=asset_id,
+        price=price,
+        date=quote_date,
+        source=source,
+        cached=cached,
+    )
+
+
+@router.post("/latest", response_model=LatestPricesResponse)
+async def get_latest_prices(
+    user: AuthenticatedUser,
+    db: DBSession,
+    asset_ids: list[UUID],
+    use_cache: bool = Query(True, description="Try to get prices from cache first"),
+) -> LatestPricesResponse:
+    """
+    Get latest prices for multiple assets.
+
+    Accepts a list of asset IDs and returns the latest price for each.
+    Uses Redis cache for efficient retrieval when available.
+    """
+    if not asset_ids:
+        return LatestPricesResponse(items=[], total=0, cached_count=0)
+
+    if len(asset_ids) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum 100 assets per request",
+        )
+
+    # Verify assets exist and get tickers
+    asset_query = select(Asset).where(Asset.id.in_(asset_ids))
+    asset_result = await db.execute(asset_query)
+    assets = {a.id: a for a in asset_result.scalars().all()}
+
+    if not assets:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No valid assets found",
+        )
+
+    quote_service = QuoteService(db)
+    items: list[LatestPriceResponse] = []
+    cached_count = 0
+
+    # Get cached prices first
+    cached_prices: dict[UUID, Decimal] = {}
+    if use_cache:
+        cached_prices = await get_cached_prices(list(assets.keys()))
+        cached_count = len(cached_prices)
+
+    # Find which assets need database lookup
+    missing_ids = [aid for aid in assets.keys() if aid not in cached_prices]
+
+    # Get prices from database for non-cached assets
+    db_prices: dict[UUID, Decimal] = {}
+    if missing_ids:
+        db_prices = await quote_service.get_latest_prices(missing_ids)
+
+        # Cache the newly fetched prices
+        if use_cache and db_prices:
+            await set_cached_prices(db_prices)
+
+    # Get dates for response (need to query for this)
+    quote_dates: dict[UUID, date] = {}
+    quote_sources: dict[UUID, str] = {}
+
+    for asset_id in assets.keys():
+        quotes = await quote_service.get_price_history(asset_id, limit=1)
+        if quotes:
+            quote_dates[asset_id] = quotes[0].date
+            quote_sources[asset_id] = quotes[0].source
+
+    # Build response
+    for asset_id in assets.keys():
+        price = cached_prices.get(asset_id) or db_prices.get(asset_id)
+        if price is not None:
+            items.append(
+                LatestPriceResponse(
+                    asset_id=asset_id,
+                    price=price,
+                    date=quote_dates.get(asset_id),
+                    source=quote_sources.get(asset_id, "unknown"),
+                    cached=asset_id in cached_prices,
+                )
+            )
+
+    return LatestPricesResponse(
+        items=items,
+        total=len(items),
+        cached_count=cached_count,
+    )

@@ -317,13 +317,13 @@ Paralelismo Fase 3.1:
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
 | 4.1.1 | Criar modelo Quote | [S] | 30min | 1.2.2 | ✅ |
-| 4.1.2 | Integração yfinance (client) | [B] | 2h | - | ⬜ |
-| 4.1.3 | Service: fetch_quotes(tickers) | [S] | 2h | 4.1.2 | ⬜ |
-| 4.1.4 | Service: get_latest_prices() | [S] | 1h | 4.1.1 | ⬜ |
+| 4.1.2 | Integração yfinance (client) | [B] | 2h | - | ✅ |
+| 4.1.3 | Service: fetch_quotes(tickers) | [S] | 2h | 4.1.2 | ✅ |
+| 4.1.4 | Service: get_latest_prices() | [S] | 1h | 4.1.1 | ✅ |
 | 4.1.5 | Celery task: sync_all_quotes | [S] | 2h | 4.1.3, 1.2.5 | ⬜ |
 | 4.1.6 | Celery Beat schedule (3x dia) | [S] | 30min | 4.1.5 | ⬜ |
-| 4.1.7 | Cache Redis para cotações recentes | [S] | 1h | 1.1.7 | ⬜ |
-| 4.1.8 | Endpoint GET /quotes/{asset_id} | [S] | 1h | 4.1.1 | ⬜ |
+| 4.1.7 | Cache Redis para cotações recentes | [S] | 1h | 1.1.7 | ✅ |
+| 4.1.8 | Endpoint GET /quotes/{asset_id} | [S] | 1h | 4.1.1 | ✅ |
 | 4.1.9 | Endpoint POST /quotes/sync (manual) | [S] | 30min | 4.1.5 | ⬜ |
 
 ---
@@ -333,7 +333,7 @@ Paralelismo Fase 3.1:
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
 | 4.2.1 | Service: calculate_unrealized_pnl() | [S] | 2h | 3.1.6, 4.1.4 | ⬜ |
-| 4.2.2 | Service: calculate_realized_pnl() | [P] | 2h | 3.1.1 | ⬜ |
+| 4.2.2 | Service: calculate_realized_pnl() | [P] | 2h | 3.1.1 | ✅ |
 | 4.2.3 | Atualizar GET /positions com P&L | [S] | 1h | 4.2.1 | ⬜ |
 | 4.2.4 | Endpoint GET /portfolio/summary | [S] | 2h | 4.2.1, 4.2.2 | ⬜ |
 
@@ -395,7 +395,7 @@ Paralelismo Fase 4:
 |---|--------|------|-------|------|--------|
 | 5.1.1 | Criar modelo CashFlow | [S] | 30min | 1.2.2 | ✅ |
 | 5.1.2 | Criar modelo FundShares | [S] | 30min | 1.2.2 | ✅ |
-| 5.1.3 | CRUD endpoints /cash-flows | [S] | 2h | 5.1.1 | ⬜ |
+| 5.1.3 | CRUD endpoints /cash-flows | [S] | 2h | 5.1.1 | ✅ |
 | 5.1.4 | Service: calculate_nav() | [B] | 2h | 4.2.1 | ⬜ |
 | 5.1.5 | Service: issue_shares() (aporte) | [S] | 2h | 5.1.4 | ⬜ |
 | 5.1.6 | Service: redeem_shares() (saque) | [S] | 1h | 5.1.4 | ⬜ |
@@ -427,8 +427,8 @@ Fluxo diário automatizado:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 5.3.1 | Página /cash-flows | [S] | 2h | 5.1.3 | ⬜ |
-| 5.3.2 | Formulário novo aporte/saque | [S] | 2h | 5.3.1 | ⬜ |
+| 5.3.1 | Página /cash-flows | [S] | 2h | 5.1.3 | ✅ |
+| 5.3.2 | Formulário novo aporte/saque | [S] | 2h | 5.3.1 | ✅ |
 | 5.3.3 | Exibir cotas emitidas/resgatadas | [S] | 1h | 5.1.5 | ⬜ |
 | 5.3.4 | Dashboard: Card NAV | [S] | 1h | 5.1.9 | ⬜ |
 | 5.3.5 | Dashboard: Card Valor Cota | [S] | 1h | 5.1.10 | ⬜ |
