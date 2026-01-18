@@ -40,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCurrency, formatQuantity, formatNumber, formatPercent, formatDate, getPnLColor } from "@/lib/format";
 import type { AssetType, PositionWithMarketData } from "@/lib/api/types";
 
 const ASSET_TYPE_LABELS: Record<AssetType, { label: string; icon: typeof Building2 }> = {
@@ -94,55 +95,10 @@ export default function PositionsPage() {
     return latest;
   }, null as Date | null);
 
-  const formatLastUpdate = (date: Date | null) => {
-    if (!date) return null;
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 1) return "agora";
-    if (diffMins < 60) return `ha ${diffMins} min`;
-    if (diffHours < 24) return `ha ${diffHours}h`;
-    if (diffDays === 1) return "ontem";
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-  };
-
   const hasFilters = Object.values(filters).some((v) => v);
 
   const clearFilters = () => {
     setFilters({});
-  };
-
-  const formatCurrency = (value: string | null) => {
-    if (!value) return "-";
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(parseFloat(value));
-  };
-
-  const formatNumber = (value: string | null) => {
-    if (!value) return "-";
-    return new Intl.NumberFormat("pt-BR", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(parseFloat(value));
-  };
-
-  const formatPercent = (value: string | null) => {
-    if (!value) return "-";
-    const num = parseFloat(value);
-    return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`;
-  };
-
-  const getPnLColor = (value: string | null) => {
-    if (!value) return "text-foreground-muted";
-    const num = parseFloat(value);
-    if (num > 0) return "text-success";
-    if (num < 0) return "text-destructive";
-    return "text-foreground-muted";
   };
 
   if (error) {
@@ -182,7 +138,7 @@ export default function PositionsPage() {
           {lastPriceUpdate && (
             <div className="flex items-center gap-1.5 text-sm text-foreground-muted mr-2">
               <Clock className="h-4 w-4" />
-              <span>Cotacoes: {formatLastUpdate(lastPriceUpdate)}</span>
+              <span>Cotacoes: {formatDate(lastPriceUpdate, "relative")}</span>
             </div>
           )}
           <div className="flex gap-2">

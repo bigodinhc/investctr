@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LogOut, Bell, Search, User, Menu } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CommandPalette } from "@/components/shared/CommandPalette";
 import { cn } from "@/lib/utils";
 
 const pageNames: Record<string, string> = {
@@ -20,6 +21,20 @@ const pageNames: Record<string, string> = {
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const [commandOpen, setCommandOpen] = useState(false);
+
+  // Keyboard shortcut for Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -38,7 +53,10 @@ export function Header() {
         {/* Left: Mobile menu + Page title */}
         <div className="flex items-center gap-4">
           {/* Mobile menu button */}
-          <button className="lg:hidden p-2 rounded-md hover:bg-background-surface transition-colors">
+          <button
+            aria-label="Abrir menu de navegação"
+            className="lg:hidden p-2 rounded-md hover:bg-background-surface transition-colors"
+          >
             <Menu className="h-5 w-5 text-foreground-muted" />
           </button>
 
@@ -57,22 +75,32 @@ export function Header() {
 
         {/* Center: Search - Desktop only */}
         <div className="hidden lg:flex flex-1 max-w-md mx-8">
-          <div className="relative w-full">
-            <Input
-              placeholder="Buscar ativos, transações..."
-              className="pl-10 bg-background-surface border-transparent focus-visible:bg-background"
-              leftIcon={<Search className="h-4 w-4" />}
-            />
-          </div>
+          <button
+            onClick={() => setCommandOpen(true)}
+            className="flex w-full items-center gap-2 rounded-lg bg-background-surface px-4 py-2 text-sm text-foreground-muted hover:bg-background transition-colors"
+            aria-label="Abrir busca global (Ctrl+K)"
+          >
+            <Search className="h-4 w-4" />
+            <span>Buscar...</span>
+            <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-foreground-muted">
+              <span className="text-xs">Ctrl</span>K
+            </kbd>
+          </button>
         </div>
+
+        {/* Command Palette */}
+        <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {/* Notifications */}
-          <button className="relative p-2 rounded-md hover:bg-background-surface transition-colors group">
+          <button
+            aria-label="Ver notificações"
+            className="relative p-2 rounded-md hover:bg-background-surface transition-colors group"
+          >
             <Bell className="h-5 w-5 text-foreground-muted group-hover:text-foreground transition-colors" />
             {/* Notification dot */}
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-foreground rounded-full" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-foreground rounded-full" aria-hidden="true" />
           </button>
 
           {/* User menu */}
@@ -91,6 +119,7 @@ export function Header() {
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
+            aria-label="Sair da conta"
             className="ml-2 text-foreground-muted hover:text-destructive"
           >
             <LogOut className="h-4 w-4" />

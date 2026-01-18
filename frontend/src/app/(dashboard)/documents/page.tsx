@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { UploadZone, ParsePreview, DocumentStatusBadge } from "@/components/documents";
 import { toast } from "@/components/ui/use-toast";
+import { formatFileSize, formatDate } from "@/lib/format";
 import type { Document, ParsedTransaction } from "@/lib/api/types";
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
@@ -141,23 +142,6 @@ export default function DocumentsPage() {
     } catch {
       // Error is handled by the mutation hook
     }
-  };
-
-  const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return "-";
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   if (error) {
@@ -343,7 +327,7 @@ export default function DocumentsPage() {
                       {formatFileSize(doc.file_size)}
                     </TableCell>
                     <TableCell className="text-sm text-foreground-muted">
-                      {formatDate(doc.created_at)}
+                      {formatDate(doc.created_at, "datetime")}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
@@ -351,6 +335,7 @@ export default function DocumentsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Processar documento ${doc.file_name}`}
                             className="h-8 w-8 hover:bg-success/10 hover:text-success"
                             onClick={() => handleParse(doc.id)}
                             disabled={parseDocument.isPending}
@@ -362,6 +347,7 @@ export default function DocumentsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Ver resultado do documento ${doc.file_name}`}
                             className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                             onClick={() => setSelectedDocumentId(doc.id)}
                           >
@@ -371,6 +357,7 @@ export default function DocumentsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          aria-label={`Excluir documento ${doc.file_name}`}
                           className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => setDeletingDocument(doc)}
                         >

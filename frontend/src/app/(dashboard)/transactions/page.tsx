@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { formatCurrency, formatQuantity, formatDate } from "@/lib/format";
 import type { TransactionWithAsset, TransactionType, TransactionUpdate } from "@/lib/api/types";
 
 const TRANSACTION_TYPE_LABELS: Record<TransactionType, { label: string; color: string }> = {
@@ -128,30 +129,6 @@ export default function TransactionsPage() {
   };
 
   const hasFilters = Object.values(filters).some((v) => v);
-
-  const formatCurrency = (value: string | null) => {
-    if (!value) return "-";
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(parseFloat(value));
-  };
-
-  const formatNumber = (value: string | null) => {
-    if (!value) return "-";
-    return new Intl.NumberFormat("pt-BR", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 6,
-    }).format(parseFloat(value));
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
 
   // Calculate stats
   const totalBuys = transactions.filter((t) => t.type === "buy").length;
@@ -407,7 +384,7 @@ export default function TransactionsPage() {
                         style={{ animationDelay: `${index * 30}ms` }}
                       >
                         <TableCell className="font-mono text-sm">
-                          {formatDate(txn.executed_at)}
+                          {formatDate(txn.executed_at, "medium")}
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -435,7 +412,7 @@ export default function TransactionsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {formatNumber(txn.quantity)}
+                          {formatQuantity(txn.quantity)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {formatCurrency(txn.price)}
@@ -451,6 +428,7 @@ export default function TransactionsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Editar transação de ${txn.ticker}`}
                               className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                               onClick={() => handleEdit(txn)}
                             >
@@ -459,6 +437,7 @@ export default function TransactionsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Excluir transação de ${txn.ticker}`}
                               className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                               onClick={() => setDeletingTransaction(txn)}
                             >
@@ -491,7 +470,7 @@ export default function TransactionsPage() {
               {editingTransaction && (
                 <>
                   {editingTransaction.ticker} -{" "}
-                  {formatDate(editingTransaction.executed_at)}
+                  {formatDate(editingTransaction.executed_at, "medium")}
                 </>
               )}
             </DialogDescription>
@@ -590,7 +569,7 @@ export default function TransactionsPage() {
               </strong>{" "}
               em{" "}
               <strong className="text-foreground">
-                {deletingTransaction && formatDate(deletingTransaction.executed_at)}
+                {deletingTransaction && formatDate(deletingTransaction.executed_at, "medium")}
               </strong>
               ? Esta ação irá recalcular as posições automaticamente.
             </DialogDescription>

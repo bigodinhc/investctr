@@ -61,6 +61,7 @@ export function Sidebar() {
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
           className={cn(
             "p-1.5 rounded-md hover:bg-background-surface transition-colors text-foreground-muted hover:text-foreground",
             collapsed && "absolute -right-3 top-6 bg-background-elevated border border-border shadow-lg"
