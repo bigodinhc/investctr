@@ -29,8 +29,18 @@ export async function getFundShares(
   return api.get<FundSharesListResponse>("/api/v1/fund/shares", queryParams);
 }
 
-export async function getLatestFundShare(): Promise<FundShare> {
-  return api.get<FundShare>("/api/v1/fund/shares/latest");
+export async function getLatestFundShare(): Promise<FundShare | null> {
+  try {
+    return await api.get<FundShare>("/api/v1/fund/shares/latest");
+  } catch (error) {
+    // Return null if no fund share records exist (404)
+    if (error instanceof Error &&
+        (error.message.includes("No fund share records found") ||
+         error.message.includes("404"))) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function getFundPerformance(): Promise<FundPerformance> {

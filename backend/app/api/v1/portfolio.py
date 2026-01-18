@@ -18,7 +18,15 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import AuthenticatedUser, DBSession
 from app.core.logging import get_logger
 from app.models import Account, Asset, Position, PortfolioSnapshot
-from app.schemas.enums import AssetType
+from app.schemas.enums import AccountType, AssetType
+
+# Mapping from AccountType to broker display name
+ACCOUNT_TYPE_BROKER_MAP: dict[AccountType, str] = {
+    AccountType.BTG_BR: "BTG Pactual",
+    AccountType.XP: "XP Investimentos",
+    AccountType.BTG_CAYMAN: "BTG Pactual (Cayman)",
+    AccountType.TESOURO_DIRETO: "Tesouro Direto",
+}
 from app.schemas.fund import PortfolioHistoryItem, PortfolioHistoryResponse
 from app.services.pnl_service import PnLService
 from app.services.position_service import PositionService
@@ -291,7 +299,7 @@ async def get_portfolio_summary(
                 AccountSummary(
                     account_id=acc_id,
                     account_name=data["account"].name,
-                    broker=data["account"].broker,
+                    broker=ACCOUNT_TYPE_BROKER_MAP.get(data["account"].type),
                     positions_count=data["positions_count"],
                     total_cost=data["total_cost"],
                     market_value=market_value,
