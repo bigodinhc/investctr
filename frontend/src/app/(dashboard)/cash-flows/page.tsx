@@ -50,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { CashFlow, CashFlowCreate, CashFlowType, CashFlowUpdate } from "@/lib/api/types";
 
 const CASH_FLOW_TYPE_LABELS: Record<CashFlowType, { label: string; color: string }> = {
@@ -146,22 +147,6 @@ export default function CashFlowsPage() {
   };
 
   const hasFilters = Object.values(filters).some((v) => v);
-
-  const formatCurrency = (value: string | null) => {
-    if (!value) return "-";
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(parseFloat(value));
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
 
   const getAccountName = (accountId: string) => {
     const account = accounts.find((a) => a.id === accountId);
@@ -397,7 +382,7 @@ export default function CashFlowsPage() {
                         style={{ animationDelay: `${index * 30}ms` }}
                       >
                         <TableCell className="font-mono text-sm">
-                          {formatDate(cf.executed_at)}
+                          {formatDate(cf.executed_at, "medium")}
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -427,6 +412,7 @@ export default function CashFlowsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Editar ${cf.type === "deposit" ? "aporte" : "saque"}`}
                               className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                               onClick={() => handleEdit(cf)}
                             >
@@ -435,6 +421,7 @@ export default function CashFlowsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              aria-label={`Excluir ${cf.type === "deposit" ? "aporte" : "saque"}`}
                               className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                               onClick={() => setDeletingCashFlow(cf)}
                             >
@@ -674,7 +661,7 @@ export default function CashFlowsPage() {
               </strong>{" "}
               em{" "}
               <strong className="text-foreground">
-                {deletingCashFlow && formatDate(deletingCashFlow.executed_at)}
+                {deletingCashFlow && formatDate(deletingCashFlow.executed_at, "medium")}
               </strong>
               ? Esta acao nao pode ser desfeita.
             </DialogDescription>

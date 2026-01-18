@@ -289,6 +289,7 @@ export default function AccountsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Editar conta ${account.name}`}
                             onClick={() => openEdit(account)}
                             className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                           >
@@ -297,6 +298,7 @@ export default function AccountsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            aria-label={`Excluir conta ${account.name}`}
                             onClick={() => setDeletingAccount(account)}
                             className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
                           >
