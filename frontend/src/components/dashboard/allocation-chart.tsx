@@ -97,11 +97,12 @@ export function AllocationChart() {
   const chartData = useMemo<ChartDataPoint[]>(() => {
     if (!allocationData?.by_asset_type) return [];
 
+    // Always use frontend colors (ignore backend colors to maintain theme consistency)
     return allocationData.by_asset_type.map((item, index) => ({
       name: item.name,
       value: parseFloat(item.value),
       percentage: parseFloat(item.percentage),
-      color: item.color || COLORS[index % COLORS.length],
+      color: COLORS[index % COLORS.length],
     }));
   }, [allocationData]);
 
