@@ -64,4 +64,16 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour=18, minute=30),
         "options": {"queue": "default"},
     },
+    # Calculate daily NAV at 19:00 BRT (after quote sync at 18:30)
+    "calculate-daily-nav": {
+        "task": "calculate_daily_nav",
+        "schedule": crontab(hour=19, minute=0),
+        "options": {"queue": "default"},
+    },
+    # Generate daily portfolio snapshots at 19:30 BRT (after NAV calculation)
+    "generate-daily-snapshot": {
+        "task": "generate_daily_snapshot",
+        "schedule": crontab(hour=19, minute=30),
+        "options": {"queue": "default"},
+    },
 }

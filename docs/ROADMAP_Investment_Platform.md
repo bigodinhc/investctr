@@ -396,14 +396,14 @@ Paralelismo Fase 4:
 | 5.1.1 | Criar modelo CashFlow | [S] | 30min | 1.2.2 | ✅ |
 | 5.1.2 | Criar modelo FundShares | [S] | 30min | 1.2.2 | ✅ |
 | 5.1.3 | CRUD endpoints /cash-flows | [S] | 2h | 5.1.1 | ✅ |
-| 5.1.4 | Service: calculate_nav() | [B] | 2h | 4.2.1 | ⬜ |
-| 5.1.5 | Service: issue_shares() (aporte) | [S] | 2h | 5.1.4 | ⬜ |
-| 5.1.6 | Service: redeem_shares() (saque) | [S] | 1h | 5.1.4 | ⬜ |
-| 5.1.7 | Celery task: daily_nav_calculation | [S] | 2h | 5.1.4 | ⬜ |
-| 5.1.8 | Celery Beat schedule (19:00 BRT) | [S] | 30min | 5.1.7 | ⬜ |
-| 5.1.9 | Endpoint GET /fund/nav | [S] | 1h | 5.1.4 | ⬜ |
-| 5.1.10 | Endpoint GET /fund/shares (histórico) | [S] | 1h | 5.1.2 | ⬜ |
-| 5.1.11 | Endpoint GET /fund/performance | [S] | 1h | 5.1.10 | ⬜ |
+| 5.1.4 | Service: calculate_nav() | [B] | 2h | 4.2.1 | ✅ |
+| 5.1.5 | Service: issue_shares() (aporte) | [S] | 2h | 5.1.4 | ✅ |
+| 5.1.6 | Service: redeem_shares() (saque) | [S] | 1h | 5.1.4 | ✅ |
+| 5.1.7 | Celery task: daily_nav_calculation | [S] | 2h | 5.1.4 | ✅ |
+| 5.1.8 | Celery Beat schedule (19:00 BRT) | [S] | 30min | 5.1.7 | ✅ |
+| 5.1.9 | Endpoint GET /fund/nav | [S] | 1h | 5.1.4 | ✅ |
+| 5.1.10 | Endpoint GET /fund/shares (histórico) | [S] | 1h | 5.1.2 | ✅ |
+| 5.1.11 | Endpoint GET /fund/performance | [S] | 1h | 5.1.10 | ✅ |
 
 ---
 
@@ -412,9 +412,9 @@ Paralelismo Fase 4:
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
 | 5.2.1 | Criar modelo PortfolioSnapshot | [S] | 30min | 1.2.2 | ✅ |
-| 5.2.2 | Celery task: generate_daily_snapshot | [S] | 2h | 5.1.4 | ⬜ |
-| 5.2.3 | Endpoint GET /portfolio/history | [S] | 1h | 5.2.1 | ⬜ |
-| 5.2.4 | Endpoint GET /portfolio/allocation | [S] | 1h | 3.1.10 | ⬜ |
+| 5.2.2 | Celery task: generate_daily_snapshot | [S] | 2h | 5.1.4 | ✅ |
+| 5.2.3 | Endpoint GET /portfolio/history | [S] | 1h | 5.2.1 | ✅ |
+| 5.2.4 | Endpoint GET /portfolio/allocation | [S] | 1h | 3.1.10 | ✅ |
 
 ```
 Fluxo diário automatizado:
@@ -429,15 +429,15 @@ Fluxo diário automatizado:
 |---|--------|------|-------|------|--------|
 | 5.3.1 | Página /cash-flows | [S] | 2h | 5.1.3 | ✅ |
 | 5.3.2 | Formulário novo aporte/saque | [S] | 2h | 5.3.1 | ✅ |
-| 5.3.3 | Exibir cotas emitidas/resgatadas | [S] | 1h | 5.1.5 | ⬜ |
-| 5.3.4 | Dashboard: Card NAV | [S] | 1h | 5.1.9 | ⬜ |
-| 5.3.5 | Dashboard: Card Valor Cota | [S] | 1h | 5.1.10 | ⬜ |
-| 5.3.6 | Dashboard: Card Rentabilidade | [S] | 1h | 5.1.11 | ⬜ |
-| 5.3.7 | Dashboard: Card P&L Total | [S] | 1h | 4.2.4 | ⬜ |
-| 5.3.8 | Dashboard: Gráfico Evolução NAV | [S] | 3h | 5.2.3 | ⬜ |
-| 5.3.9 | Dashboard: Donut Alocação | [S] | 2h | 5.2.4 | ⬜ |
-| 5.3.10 | Dashboard: Tabela Posições resumida | [S] | 2h | 3.1.10 | ⬜ |
-| 5.3.11 | Filtro de período (MTD, YTD, 1Y) | [S] | 2h | 5.3.8 | ⬜ |
+| 5.3.3 | Exibir cotas emitidas/resgatadas | [S] | 1h | 5.1.5 | ✅ |
+| 5.3.4 | Dashboard: Card NAV | [S] | 1h | 5.1.9 | ✅ |
+| 5.3.5 | Dashboard: Card Valor Cota | [S] | 1h | 5.1.10 | ✅ |
+| 5.3.6 | Dashboard: Card Rentabilidade | [S] | 1h | 5.1.11 | ✅ |
+| 5.3.7 | Dashboard: Card P&L Total | [S] | 1h | 4.2.4 | ✅ |
+| 5.3.8 | Dashboard: Gráfico Evolução NAV | [S] | 3h | 5.2.3 | ✅ |
+| 5.3.9 | Dashboard: Donut Alocação | [S] | 2h | 5.2.4 | ✅ |
+| 5.3.10 | Dashboard: Tabela Posições resumida | [S] | 2h | 3.1.10 | ✅ |
+| 5.3.11 | Filtro de período (MTD, YTD, 1Y) | [S] | 2h | 5.3.8 | ✅ |
 
 ```
 Layout Dashboard:

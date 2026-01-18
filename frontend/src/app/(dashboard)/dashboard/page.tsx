@@ -8,12 +8,10 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  PieChart,
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
   FileUp,
-  Plus,
   RefreshCw,
   Calendar,
   AlertCircle,
@@ -70,13 +68,6 @@ export default function DashboardPage() {
 
   // Positions from API
   const positions = positionsData?.items || [];
-
-  // Allocation data from API
-  const allocation = portfolioSummary?.by_asset_type.map((item) => ({
-    name: assetTypeConfig[item.asset_type]?.label || item.asset_type,
-    value: item.allocation_pct ? parseFloat(item.allocation_pct) : 0,
-    color: assetTypeConfig[item.asset_type]?.color || "bg-gray-500",
-  })) || [];
 
   // Check if user has no data
   const hasNoData = !isLoading && portfolioSummary?.total_positions === 0;
@@ -238,66 +229,7 @@ export default function DashboardPage() {
         <NavEvolutionChart />
 
         {/* Allocation Chart */}
-        <Card variant="elevated">
-          <CardHeader className="pb-2">
-            <CardTitle className="font-display text-xl">ALOCAÇÃO</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-4">
-                <div className="h-48 flex items-center justify-center">
-                  <div className="w-40 h-40 skeleton rounded-full" />
-                </div>
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="h-4 w-24 skeleton rounded" />
-                    <div className="h-4 w-12 skeleton rounded" />
-                  </div>
-                ))}
-              </div>
-            ) : allocation.length === 0 ? (
-              <div className="h-48 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <PieChart className="h-8 w-8 text-foreground-dim mx-auto" />
-                  <p className="text-sm text-foreground-muted">Sem dados de alocação</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Donut chart placeholder */}
-                <div className="h-48 flex items-center justify-center mb-6">
-                  <div className="relative w-40 h-40">
-                    {allocation.slice(0, 4).map((item, index) => (
-                      <div
-                        key={item.name}
-                        className={`absolute rounded-full border-8 ${item.color.replace("bg-", "border-")}/20`}
-                        style={{
-                          inset: `${index * 16}px`,
-                        }}
-                      />
-                    ))}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <PieChart className="h-8 w-8 text-foreground-dim" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="space-y-3">
-                  {allocation.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                        <span className="text-sm text-foreground-muted">{item.name}</span>
-                      </div>
-                      <span className="font-mono text-sm font-semibold">{item.value.toFixed(1)}%</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <AllocationChart />
       </div>
 
       {/* Positions Table */}

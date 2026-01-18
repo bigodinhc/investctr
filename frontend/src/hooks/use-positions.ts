@@ -7,7 +7,7 @@ import {
   getPositions,
   getPosition,
   getConsolidatedPositions,
-  getPortfolioSummary,
+  getPositionsSummary,
   recalculatePositions,
 } from "@/lib/api/positions";
 import type { PositionFilters, AssetType } from "@/lib/api/types";
@@ -47,10 +47,10 @@ export function useConsolidatedPositions(assetType?: AssetType) {
   });
 }
 
-export function usePortfolioSummary(accountId?: string) {
+export function usePositionsSummary(accountId?: string) {
   return useQuery({
     queryKey: positionKeys.summary(accountId),
-    queryFn: () => getPortfolioSummary(accountId),
+    queryFn: () => getPositionsSummary(accountId),
   });
 }
 

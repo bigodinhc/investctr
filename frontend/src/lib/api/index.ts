@@ -10,3 +10,5 @@ export * from "./transactions";
 export * from "./positions";
 export * from "./cash-flows";
 export * from "./quotes";
+export * from "./portfolio";
+export * from "./fund";

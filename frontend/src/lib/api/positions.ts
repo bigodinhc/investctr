@@ -42,7 +42,7 @@ export async function getConsolidatedPositions(
   );
 }
 
-export async function getPortfolioSummary(
+export async function getPositionsSummary(
   accountId?: string
 ): Promise<PortfolioSummary> {
   const queryParams: Record<string, string> = {};
@@ -61,6 +61,6 @@ export const positionsApi = {
   list: getPositions,
   get: getPosition,
   consolidated: getConsolidatedPositions,
-  summary: getPortfolioSummary,
+  summary: getPositionsSummary,
   recalculate: recalculatePositions,
 };
