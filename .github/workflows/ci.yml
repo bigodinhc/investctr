@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================
+  # FRONTEND - Next.js
+  # ============================================
+  frontend:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          # Variáveis necessárias para build (valores dummy para CI)
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
+          NEXT_PUBLIC_API_URL: https://placeholder-api.railway.app
+
+  # ============================================
+  # BACKEND - FastAPI
+  # ============================================
+  backend:
+    name: Backend (FastAPI)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Ruff (linter)
+        run: ruff check .
+
+      - name: Run Ruff (formatter check)
+        run: ruff format --check .
+
+      # Mypy desabilitado temporariamente - pode habilitar depois
+      # - name: Type check (mypy)
+      #   run: mypy app/
+
+  # ============================================
+  # TESTES (opcional - descomente quando tiver testes)
+  # ============================================
+  # backend-tests:
+  #   name: Backend Tests
+  #   runs-on: ubuntu-latest
+  #   needs: backend
+  #   defaults:
+  #     run:
+  #       working-directory: backend
+  #
+  #   services:
+  #     postgres:
+  #       image: postgres:15
+  #       env:
+  #         POSTGRES_USER: test
+  #         POSTGRES_PASSWORD: test
+  #         POSTGRES_DB: test
+  #       ports:
+  #         - 5432:5432
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #
+  #     redis:
+  #       image: redis:7
+  #       ports:
+  #         - 6379:6379
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.12'
+  #         cache: 'pip'
+  #     - run: pip install -e ".[dev]"
+  #     - run: pytest --cov=app --cov-report=xml
+  #       env:
+  #         DATABASE_URL: postgresql://test:test@localhost:5432/test
+  #         REDIS_URL: redis://localhost:6379
+
+  # ============================================
+  # STATUS CHECK - Agrupa todos os jobs
+  # ============================================
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.frontend.result }}" == "success" && "${{ needs.backend.result }}" == "success" ]]; then
+            echo "✅ All checks passed!"
+            exit 0
+          else
+            echo "❌ Some checks failed"
+            echo "Frontend: ${{ needs.frontend.result }}"
+            echo "Backend: ${{ needs.backend.result }}"
+            exit 1
+          fi
