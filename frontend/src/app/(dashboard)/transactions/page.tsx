@@ -174,18 +174,19 @@ export default function TransactionsPage() {
             variant={hasFilters ? "default" : "outline"}
             size="lg"
             onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            aria-label="Abrir filtros"
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
+            <Filter className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Filtros</span>
             {hasFilters && (
-              <Badge variant="muted" className="ml-2">
+              <Badge variant="muted" className="ml-1 sm:ml-2">
                 {Object.values(filters).filter((v) => v).length}
               </Badge>
             )}
           </Button>
-          <Button variant="outline" size="lg" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
+          <Button variant="outline" size="lg" onClick={() => refetch()} aria-label="Atualizar lista">
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </div>
       </div>
@@ -361,96 +362,178 @@ export default function TransactionsPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Ativo</TableHead>
-                    <TableHead className="text-right">Quantidade</TableHead>
-                    <TableHead className="text-right">Preço</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Taxas</TableHead>
-                    <TableHead className="w-[100px] text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((txn, index) => {
-                    const typeInfo = TRANSACTION_TYPE_LABELS[txn.type] || TRANSACTION_TYPE_LABELS.other;
-                    return (
-                      <TableRow
-                        key={txn.id}
-                        style={{ animationDelay: `${index * 30}ms` }}
-                      >
-                        <TableCell className="font-mono text-sm">
-                          {formatDate(txn.executed_at, "medium")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              typeInfo.color === "success"
-                                ? "success"
-                                : typeInfo.color === "destructive"
-                                ? "destructive"
-                                : typeInfo.color === "info"
-                                ? "info"
-                                : typeInfo.color === "warning"
-                                ? "warning"
-                                : "secondary"
-                            }
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {transactions.map((txn, index) => {
+                  const typeInfo = TRANSACTION_TYPE_LABELS[txn.type] || TRANSACTION_TYPE_LABELS.other;
+                  return (
+                    <div
+                      key={txn.id}
+                      className="p-4 rounded-lg bg-background-surface border border-border-subtle"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-mono font-semibold text-foreground">{txn.ticker}</p>
+                          <p className="text-xs text-foreground-muted truncate">{txn.asset_name}</p>
+                        </div>
+                        <Badge
+                          variant={
+                            typeInfo.color === "success"
+                              ? "success"
+                              : typeInfo.color === "destructive"
+                              ? "destructive"
+                              : typeInfo.color === "info"
+                              ? "info"
+                              : typeInfo.color === "warning"
+                              ? "warning"
+                              : "secondary"
+                          }
+                        >
+                          {typeInfo.label}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                        <div>
+                          <p className="text-foreground-muted text-xs">Data</p>
+                          <p className="font-mono">{formatDate(txn.executed_at, "short")}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-foreground-muted text-xs">Total</p>
+                          <p className="font-mono font-semibold">{formatCurrency(txn.total_value)}</p>
+                        </div>
+                        <div>
+                          <p className="text-foreground-muted text-xs">Qtd</p>
+                          <p className="font-mono">{formatQuantity(txn.quantity)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-foreground-muted text-xs">Preco</p>
+                          <p className="font-mono">{formatCurrency(txn.price)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
+                        <p className="text-xs text-foreground-muted">
+                          Taxas: {formatCurrency(txn.fees)}
+                        </p>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Editar transação de ${txn.ticker}`}
+                            className="h-8 w-8"
+                            onClick={() => handleEdit(txn)}
                           >
-                            {typeInfo.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-mono font-semibold">{txn.ticker}</p>
-                            <p className="text-xs text-foreground-muted truncate max-w-[150px]">
-                              {txn.asset_name}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatQuantity(txn.quantity)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(txn.price)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-semibold">
-                          {formatCurrency(txn.total_value)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-foreground-muted">
-                          {formatCurrency(txn.fees)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Editar transação de ${txn.ticker}`}
-                              className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
-                              onClick={() => handleEdit(txn)}
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Excluir transação de ${txn.ticker}`}
+                            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setDeletingTransaction(txn)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Ativo</TableHead>
+                      <TableHead className="text-right">Quantidade</TableHead>
+                      <TableHead className="text-right">Preco</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Taxas</TableHead>
+                      <TableHead className="w-[100px] text-right">Acoes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map((txn, index) => {
+                      const typeInfo = TRANSACTION_TYPE_LABELS[txn.type] || TRANSACTION_TYPE_LABELS.other;
+                      return (
+                        <TableRow
+                          key={txn.id}
+                          style={{ animationDelay: `${index * 30}ms` }}
+                        >
+                          <TableCell className="font-mono text-sm">
+                            {formatDate(txn.executed_at, "medium")}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                typeInfo.color === "success"
+                                  ? "success"
+                                  : typeInfo.color === "destructive"
+                                  ? "destructive"
+                                  : typeInfo.color === "info"
+                                  ? "info"
+                                  : typeInfo.color === "warning"
+                                  ? "warning"
+                                  : "secondary"
+                              }
                             >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Excluir transação de ${txn.ticker}`}
-                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => setDeletingTransaction(txn)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                              {typeInfo.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-mono font-semibold">{txn.ticker}</p>
+                              <p className="text-xs text-foreground-muted truncate max-w-[150px]">
+                                {txn.asset_name}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatQuantity(txn.quantity)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(txn.price)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-semibold">
+                            {formatCurrency(txn.total_value)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-foreground-muted">
+                            {formatCurrency(txn.fees)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Editar transação de ${txn.ticker}`}
+                                className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
+                                onClick={() => handleEdit(txn)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Excluir transação de ${txn.ticker}`}
+                                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setDeletingTransaction(txn)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

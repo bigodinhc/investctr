@@ -146,11 +146,12 @@ export default function PositionsPage() {
               variant={hasFilters ? "default" : "outline"}
               size="lg"
               onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              aria-label="Abrir filtros"
             >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
+              <Filter className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Filtros</span>
               {hasFilters && (
-                <Badge variant="muted" className="ml-2">
+                <Badge variant="muted" className="ml-1 sm:ml-2">
                   {Object.values(filters).filter((v) => v).length}
                 </Badge>
               )}
@@ -160,13 +161,16 @@ export default function PositionsPage() {
               size="lg"
               onClick={() => syncQuotes.mutate()}
               disabled={syncQuotes.isPending}
+              aria-label="Atualizar cotacoes"
             >
               {syncQuotes.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
               ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-4 w-4 sm:mr-2" />
               )}
-              {syncQuotes.isPending ? "Atualizando..." : "Atualizar Cotacoes"}
+              <span className="hidden sm:inline">
+                {syncQuotes.isPending ? "Atualizando..." : "Atualizar"}
+              </span>
             </Button>
           </div>
         </div>

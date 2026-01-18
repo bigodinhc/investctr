@@ -144,9 +144,9 @@ export default function AccountsPage() {
             Gerencie suas contas de investimento
           </p>
         </div>
-        <Button size="lg" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Conta
+        <Button size="lg" onClick={() => setIsCreateOpen(true)} aria-label="Criar nova conta">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Nova Conta</span>
         </Button>
       </div>
 

@@ -177,13 +177,13 @@ export default function DocumentsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="lg" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
+          <Button variant="outline" size="lg" onClick={() => refetch()} aria-label="Atualizar lista">
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
-          <Button size="lg" onClick={() => setIsUploadOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Novo Upload
+          <Button size="lg" onClick={() => setIsUploadOpen(true)} aria-label="Novo upload de documento">
+            <Upload className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Upload</span>
           </Button>
         </div>
       </div>
