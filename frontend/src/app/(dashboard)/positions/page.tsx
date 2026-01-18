@@ -493,14 +493,19 @@ export default function PositionsPage() {
                       >
                         <TableCell>
                           <div>
-                            <p className="font-mono font-semibold">{position.ticker}</p>
-                            <p className="text-xs text-foreground-muted truncate max-w-[150px]">
-                              {position.asset_name}
+                            <p className="font-semibold truncate max-w-[200px]">{position.asset_name}</p>
+                            <p className="text-xs text-foreground-muted font-mono">
+                              {position.ticker}
                             </p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{typeInfo.label}</Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="secondary">{typeInfo.label}</Badge>
+                            {position.position_type === "short" && (
+                              <Badge variant="destructive" size="sm">Short</Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {formatNumber(quantity)}
