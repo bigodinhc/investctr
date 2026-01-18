@@ -332,11 +332,13 @@ ASSET_TYPE_COLORS: dict[AssetType, str] = {
     AssetType.REIT: "#DAA520",       # Goldenrod
     AssetType.BDR: "#FFD700",        # Gold (bright)
     AssetType.FUND: "#F0E68C",       # Khaki
-    AssetType.FIXED_INCOME: "#EEE8AA",  # Pale goldenrod
+    AssetType.FII: "#C5B358",        # Vegas gold
+    AssetType.FIAGRO: "#E6BE8A",     # Pale gold
+    AssetType.BOND: "#EEE8AA",       # Pale goldenrod
+    AssetType.TREASURY: "#FAFAD2",   # Light goldenrod yellow
     AssetType.CRYPTO: "#CD853F",     # Peru
     AssetType.OPTION: "#D2691E",     # Chocolate
     AssetType.FUTURE: "#8B4513",     # Saddle brown
-    AssetType.OTHER: "#A0522D",      # Sienna
 }
 
 
