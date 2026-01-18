@@ -2,13 +2,14 @@
 FastAPI application entry point.
 """
 
+import re
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError, OperationalError
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.errors import ServerErrorMiddleware
 
 from app.api.router import api_router
@@ -18,6 +19,22 @@ from app.core.logging import get_logger, setup_logging
 from app.core.redis import close_redis, redis_health_check
 
 logger = get_logger(__name__)
+
+
+def is_origin_allowed(origin: str, allowed_origins: list[str]) -> bool:
+    """Check if origin matches any allowed pattern (supports wildcards)."""
+    if not origin:
+        return False
+    for pattern in allowed_origins:
+        # Exact match
+        if origin == pattern:
+            return True
+        # Wildcard pattern match (e.g., https://*.vercel.app)
+        if "*" in pattern:
+            regex_pattern = pattern.replace(".", r"\.").replace("*", ".*")
+            if re.match(f"^{regex_pattern}$", origin):
+                return True
+    return False
 
 
 @asynccontextmanager
@@ -58,9 +75,9 @@ def create_application() -> FastAPI:
     # are included even on 500 errors (known FastAPI/Starlette issue)
     async def server_error_handler(request: Request, exc: Exception):
         """Handle server errors with CORS headers."""
-        origin = request.headers.get("origin", "*")
-        # Only allow configured origins
-        if origin != "*" and origin not in settings.cors_origins:
+        origin = request.headers.get("origin", "")
+        # Only allow configured origins (with wildcard support)
+        if not is_origin_allowed(origin, settings.cors_origins):
             origin = settings.cors_origins[0] if settings.cors_origins else "*"
 
         logger.exception(
@@ -83,14 +100,36 @@ def create_application() -> FastAPI:
 
     app.add_middleware(ServerErrorMiddleware, handler=server_error_handler)
 
-    # CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Custom CORS middleware with wildcard support for Vercel previews
+    class WildcardCORSMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            origin = request.headers.get("origin", "")
+
+            # Handle preflight OPTIONS requests
+            if request.method == "OPTIONS":
+                if is_origin_allowed(origin, settings.cors_origins):
+                    return JSONResponse(
+                        content={},
+                        headers={
+                            "Access-Control-Allow-Origin": origin,
+                            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With",
+                            "Access-Control-Allow-Credentials": "true",
+                            "Access-Control-Max-Age": "600",
+                        },
+                    )
+                return JSONResponse(status_code=403, content={"error": "CORS not allowed"})
+
+            # Handle regular requests
+            response = await call_next(request)
+
+            if is_origin_allowed(origin, settings.cors_origins):
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+
+            return response
+
+    app.add_middleware(WildcardCORSMiddleware)
 
     # Exception handlers
     @app.exception_handler(AuthenticationError)

@@ -53,11 +53,12 @@ class Settings(BaseSettings):
     lseg_password: str | None = None
 
     # CORS - accepts comma-separated string or JSON array
+    # Supports wildcard patterns for Vercel preview deployments
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",
             "https://investctr.vercel.app",
-            "https://investctr-git-main-antonio-jrs-projects.vercel.app",
+            "https://*.vercel.app",
         ]
     )
 
