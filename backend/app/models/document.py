@@ -32,7 +32,12 @@ class Document(Base, UUIDMixin):
         nullable=True,
     )
     doc_type: Mapped[DocumentType] = mapped_column(
-        SAEnum(DocumentType, name="document_type", create_type=False),
+        SAEnum(
+            DocumentType,
+            name="document_type",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
     )
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -41,7 +46,12 @@ class Document(Base, UUIDMixin):
     parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     raw_extracted_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     parsing_status: Mapped[ParsingStatus] = mapped_column(
-        SAEnum(ParsingStatus, name="parsing_status", create_type=False),
+        SAEnum(
+            ParsingStatus,
+            name="parsing_status",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         default=ParsingStatus.PENDING,
     )
     parsing_error: Mapped[str | None] = mapped_column(Text, nullable=True)

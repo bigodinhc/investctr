@@ -38,7 +38,12 @@ class Transaction(Base, UUIDMixin, TimestampMixin):
         nullable=True,
     )
     type: Mapped[TransactionType] = mapped_column(
-        SAEnum(TransactionType, name="transaction_type", create_type=False),
+        SAEnum(
+            TransactionType,
+            name="transaction_type",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
     )
     quantity: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)

@@ -39,7 +39,12 @@ class Position(Base, UUIDMixin):
     avg_price: Mapped[Decimal] = mapped_column(Numeric(18, 6), default=Decimal("0"))
     total_cost: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0"))
     position_type: Mapped[PositionType] = mapped_column(
-        SAEnum(PositionType, name="position_type", create_type=False),
+        SAEnum(
+            PositionType,
+            name="position_type",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         default=PositionType.LONG,
     )
     opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

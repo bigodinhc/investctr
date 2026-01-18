@@ -27,7 +27,12 @@ class CashFlow(Base, UUIDMixin):
         index=True,
     )
     type: Mapped[CashFlowType] = mapped_column(
-        SAEnum(CashFlowType, name="cash_flow_type", create_type=False),
+        SAEnum(
+            CashFlowType,
+            name="cash_flow_type",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)

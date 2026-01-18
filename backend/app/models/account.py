@@ -26,7 +26,12 @@ class Account(Base, UUIDMixin, TimestampMixin):
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[AccountType] = mapped_column(
-        SAEnum(AccountType, name="account_type", create_type=False),
+        SAEnum(
+            AccountType,
+            name="account_type",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
     )
     currency: Mapped[str] = mapped_column(String(3), default="BRL", nullable=False)

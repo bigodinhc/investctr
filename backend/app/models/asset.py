@@ -18,7 +18,12 @@ class Asset(Base, UUIDMixin, TimestampMixin):
     ticker: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     asset_type: Mapped[AssetType] = mapped_column(
-        SAEnum(AssetType, name="asset_type", create_type=False),
+        SAEnum(
+            AssetType,
+            name="asset_type",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
     )
     currency: Mapped[str] = mapped_column(String(3), default="BRL", nullable=False)
