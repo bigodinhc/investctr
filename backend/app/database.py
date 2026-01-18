@@ -37,10 +37,8 @@ def get_database_url() -> str:
     elif url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
 
-    # Add SSL mode for Supabase if not already specified
-    if "sslmode" not in url:
-        separator = "&" if "?" in url else "?"
-        url = f"{url}{separator}ssl=require"
+    # Note: SSL is configured via connect_args in get_engine()
+    # Do not add ssl/sslmode to URL as it conflicts with asyncpg ssl context
 
     return url
 
