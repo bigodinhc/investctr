@@ -26,6 +26,9 @@ class AssetType(str, Enum):
     TREASURY = "treasury"
     CRYPTO = "crypto"
     FUND = "fund"
+    FIAGRO = "fiagro"
+    BDR = "bdr"
+    REIT = "reit"
 
 
 class TransactionType(str, Enum):
@@ -40,6 +43,12 @@ class TransactionType(str, Enum):
     BONUS = "bonus"
     SUBSCRIPTION = "subscription"
     FEE = "fee"
+    INCOME = "income"
+    AMORTIZATION = "amortization"
+    TRANSFER_IN = "transfer_in"
+    TRANSFER_OUT = "transfer_out"
+    RENTAL = "rental"
+    OTHER = "other"
 
 
 class PositionType(str, Enum):

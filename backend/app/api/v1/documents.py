@@ -443,13 +443,13 @@ async def commit_document_transactions(
     for idx, txn_data in enumerate(request.transactions):
         try:
             # Get or create asset
-            asset = await _get_or_create_asset(
+            asset, was_created = await _get_or_create_asset(
                 db=db,
                 ticker=txn_data.ticker,
                 asset_name=txn_data.asset_name,
                 asset_type_str=txn_data.asset_type,
             )
-            if asset._created:
+            if was_created:
                 assets_created += 1
 
             # Map transaction type
@@ -547,8 +547,12 @@ async def _get_or_create_asset(
     ticker: str,
     asset_name: str | None,
     asset_type_str: str | None,
-) -> Asset:
-    """Get existing asset by ticker or create a new one."""
+) -> tuple[Asset, bool]:
+    """Get existing asset by ticker or create a new one.
+
+    Returns:
+        tuple[Asset, bool]: The asset and whether it was created (True) or existed (False).
+    """
     # Normalize ticker
     ticker = ticker.upper().strip()
 
@@ -558,8 +562,7 @@ async def _get_or_create_asset(
     asset = result.scalar_one_or_none()
 
     if asset:
-        asset._created = False
-        return asset
+        return asset, False
 
     # Determine asset type
     asset_type = _infer_asset_type(ticker, asset_type_str)
@@ -573,8 +576,7 @@ async def _get_or_create_asset(
     db.add(asset)
     await db.flush()
 
-    asset._created = True
-    return asset
+    return asset, True
 
 
 def _infer_asset_type(ticker: str, asset_type_str: str | None) -> AssetType:
