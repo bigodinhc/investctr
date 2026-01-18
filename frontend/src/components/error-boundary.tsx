@@ -63,7 +63,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
             Ocorreu um erro inesperado. Tente recarregar a pagina ou voltar para o inicio.
           </p>
           {process.env.NODE_ENV === "development" && this.state.error && (
-            <pre className="bg-background-surface border border-border rounded-lg p-4 mb-6 max-w-lg overflow-auto text-xs text-destructive">
+            <pre className="glass-card-subtle p-4 mb-6 max-w-lg overflow-auto text-xs text-destructive">
               {this.state.error.message}
             </pre>
           )}
@@ -114,7 +114,7 @@ function PageErrorBoundary({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary
       fallback={
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background-deep p-8">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-mesh p-8">
           <div className="rounded-full bg-destructive/10 p-6 mb-8">
             <AlertTriangle className="h-16 w-16 text-destructive" />
           </div>
@@ -160,7 +160,7 @@ function SectionErrorBoundary({
   return (
     <ErrorBoundary
       fallback={
-        <div className="flex flex-col items-center justify-center py-12 px-4 border border-border rounded-lg bg-background-elevated">
+        <div className="flex flex-col items-center justify-center py-12 px-4 glass-card">
           <AlertTriangle className="h-8 w-8 text-destructive mb-3" />
           <p className="text-sm text-foreground-muted text-center mb-4">
             {title} nao pode ser carregada
