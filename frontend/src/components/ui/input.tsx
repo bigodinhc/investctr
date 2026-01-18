@@ -8,12 +8,20 @@ export interface InputProps
   error?: boolean
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
+  variant?: "default" | "glass"
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, isNumeric, error, leftIcon, rightIcon, ...props }, ref) => {
+  ({ className, type, isNumeric, error, leftIcon, rightIcon, variant = "default", ...props }, ref) => {
+    const baseClasses = "flex h-10 w-full rounded-xl px-3 py-2 text-sm transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-foreground-dim focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+
+    const variantClasses = variant === "glass"
+      ? "glass-card-subtle border-white/10 focus-visible:border-vermillion/50 focus-visible:ring-2 focus-visible:ring-vermillion/30"
+      : "border border-input bg-background focus-visible:border-vermillion focus-visible:ring-2 focus-visible:ring-vermillion/30"
+
     const inputClasses = cn(
-      "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-foreground-dim focus-visible:outline-none focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-50",
+      baseClasses,
+      variantClasses,
       isNumeric && "font-mono tabular-nums text-right",
       error && "border-destructive focus-visible:ring-destructive/30 focus-visible:border-destructive",
       leftIcon && "pl-10",

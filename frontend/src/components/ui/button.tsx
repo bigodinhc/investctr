@@ -5,30 +5,40 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
+        // Vermillion solid - primary action
         default:
-          "bg-primary text-primary-foreground hover:bg-gold-light hover:shadow-glow-gold active:bg-gold-dark",
+          "bg-vermillion text-white hover:bg-vermillion-light hover:shadow-glow-vermillion active:bg-vermillion-dark",
+        // Destructive
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive-dark hover:shadow-glow-destructive",
+          "bg-destructive/10 text-destructive hover:bg-destructive hover:text-white hover:shadow-glow-destructive",
+        // Glass button
+        glass:
+          "glass-card-subtle hover:bg-white/10 hover:border-white/20",
+        // Outline with glass effect
         outline:
-          "border border-border bg-transparent hover:bg-background-surface hover:border-gold/50 hover:text-gold",
+          "border border-border bg-transparent hover:bg-white/5 hover:border-white/15",
+        // Secondary
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-background-surface",
+        // Ghost
         ghost:
-          "hover:bg-background-surface hover:text-foreground",
+          "hover:bg-white/5 hover:text-foreground",
+        // Link
         link:
-          "text-gold underline-offset-4 hover:underline hover:text-gold-light",
+          "text-vermillion underline-offset-4 hover:underline hover:text-vermillion-light",
+        // Success
         success:
           "bg-success text-success-foreground hover:bg-success-vibrant hover:shadow-glow-success",
       },
       size: {
         default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3 text-xs",
-        lg: "h-11 rounded-md px-8 text-base",
-        xl: "h-12 rounded-md px-10 text-lg",
+        sm: "h-9 rounded-lg px-3 text-xs",
+        lg: "h-11 rounded-xl px-8 text-base",
+        xl: "h-12 rounded-xl px-10 text-lg",
         icon: "h-10 w-10",
       },
     },

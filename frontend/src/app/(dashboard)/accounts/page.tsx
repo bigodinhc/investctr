@@ -115,7 +115,7 @@ export default function AccountsPage() {
   if (error) {
     return (
       <div className="space-y-8 animate-fade-in">
-        <Card variant="elevated">
+        <Card variant="glass">
           <CardContent className="p-8">
             <div className="flex items-center gap-4 text-destructive">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
@@ -138,7 +138,7 @@ export default function AccountsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-3xl tracking-tight">
-            <span className="text-gradient-gold">Contas</span>
+            <span className="text-gradient-vermillion">Contas</span>
           </h1>
           <p className="text-foreground-muted">
             Gerencie suas contas de investimento
@@ -152,10 +152,10 @@ export default function AccountsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card variant="elevated" className="p-4">
+        <Card variant="glass" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <Wallet className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-vermillion/10">
+              <Wallet className="h-5 w-5 text-vermillion" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Total de Contas</p>
@@ -165,7 +165,7 @@ export default function AccountsPage() {
             </div>
           </div>
         </Card>
-        <Card variant="elevated" className="p-4">
+        <Card variant="glass" className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
               <Building2 className="h-5 w-5 text-info" />
@@ -178,7 +178,7 @@ export default function AccountsPage() {
             </div>
           </div>
         </Card>
-        <Card variant="elevated" className="p-4">
+        <Card variant="glass" className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
               <Globe className="h-5 w-5 text-success" />
@@ -194,11 +194,11 @@ export default function AccountsPage() {
       </div>
 
       {/* Accounts Table */}
-      <Card variant="elevated">
+      <Card variant="glass">
         <CardHeader className="pb-4">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <Building2 className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-vermillion/10">
+              <Building2 className="h-4 w-4 text-vermillion" />
             </div>
             MINHAS CONTAS
           </CardTitle>
@@ -219,8 +219,8 @@ export default function AccountsPage() {
             </div>
           ) : !data?.items.length ? (
             <div className="text-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10 mx-auto mb-6">
-                <Building2 className="h-8 w-8 text-gold" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-vermillion/10 mx-auto mb-6">
+                <Building2 className="h-8 w-8 text-vermillion" />
               </div>
               <h3 className="font-display text-xl mb-2">Nenhuma conta cadastrada</h3>
               <p className="text-foreground-muted mb-6 max-w-sm mx-auto">
@@ -253,8 +253,8 @@ export default function AccountsPage() {
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 border border-gold/20">
-                            <span className="font-mono text-xs font-semibold text-gold">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-vermillion/10 border border-vermillion/20">
+                            <span className="font-mono text-xs font-semibold text-vermillion">
                               {account.name.slice(0, 2).toUpperCase()}
                             </span>
                           </div>
@@ -291,7 +291,7 @@ export default function AccountsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openEdit(account)}
-                            className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                            className="h-8 w-8 hover:bg-vermillion/10 hover:text-vermillion"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>

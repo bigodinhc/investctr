@@ -19,7 +19,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
-        display: ['var(--font-bebas)', 'sans-serif'],
+        display: ['var(--font-display)', 'sans-serif'],
         mono: ['var(--font-mono)', ...defaultTheme.fontFamily.mono],
       },
       colors: {
@@ -67,12 +67,13 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Semantic colors
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          light: "hsl(var(--gold-light))",
-          dark: "hsl(var(--gold-dark))",
+        // Vermillion accent colors
+        vermillion: {
+          DEFAULT: "hsl(var(--vermillion))",
+          light: "hsl(var(--vermillion-light))",
+          dark: "hsl(var(--vermillion-dark))",
         },
+        // Semantic colors
         success: {
           DEFAULT: "hsl(var(--success))",
           vibrant: "hsl(var(--success-vibrant))",
@@ -86,18 +87,34 @@ module.exports = {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        // Glass colors
+        glass: {
+          bg: "hsl(var(--glass-bg) / <alpha-value>)",
+          border: "hsl(var(--glass-border) / <alpha-value>)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+      },
+      backdropBlur: {
+        xs: '2px',
+        sm: 'var(--blur-sm)',
+        md: 'var(--blur-md)',
+        lg: 'var(--blur-lg)',
+        xl: 'var(--blur-xl)',
       },
       boxShadow: {
-        'glow-gold': '0 0 20px hsl(var(--gold) / 0.3)',
-        'glow-gold-sm': '0 0 10px hsl(var(--gold) / 0.2)',
-        'glow-gold-lg': '0 0 30px hsl(var(--gold) / 0.4)',
+        'glow-vermillion': '0 0 20px hsl(var(--vermillion) / 0.3)',
+        'glow-vermillion-sm': '0 0 10px hsl(var(--vermillion) / 0.2)',
+        'glow-vermillion-lg': '0 0 30px hsl(var(--vermillion) / 0.4)',
         'glow-success': '0 0 15px hsl(var(--success) / 0.3)',
         'glow-destructive': '0 0 15px hsl(var(--destructive) / 0.3)',
+        'glass': '0 4px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+        'glass-elevated': '0 8px 40px rgba(0, 0, 0, 0.4), 0 0 80px hsl(var(--vermillion) / 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
       },
       keyframes: {
         "accordion-down": {
@@ -124,11 +141,15 @@ module.exports = {
           from: { opacity: 0, transform: "translateX(-20px)" },
           to: { opacity: 1, transform: "translateX(0)" },
         },
-        "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 15px hsl(var(--gold) / 0.2)" },
-          "50%": { boxShadow: "0 0 25px hsl(var(--gold) / 0.4)" },
+        "vermillion-pulse": {
+          "0%, 100%": {
+            boxShadow: "0 4px 30px rgba(0, 0, 0, 0.3), 0 0 20px hsl(var(--vermillion) / 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+          },
+          "50%": {
+            boxShadow: "0 4px 30px rgba(0, 0, 0, 0.3), 0 0 40px hsl(var(--vermillion) / 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+          },
         },
-        "shimmer": {
+        "glass-shimmer": {
           from: { backgroundPosition: "-200% 0" },
           to: { backgroundPosition: "200% 0" },
         },
@@ -140,6 +161,10 @@ module.exports = {
           from: { opacity: 0, transform: "translateY(-8px)" },
           to: { opacity: 1, transform: "translateY(0)" },
         },
+        "glass-fade-in": {
+          from: { opacity: 0, backdropFilter: "blur(0px)", transform: "translateY(10px)" },
+          to: { opacity: 1, backdropFilter: "blur(var(--blur-md))", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -148,18 +173,20 @@ module.exports = {
         "fade-in-up": "fade-in-up 0.5s ease-out forwards",
         "slide-in-right": "slide-in-right 0.4s ease-out forwards",
         "slide-in-left": "slide-in-left 0.4s ease-out forwards",
-        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
-        "shimmer": "shimmer 1.5s infinite",
+        "vermillion-pulse": "vermillion-pulse 3s ease-in-out infinite",
+        "glass-shimmer": "glass-shimmer 1.5s infinite",
         "scale-in": "scale-in 0.3s ease-out forwards",
         "number-tick": "number-tick 0.3s ease-out forwards",
+        "glass-in": "glass-fade-in 0.5s ease-out forwards",
       },
       transitionDuration: {
         '400': '400ms',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-gold': 'linear-gradient(135deg, hsl(var(--gold-light)), hsl(var(--gold)))',
+        'gradient-vermillion': 'linear-gradient(135deg, hsl(var(--vermillion-light)), hsl(var(--vermillion)))',
         'gradient-dark': 'linear-gradient(180deg, hsl(var(--background-elevated)), hsl(var(--background)))',
+        'gradient-mesh': 'radial-gradient(ellipse at 20% 30%, hsl(var(--vermillion) / 0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 70%, hsl(210 100% 50% / 0.05) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, hsl(240 8% 8%) 0%, hsl(240 10% 4%) 100%)',
       },
     },
   },

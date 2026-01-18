@@ -30,8 +30,8 @@ const TRANSACTION_TYPES = [
   { value: "jcp", label: "JCP", color: "info" },
   { value: "split", label: "Desdobramento", color: "warning" },
   { value: "bonus", label: "Bonificação", color: "warning" },
-  { value: "transfer_in", label: "Transferência (entrada)", color: "gold" },
-  { value: "transfer_out", label: "Transferência (saída)", color: "gold" },
+  { value: "transfer_in", label: "Transferência (entrada)", color: "vermillion" },
+  { value: "transfer_out", label: "Transferência (saída)", color: "vermillion" },
   { value: "other", label: "Outro", color: "default" },
 ] as const;
 
@@ -136,16 +136,16 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
   };
 
   return (
-    <Card variant="elevated">
+    <Card variant="glass">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <CheckCircle2 className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-vermillion/10">
+              <CheckCircle2 className="h-4 w-4 text-vermillion" />
             </div>
             TRANSAÇÕES EXTRAÍDAS
           </CardTitle>
-          <Badge variant="gold">
+          <Badge variant="vermillion">
             {selectedCount} de {transactions.length} selecionadas
           </Badge>
         </div>
@@ -354,7 +354,7 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
                                 txnType.color === "destructive" ? "destructive" :
                                 txnType.color === "info" ? "info" :
                                 txnType.color === "warning" ? "warning" :
-                                txnType.color === "gold" ? "gold" :
+                                txnType.color === "vermillion" ? "vermillion" :
                                 "secondary"
                               }
                             >
@@ -381,7 +381,7 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 hover:bg-gold/10 hover:text-gold"
+                                className="h-7 w-7 hover:bg-vermillion/10 hover:text-vermillion"
                                 onClick={() => startEdit(txn)}
                               >
                                 <Pencil className="h-4 w-4" />

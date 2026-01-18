@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "rounded-lg transition-all duration-300",
+  "rounded-2xl transition-all duration-300",
   {
     variants: {
       variant: {
@@ -12,24 +12,31 @@ const cardVariants = cva(
           "bg-card border border-border text-card-foreground",
         elevated:
           "bg-background-elevated border border-border shadow-lg text-card-foreground",
+        // Glass variants
         glass:
-          "glass text-card-foreground",
-        "glass-gold":
-          "glass-gold text-card-foreground",
+          "glass-card text-card-foreground",
+        "glass-elevated":
+          "glass-card-elevated text-card-foreground",
+        "glass-subtle":
+          "glass-card-subtle text-card-foreground",
+        "glass-accent":
+          "glass-card-accent text-card-foreground animate-glow-pulse",
+        // Solid variants
         bordered:
-          "bg-card border-2 border-border hover:border-gold/30 text-card-foreground",
+          "bg-card border-2 border-border hover:border-vermillion/30 text-card-foreground",
         ghost:
           "bg-transparent text-card-foreground",
       },
       hover: {
         none: "",
-        lift: "hover:-translate-y-1 hover:shadow-lg hover:border-border-hover",
-        glow: "hover:shadow-glow-gold-sm hover:border-gold/30",
+        lift: "hover:-translate-y-1 hover:shadow-xl hover:border-glass-border/15",
+        glow: "hover:shadow-glow-vermillion-sm hover:border-vermillion/30",
+        brighten: "hover:bg-white/10 hover:border-white/15",
         scale: "hover:scale-[1.02]",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "glass",
       hover: "none",
     },
   }
@@ -69,7 +76,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-xl font-semibold leading-none tracking-tight",
+      "text-xl font-display font-semibold leading-none tracking-tight",
       className
     )}
     {...props}

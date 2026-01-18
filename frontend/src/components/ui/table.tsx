@@ -4,9 +4,12 @@ import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto scrollbar-thin">
+  React.HTMLAttributes<HTMLTableElement> & { variant?: "default" | "glass" }
+>(({ className, variant = "glass", ...props }, ref) => (
+  <div className={cn(
+    "relative w-full overflow-auto scrollbar-thin rounded-2xl",
+    variant === "glass" && "glass-card"
+  )}>
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
@@ -20,7 +23,14 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b [&_tr]:border-border", className)} {...props} />
+  <thead
+    ref={ref}
+    className={cn(
+      "bg-white/5 [&_tr]:border-b [&_tr]:border-white/10",
+      className
+    )}
+    {...props}
+  />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -43,7 +53,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-border bg-background-surface/50 font-medium [&>tr]:last:border-b-0",
+      "border-t border-white/10 bg-white/5 font-medium [&>tr]:last:border-b-0",
       className
     )}
     {...props}
@@ -58,7 +68,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-border/50 transition-colors hover:bg-background-surface/50 data-[state=selected]:bg-gold/5 data-[state=selected]:border-gold/20",
+      "border-b border-white/5 transition-colors hover:bg-white/5 data-[state=selected]:bg-vermillion/5 data-[state=selected]:border-l-2 data-[state=selected]:border-l-vermillion",
       className
     )}
     {...props}
@@ -73,7 +83,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle text-xs font-medium uppercase tracking-wider text-foreground-muted [&:has([role=checkbox])]:pr-0",
+      "h-12 px-4 text-left align-middle text-glass-label [&:has([role=checkbox])]:pr-0",
       className
     )}
     {...props}

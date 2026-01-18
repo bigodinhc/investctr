@@ -11,7 +11,7 @@ export interface DataCardProps {
   changeLabel?: string;
   icon?: LucideIcon;
   trend?: "up" | "down" | "neutral";
-  variant?: "default" | "highlight" | "success" | "destructive";
+  variant?: "default" | "highlight" | "success" | "destructive" | "glass" | "glass-accent";
   className?: string;
   isLoading?: boolean;
 }
@@ -23,7 +23,7 @@ export function DataCard({
   changeLabel,
   icon: Icon,
   trend,
-  variant = "default",
+  variant = "glass",
   className,
   isLoading = false,
 }: DataCardProps) {
@@ -34,9 +34,11 @@ export function DataCard({
 
   const variants = {
     default: "bg-card border-border",
-    highlight: "bg-gold/5 border-gold/20",
+    highlight: "bg-vermillion/5 border-vermillion/20",
     success: "bg-success/5 border-success/20",
     destructive: "bg-destructive/5 border-destructive/20",
+    glass: "glass-card",
+    "glass-accent": "glass-card-accent",
   };
 
   const trendColors = {
@@ -47,14 +49,14 @@ export function DataCard({
 
   if (isLoading) {
     return (
-      <div className={cn("rounded-lg border p-6", variants[variant], className)}>
+      <div className={cn("rounded-2xl border p-6", variants[variant], className)}>
         <div className="flex items-start justify-between">
           <div className="space-y-3 flex-1">
             <div className="h-4 w-24 skeleton rounded" />
             <div className="h-8 w-32 skeleton rounded" />
             <div className="h-4 w-20 skeleton rounded" />
           </div>
-          <div className="h-10 w-10 skeleton rounded-lg" />
+          <div className="h-10 w-10 skeleton rounded-xl" />
         </div>
       </div>
     );
@@ -63,15 +65,19 @@ export function DataCard({
   return (
     <div
       className={cn(
-        "rounded-lg border p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5",
-        variants[variant],
+        "rounded-2xl p-6 transition-all duration-300 group",
+        variant === "glass" || variant === "glass-accent"
+          ? variants[variant]
+          : `border ${variants[variant]}`,
+        "hover:-translate-y-0.5",
+        variant === "glass" && "hover:shadow-glow-vermillion-sm hover:border-vermillion/20",
         className
       )}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           {/* Title */}
-          <p className="text-sm text-foreground-muted font-medium">{title}</p>
+          <p className="text-glass-label">{title}</p>
 
           {/* Value */}
           <p className="font-mono text-2xl font-semibold tracking-tight text-foreground">
@@ -83,7 +89,7 @@ export function DataCard({
             <div className="flex items-center gap-2 pt-1">
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium",
                   trendColors[effectiveTrend]
                 )}
               >
@@ -103,14 +109,14 @@ export function DataCard({
         {Icon && (
           <div
             className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-lg",
+              "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
               variant === "highlight"
-                ? "bg-gold/10 text-gold"
+                ? "bg-vermillion/10 text-vermillion"
                 : variant === "success"
                 ? "bg-success/10 text-success"
                 : variant === "destructive"
                 ? "bg-destructive/10 text-destructive"
-                : "bg-muted text-foreground-muted"
+                : "bg-white/5 text-foreground-muted group-hover:text-vermillion group-hover:bg-vermillion/10"
             )}
           >
             <Icon className="h-5 w-5" />
@@ -157,7 +163,7 @@ export function Stat({
 
   return (
     <div className={cn("space-y-1", alignments[align], className)}>
-      <p className="text-xs uppercase tracking-wider text-foreground-dim font-medium">
+      <p className="text-glass-label">
         {label}
       </p>
       <p className={cn("font-mono font-bold", sizes[size])}>

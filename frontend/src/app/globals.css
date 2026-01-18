@@ -23,21 +23,21 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
-  /* Dark mode - Nova paleta vibrante */
+  /* Dark mode - Vermillion Glass Theme */
   .dark {
-    /* Backgrounds - Deep Dark */
-    --background-deep: 240 5% 4%;
-    --background: 240 4% 7%;
+    /* Backgrounds - Deep dark for glass contrast */
+    --background-deep: 240 10% 3.5%;
+    --background: 240 8% 6%;
     --background-elevated: 240 6% 10%;
-    --background-surface: 240 6% 13%;
+    --background-surface: 240 5% 14%;
 
-    /* Foreground/Text */
+    /* Foreground/Text - High contrast */
     --foreground: 0 0% 98%;
-    --foreground-muted: 240 4% 65%;
-    --foreground-dim: 240 4% 46%;
+    --foreground-muted: 240 5% 65%;
+    --foreground-dim: 240 5% 45%;
 
     /* Cards & Popovers */
     --card: 240 6% 10%;
@@ -45,14 +45,18 @@
     --popover: 240 6% 10%;
     --popover-foreground: 0 0% 98%;
 
-    /* Gold Accent - Primary */
-    --gold: 43 60% 58%;
-    --gold-light: 45 70% 69%;
-    --gold-dark: 38 47% 45%;
+    /* Glass Colors - For blur/transparency */
+    --glass-bg: 240 8% 12%;
+    --glass-border: 0 0% 100%;
 
-    /* Primary = Gold */
-    --primary: 43 60% 58%;
-    --primary-foreground: 240 5% 4%;
+    /* Vermillion Accent - Primary (the "fire" through the glass) */
+    --vermillion: 12 95% 47%;
+    --vermillion-light: 15 95% 58%;
+    --vermillion-dark: 10 90% 38%;
+
+    /* Primary = Vermillion */
+    --primary: 12 95% 47%;
+    --primary-foreground: 0 0% 100%;
 
     /* Secondary */
     --secondary: 240 6% 13%;
@@ -60,32 +64,39 @@
 
     /* Muted */
     --muted: 240 6% 13%;
-    --muted-foreground: 240 4% 65%;
+    --muted-foreground: 240 5% 65%;
 
     /* Accent */
-    --accent: 43 60% 58%;
-    --accent-foreground: 240 5% 4%;
+    --accent: 12 95% 47%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Semantic Colors - Vibrant */
-    --success: 142 71% 45%;
-    --success-vibrant: 142 69% 58%;
+    /* Semantic Colors - Vibrant against glass */
+    --success: 152 70% 45%;
+    --success-vibrant: 152 69% 55%;
     --success-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-dark: 0 72% 51%;
+    --destructive: 0 75% 55%;
+    --destructive-dark: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 95% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --info: 217 91% 60%;
+    --info: 210 100% 60%;
     --info-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 240 4% 16%;
-    --border-hover: 240 4% 26%;
-    --input: 240 4% 16%;
-    --ring: 43 60% 58%;
+    --border: 240 5% 18%;
+    --border-hover: 240 5% 28%;
+    --border-subtle: 240 5% 14%;
+    --input: 240 5% 18%;
+    --ring: 12 95% 47%;
+
+    /* Blur intensities - increased for more dramatic glass effect */
+    --blur-sm: 12px;
+    --blur-md: 24px;
+    --blur-lg: 36px;
+    --blur-xl: 56px;
   }
 }
 
@@ -104,7 +115,7 @@
   }
 }
 
-/* Custom scrollbar with gold accent */
+/* Custom scrollbar with vermillion accent */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -120,15 +131,14 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--gold) / 0.5);
+  background: hsl(var(--vermillion) / 0.5);
 }
 
 /* Typography utilities */
 @layer utilities {
   .font-display {
-    font-family: var(--font-bebas), sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-family: var(--font-display), sans-serif;
+    letter-spacing: -0.02em;
   }
 
   .font-numeric {
@@ -136,17 +146,103 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Gold glow effect */
-  .glow-gold {
-    box-shadow: 0 0 20px hsl(var(--gold) / 0.3);
+  .text-glass-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: hsl(var(--foreground-muted));
   }
 
-  .glow-gold-sm {
-    box-shadow: 0 0 10px hsl(var(--gold) / 0.2);
+  .text-value-hero {
+    font-family: var(--font-display), sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #FFFFFF 0%, #A3A5B0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .glow-gold-lg {
-    box-shadow: 0 0 30px hsl(var(--gold) / 0.4);
+  /* Text gradient - Vermillion */
+  .text-gradient-vermillion {
+    background: linear-gradient(135deg, hsl(var(--vermillion-light)), hsl(var(--vermillion)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Glassmorphism utilities - Maximum transparency for dramatic effect */
+@layer utilities {
+  /* Base glass card - highly transparent */
+  .glass-card {
+    background: hsl(var(--glass-bg) / 0.22);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border: 1px solid hsl(var(--glass-border) / 0.1);
+    border-radius: 1rem;
+    box-shadow:
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Elevated glass (modals, dropdowns) */
+  .glass-card-elevated {
+    background: hsl(var(--glass-bg) / 0.35);
+    backdrop-filter: blur(var(--blur-xl));
+    -webkit-backdrop-filter: blur(var(--blur-xl));
+    border: 1px solid hsl(var(--glass-border) / 0.12);
+    border-radius: 1rem;
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.25),
+      0 0 80px hsl(var(--vermillion) / 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  /* Subtle glass (nested cards) - ultra transparent */
+  .glass-card-subtle {
+    background: hsl(var(--glass-bg) / 0.12);
+    backdrop-filter: blur(var(--blur-sm));
+    -webkit-backdrop-filter: blur(var(--blur-sm));
+    border: 1px solid hsl(var(--glass-border) / 0.08);
+    border-radius: 0.75rem;
+  }
+
+  /* Glass with vermillion accent glow */
+  .glass-card-accent {
+    background: hsl(var(--glass-bg) / 0.18);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border: 1px solid hsl(var(--vermillion) / 0.3);
+    border-radius: 1rem;
+    box-shadow:
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      0 0 70px hsl(var(--vermillion) / 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Extra transparent glass for layered effects */
+  .glass-card-ultra {
+    background: hsl(var(--glass-bg) / 0.08);
+    backdrop-filter: blur(var(--blur-lg));
+    -webkit-backdrop-filter: blur(var(--blur-lg));
+    border: 1px solid hsl(var(--glass-border) / 0.06);
+    border-radius: 1rem;
+  }
+
+  /* Vermillion glow effects */
+  .glow-vermillion {
+    box-shadow: 0 0 20px hsl(var(--vermillion) / 0.3);
+  }
+
+  .glow-vermillion-sm {
+    box-shadow: 0 0 10px hsl(var(--vermillion) / 0.2);
+  }
+
+  .glow-vermillion-lg {
+    box-shadow: 0 0 40px hsl(var(--vermillion) / 0.4);
   }
 
   /* Success/Destructive glows */
@@ -157,41 +253,89 @@
   .glow-destructive {
     box-shadow: 0 0 15px hsl(var(--destructive) / 0.3);
   }
+}
 
-  /* Text gradient */
-  .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(var(--gold-light)), hsl(var(--gold)));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+/* Background effects - Vibrant for glass visibility */
+@layer utilities {
+  .bg-gradient-mesh {
+    background:
+      radial-gradient(ellipse at 15% 25%, hsl(var(--vermillion) / 0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 15%, hsl(280 80% 50% / 0.1) 0%, transparent 40%),
+      radial-gradient(ellipse at 75% 75%, hsl(210 100% 50% / 0.12) 0%, transparent 45%),
+      radial-gradient(ellipse at 25% 85%, hsl(var(--vermillion) / 0.1) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 50%, hsl(240 8% 5%) 0%, hsl(240 10% 2.5%) 100%);
   }
 
-  /* Glass effect */
-  .glass {
-    background: hsl(var(--card) / 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border));
+  /* Intense version for hero areas */
+  .bg-gradient-mesh-intense {
+    background:
+      radial-gradient(ellipse at 10% 20%, hsl(var(--vermillion) / 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse at 90% 10%, hsl(280 80% 50% / 0.15) 0%, transparent 35%),
+      radial-gradient(ellipse at 80% 80%, hsl(210 100% 50% / 0.18) 0%, transparent 40%),
+      radial-gradient(ellipse at 20% 90%, hsl(var(--vermillion) / 0.15) 0%, transparent 35%),
+      radial-gradient(ellipse at 50% 50%, hsl(240 8% 4%) 0%, hsl(240 10% 2%) 100%);
   }
 
-  .glass-gold {
-    background: hsl(var(--card) / 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--gold) / 0.2);
+  .bg-noise {
+    position: relative;
+  }
+
+  .bg-noise::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
   }
 }
 
-/* Animation utilities */
-@layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+/* Animation keyframes */
+@keyframes glass-fade-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    transform: translateY(10px);
   }
-
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out forwards;
+  to {
+    opacity: 1;
+    backdrop-filter: blur(var(--blur-md));
+    transform: translateY(0);
   }
+}
 
-  .animate-glow-pulse {
-    animation: glowPulse 2s ease-in-out infinite;
+@keyframes vermillion-pulse {
+  0%, 100% {
+    box-shadow:
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      0 0 30px hsl(var(--vermillion) / 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 4px 30px rgba(0, 0, 0, 0.15),
+      0 0 60px hsl(var(--vermillion) / 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+@keyframes glass-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes value-update {
+  0% {
+    color: hsl(var(--vermillion-light));
+    text-shadow: 0 0 10px hsl(var(--vermillion) / 0.5);
+  }
+  100% {
+    color: inherit;
+    text-shadow: none;
   }
 }
 
@@ -217,25 +361,37 @@
   }
 }
 
-@keyframes glowPulse {
-  0%, 100% {
-    box-shadow: 0 0 15px hsl(var(--gold) / 0.2);
+/* Animation utilities */
+@layer utilities {
+  .animate-glass-in {
+    animation: glass-fade-in 0.5s ease-out forwards;
   }
-  50% {
-    box-shadow: 0 0 25px hsl(var(--gold) / 0.4);
+
+  .animate-glow-pulse {
+    animation: vermillion-pulse 3s ease-in-out infinite;
   }
+
+  .animate-value-update {
+    animation: value-update 0.8s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  /* Stagger delays */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-/* Skeleton loading */
+/* Skeleton loading with glass effect */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -244,5 +400,35 @@
     hsl(var(--muted)) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: glass-shimmer 1.5s infinite;
+}
+
+/* Glass table styling */
+@layer utilities {
+  .table-glass {
+    @apply glass-card overflow-hidden;
+  }
+
+  .table-glass thead {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .table-glass th {
+    @apply text-glass-label py-4 px-4 border-b;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .table-glass tr {
+    @apply transition-colors;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .table-glass tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .table-glass tr.active {
+    background: hsl(var(--vermillion) / 0.05);
+    border-left: 2px solid hsl(var(--vermillion));
+  }
 }
