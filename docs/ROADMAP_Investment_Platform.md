@@ -472,12 +472,12 @@ Layout Dashboard:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 6.1.1 | Error handling global | [P] | 2h | - | ⬜ |
-| 6.1.2 | Logging estruturado (structlog) | [P] | 2h | - | ⬜ |
+| 6.1.1 | Error handling global | [P] | 2h | - | ✅ |
+| 6.1.2 | Logging estruturado (structlog) | [P] | 2h | - | ✅ |
 | 6.1.3 | Rate limiting | [P] | 1h | - | ⬜ |
 | 6.1.4 | Documentação OpenAPI completa | [P] | 2h | - | ⬜ |
 | 6.1.5 | Testes de integração (críticos) | [P] | 4h | - | ⬜ |
-| 6.1.6 | Health check endpoint | [P] | 30min | - | ⬜ |
+| 6.1.6 | Health check endpoint | [P] | 30min | - | ✅ |
 
 ---
 
@@ -485,12 +485,12 @@ Layout Dashboard:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 6.2.1 | Error boundaries | [P] | 1h | - | ⬜ |
-| 6.2.2 | Loading skeletons | [P] | 2h | - | ⬜ |
-| 6.2.3 | Toast de feedback (sucesso/erro) | [P] | 1h | - | ⬜ |
-| 6.2.4 | Empty states | [P] | 1h | - | ⬜ |
+| 6.2.1 | Error boundaries | [P] | 1h | - | ✅ |
+| 6.2.2 | Loading skeletons | [P] | 2h | - | ✅ |
+| 6.2.3 | Toast de feedback (sucesso/erro) | [P] | 1h | - | ✅ |
+| 6.2.4 | Empty states | [P] | 1h | - | ✅ |
 | 6.2.5 | Ajustes de responsividade | [P] | 2h | - | ⬜ |
-| 6.2.6 | Favicon + meta tags | [P] | 30min | - | ⬜ |
+| 6.2.6 | Favicon + meta tags | [P] | 30min | - | ✅ |
 
 ---
 
@@ -498,7 +498,7 @@ Layout Dashboard:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 6.3.1 | Configurar variáveis produção | [S] | 1h | - | ⬜ |
+| 6.3.1 | Configurar variáveis produção | [S] | 1h | - | ✅ |
 | 6.3.2 | Setup domínio customizado | [P] | 1h | - | ⬜ |
 | 6.3.3 | CI/CD pipeline (GitHub Actions) | [S] | 2h | - | ⬜ |
 | 6.3.4 | Backup automático Supabase | [P] | 30min | - | ⬜ |

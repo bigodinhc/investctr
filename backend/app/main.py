@@ -8,6 +8,7 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import DBAPIError, OperationalError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.errors import ServerErrorMiddleware
@@ -199,6 +200,31 @@ def create_application() -> FastAPI:
             content={
                 "error": "Database error",
                 "details": {} if settings.is_production else {"message": str(exc)},
+            },
+        )
+
+    @app.exception_handler(PydanticValidationError)
+    async def pydantic_validation_error_handler(
+        request: Request, exc: PydanticValidationError
+    ) -> JSONResponse:
+        """Handle Pydantic validation errors with detailed field information."""
+        errors = []
+        for error in exc.errors():
+            errors.append({
+                "field": ".".join(str(loc) for loc in error["loc"]),
+                "message": error["msg"],
+                "type": error["type"],
+            })
+        logger.warning(
+            "validation_error",
+            errors=errors,
+            path=request.url.path,
+        )
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": "Validation error",
+                "details": {"errors": errors},
             },
         )
 
