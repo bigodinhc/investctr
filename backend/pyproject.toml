@@ -2,7 +2,6 @@
 name = "investctr-backend"
 version = "0.1.0"
 description = "Investment portfolio management platform API"
-readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Bigode" }]
