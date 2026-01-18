@@ -8,6 +8,8 @@ from typing import AsyncGenerator
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DBAPIError, OperationalError
+from starlette.middleware.errors import ServerErrorMiddleware
 
 from app.api.router import api_router
 from app.config import settings
@@ -51,6 +53,36 @@ def create_application() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Server error middleware with CORS support
+    # This must be added BEFORE CORSMiddleware to ensure CORS headers
+    # are included even on 500 errors (known FastAPI/Starlette issue)
+    async def server_error_handler(request: Request, exc: Exception):
+        """Handle server errors with CORS headers."""
+        origin = request.headers.get("origin", "*")
+        # Only allow configured origins
+        if origin != "*" and origin not in settings.cors_origins:
+            origin = settings.cors_origins[0] if settings.cors_origins else "*"
+
+        logger.exception(
+            "server_error",
+            error=str(exc),
+            error_type=type(exc).__name__,
+            path=str(request.url),
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal server error",
+                "details": {} if settings.is_production else {"message": str(exc)},
+            },
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Credentials": "true",
+            },
+        )
+
+    app.add_middleware(ServerErrorMiddleware, handler=server_error_handler)
+
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -92,6 +124,42 @@ def create_application() -> FastAPI:
             content={
                 "error": exc.message,
                 "details": exc.details,
+            },
+        )
+
+    @app.exception_handler(OperationalError)
+    async def database_operational_error_handler(
+        request: Request, exc: OperationalError
+    ) -> JSONResponse:
+        """Handle database connection/operational errors."""
+        logger.error(
+            "database_operational_error",
+            error=str(exc),
+            path=request.url.path,
+        )
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "Database temporarily unavailable",
+                "details": {} if settings.is_production else {"message": str(exc)},
+            },
+        )
+
+    @app.exception_handler(DBAPIError)
+    async def database_api_error_handler(
+        request: Request, exc: DBAPIError
+    ) -> JSONResponse:
+        """Handle database API errors."""
+        logger.error(
+            "database_api_error",
+            error=str(exc),
+            path=request.url.path,
+        )
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "Database error",
+                "details": {} if settings.is_production else {"message": str(exc)},
             },
         )
 

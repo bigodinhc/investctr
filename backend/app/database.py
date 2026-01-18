@@ -58,8 +58,9 @@ def get_engine():
             get_database_url(),
             echo=settings.debug,
             pool_pre_ping=True,
-            pool_size=5,
-            max_overflow=10,
+            pool_size=10,       # Increased from 5 to handle more concurrent connections
+            max_overflow=20,    # Increased from 10 for burst handling
+            pool_recycle=1800,  # Recycle connections every 30 minutes
             connect_args={"ssl": ssl_context},
         )
     return _engine
