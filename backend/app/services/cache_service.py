@@ -5,7 +5,6 @@ Provides specialized caching functions for asset prices with
 configurable TTL and automatic serialization.
 """
 
-import json
 from decimal import Decimal
 from uuid import UUID
 

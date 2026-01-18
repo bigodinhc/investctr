@@ -17,7 +17,12 @@ class ExchangeRate(Base, UUIDMixin):
 
     __tablename__ = "exchange_rates"
     __table_args__ = (
-        UniqueConstraint("from_currency", "to_currency", "date", name="uq_exchange_rates_currencies_date"),
+        UniqueConstraint(
+            "from_currency",
+            "to_currency",
+            "date",
+            name="uq_exchange_rates_currencies_date",
+        ),
     )
 
     from_currency: Mapped[str] = mapped_column(String(3), nullable=False)

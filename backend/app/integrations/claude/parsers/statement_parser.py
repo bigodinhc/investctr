@@ -30,12 +30,14 @@ class StatementParser(BaseParser):
             return False, "Response is not a valid JSON object"
 
         # Check for at least one data section
-        has_data = any([
-            raw_data.get("transactions"),
-            raw_data.get("cash_movements", {}).get("movements"),
-            raw_data.get("stock_positions"),
-            raw_data.get("fixed_income_positions"),
-        ])
+        has_data = any(
+            [
+                raw_data.get("transactions"),
+                raw_data.get("cash_movements", {}).get("movements"),
+                raw_data.get("stock_positions"),
+                raw_data.get("fixed_income_positions"),
+            ]
+        )
 
         if not has_data:
             return False, "No data extracted from statement"
@@ -62,7 +64,9 @@ class StatementParser(BaseParser):
 
         return transactions
 
-    def _extract_from_transactions(self, raw_data: dict[str, Any]) -> list[ParsedTransaction]:
+    def _extract_from_transactions(
+        self, raw_data: dict[str, Any]
+    ) -> list[ParsedTransaction]:
         """Extract from main transactions array."""
         transactions = []
 
@@ -92,7 +96,9 @@ class StatementParser(BaseParser):
 
         return transactions
 
-    def _extract_from_cash_movements(self, raw_data: dict[str, Any]) -> list[ParsedTransaction]:
+    def _extract_from_cash_movements(
+        self, raw_data: dict[str, Any]
+    ) -> list[ParsedTransaction]:
         """Extract from cash movements section."""
         transactions = []
         cash_movements = raw_data.get("cash_movements", {})
@@ -128,7 +134,9 @@ class StatementParser(BaseParser):
 
         return transactions
 
-    def _extract_from_stock_lending(self, raw_data: dict[str, Any]) -> list[ParsedTransaction]:
+    def _extract_from_stock_lending(
+        self, raw_data: dict[str, Any]
+    ) -> list[ParsedTransaction]:
         """Extract from stock lending section."""
         transactions = []
 
@@ -165,7 +173,7 @@ class StatementParser(BaseParser):
 
         # Common patterns: "DIVIDENDOS GGBR4", "JCP VALE3", etc.
         # B3 tickers: 4 letters + 1-2 digits (e.g., VALE3, PETR4, XPLG11)
-        pattern = r'\b([A-Z]{4}\d{1,2})\b'
+        pattern = r"\b([A-Z]{4}\d{1,2})\b"
         match = re.search(pattern, description.upper())
         return match.group(1) if match else ""
 

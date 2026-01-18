@@ -20,7 +20,9 @@ class TransactionBase(BaseSchema):
     price: Decimal = Field(..., ge=0, description="Unit price")
     fees: Decimal = Field(default=Decimal("0"), ge=0, description="Transaction fees")
     currency: Currency = Field(default=Currency.BRL, description="Transaction currency")
-    exchange_rate: Decimal = Field(default=Decimal("1"), description="Exchange rate to BRL")
+    exchange_rate: Decimal = Field(
+        default=Decimal("1"), description="Exchange rate to BRL"
+    )
     executed_at: datetime = Field(..., description="Transaction execution date/time")
     notes: str | None = Field(None, max_length=500, description="Additional notes")
 
@@ -72,7 +74,9 @@ class TransactionResponse(TransactionBase, IDMixin):
     account_id: UUID
     asset_id: UUID
     document_id: UUID | None = None
-    total_value: Decimal | None = Field(None, description="Total transaction value (qty * price)")
+    total_value: Decimal | None = Field(
+        None, description="Total transaction value (qty * price)"
+    )
     created_at: datetime
 
     class Config:
@@ -129,7 +133,9 @@ class CommitTransactionItem(BaseSchema):
     type: str = Field(..., description="Transaction type")
     ticker: str = Field(..., min_length=1, description="Asset ticker")
     asset_name: str | None = Field(None, description="Asset name (for auto-creation)")
-    asset_type: str | None = Field(None, description="Asset type (stock, fii, etf, etc.)")
+    asset_type: str | None = Field(
+        None, description="Asset type (stock, fii, etf, etc.)"
+    )
     quantity: Decimal | None = None
     price: Decimal | None = None
     total: Decimal | None = None

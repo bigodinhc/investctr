@@ -65,8 +65,7 @@ async def list_cash_flows(
 
     # Query with pagination
     query = (
-        base_query
-        .offset(pagination.skip)
+        base_query.offset(pagination.skip)
         .limit(pagination.limit)
         .order_by(CashFlow.executed_at.desc())
     )

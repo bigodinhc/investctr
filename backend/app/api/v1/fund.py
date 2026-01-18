@@ -5,7 +5,6 @@ Provides endpoints for NAV, fund shares, and performance metrics.
 """
 
 from datetime import date
-from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
@@ -32,7 +31,9 @@ router = APIRouter(prefix="/fund", tags=["fund"])
 async def get_current_nav(
     user: AuthenticatedUser,
     db: DBSession,
-    target_date: date | None = Query(None, description="Date for NAV calculation (defaults to today)"),
+    target_date: date | None = Query(
+        None, description="Date for NAV calculation (defaults to today)"
+    ),
 ) -> NAVResponse:
     """
     Get current NAV for the authenticated user.
@@ -181,7 +182,9 @@ async def get_performance(
 async def calculate_daily_share(
     user: AuthenticatedUser,
     db: DBSession,
-    target_date: date | None = Query(None, description="Date for calculation (defaults to today)"),
+    target_date: date | None = Query(
+        None, description="Date for calculation (defaults to today)"
+    ),
 ) -> FundShareResponse:
     """
     Manually trigger daily fund share calculation.

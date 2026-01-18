@@ -66,7 +66,9 @@ def create_application() -> FastAPI:
         if settings.is_development
         else None,
         docs_url=f"{settings.api_v1_prefix}/docs" if settings.is_development else None,
-        redoc_url=f"{settings.api_v1_prefix}/redoc" if settings.is_development else None,
+        redoc_url=f"{settings.api_v1_prefix}/redoc"
+        if settings.is_development
+        else None,
         lifespan=lifespan,
     )
 
@@ -118,7 +120,9 @@ def create_application() -> FastAPI:
                             "Access-Control-Max-Age": "600",
                         },
                     )
-                return JSONResponse(status_code=403, content={"error": "CORS not allowed"})
+                return JSONResponse(
+                    status_code=403, content={"error": "CORS not allowed"}
+                )
 
             # Handle regular requests
             response = await call_next(request)
@@ -133,7 +137,9 @@ def create_application() -> FastAPI:
 
     # Exception handlers
     @app.exception_handler(AuthenticationError)
-    async def auth_exception_handler(request: Request, exc: AuthenticationError) -> JSONResponse:
+    async def auth_exception_handler(
+        request: Request, exc: AuthenticationError
+    ) -> JSONResponse:
         """Handle authentication errors with proper WWW-Authenticate header."""
         logger.warning(
             "authentication_failed",
@@ -150,7 +156,9 @@ def create_application() -> FastAPI:
         )
 
     @app.exception_handler(AppException)
-    async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+    async def app_exception_handler(
+        request: Request, exc: AppException
+    ) -> JSONResponse:
         logger.warning(
             "app_exception",
             status_code=exc.status_code,
@@ -203,7 +211,9 @@ def create_application() -> FastAPI:
         )
 
     @app.exception_handler(Exception)
-    async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    async def general_exception_handler(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
         logger.exception(
             "unhandled_exception",
             error=str(exc),
@@ -225,6 +235,7 @@ def create_application() -> FastAPI:
         redis_ok = False
         try:
             import asyncio
+
             redis_ok = await asyncio.wait_for(redis_health_check(), timeout=2.0)
         except Exception:
             pass  # Redis not available, but app is still healthy

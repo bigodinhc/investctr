@@ -6,18 +6,17 @@ Provides aggregated portfolio views and summaries with realized and unrealized P
 
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from enum import Enum
 from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import AuthenticatedUser, DBSession
 from app.core.logging import get_logger
-from app.models import Account, Asset, Position, PortfolioSnapshot
+from app.models import Account, Position, PortfolioSnapshot
 from app.schemas.enums import AccountType, AssetType
 
 # Mapping from AccountType to broker display name
@@ -29,7 +28,6 @@ ACCOUNT_TYPE_BROKER_MAP: dict[AccountType, str] = {
 }
 from app.schemas.fund import PortfolioHistoryItem, PortfolioHistoryResponse
 from app.services.pnl_service import PnLService
-from app.services.position_service import PositionService
 from app.services.quote_service import QuoteService
 
 logger = get_logger(__name__)
@@ -96,11 +94,17 @@ class PortfolioSummaryResponse(BaseModel):
 
     # Totals
     total_positions: int = Field(..., description="Total number of positions")
-    total_value: Decimal = Field(..., description="Total market value (or cost if no prices)")
+    total_value: Decimal = Field(
+        ..., description="Total market value (or cost if no prices)"
+    )
     total_cost: Decimal = Field(..., description="Total cost basis")
     total_unrealized_pnl: Decimal = Field(..., description="Total unrealized P&L")
-    total_unrealized_pnl_pct: Decimal | None = Field(None, description="Total unrealized P&L %")
-    total_realized_pnl: Decimal = Field(..., description="Total realized P&L (all time)")
+    total_unrealized_pnl_pct: Decimal | None = Field(
+        None, description="Total unrealized P&L %"
+    )
+    total_realized_pnl: Decimal = Field(
+        ..., description="Total realized P&L (all time)"
+    )
 
     # Breakdowns
     by_asset_type: list[AssetTypeSummary] = Field(
@@ -114,7 +118,9 @@ class PortfolioSummaryResponse(BaseModel):
 
     # Metadata
     accounts_count: int = Field(..., description="Number of accounts included")
-    last_price_update: datetime | None = Field(None, description="Latest quote timestamp")
+    last_price_update: datetime | None = Field(
+        None, description="Latest quote timestamp"
+    )
 
 
 # -------------------------------------------------------------------------
@@ -177,7 +183,9 @@ async def get_portfolio_summary(
 
     # Calculate unrealized P&L
     pnl_service = PnLService(db)
-    unrealized_summary = await pnl_service.calculate_unrealized_pnl(positions, current_prices)
+    unrealized_summary = await pnl_service.calculate_unrealized_pnl(
+        positions, current_prices
+    )
 
     # Calculate realized P&L
     realized_summary = await pnl_service.calculate_realized_pnl(
@@ -234,9 +242,7 @@ async def get_portfolio_summary(
             else None
         )
         allocation_pct = (
-            (data["total_cost"] / total_cost * 100)
-            if total_cost > 0
-            else None
+            (data["total_cost"] / total_cost * 100) if total_cost > 0 else None
         )
 
         by_asset_type.append(
@@ -290,9 +296,7 @@ async def get_portfolio_summary(
                 else None
             )
             allocation_pct = (
-                (data["total_cost"] / total_cost * 100)
-                if total_cost > 0
-                else None
+                (data["total_cost"] / total_cost * 100) if total_cost > 0 else None
             )
 
             by_account.append(
@@ -335,18 +339,18 @@ async def get_portfolio_summary(
 
 # Color palette for asset types (gold-themed)
 ASSET_TYPE_COLORS: dict[AssetType, str] = {
-    AssetType.STOCK: "#D4AF37",      # Gold
-    AssetType.ETF: "#B8860B",        # Dark golden rod
-    AssetType.REIT: "#DAA520",       # Goldenrod
-    AssetType.BDR: "#FFD700",        # Gold (bright)
-    AssetType.FUND: "#F0E68C",       # Khaki
-    AssetType.FII: "#C5B358",        # Vegas gold
-    AssetType.FIAGRO: "#E6BE8A",     # Pale gold
-    AssetType.BOND: "#EEE8AA",       # Pale goldenrod
-    AssetType.TREASURY: "#FAFAD2",   # Light goldenrod yellow
-    AssetType.CRYPTO: "#CD853F",     # Peru
-    AssetType.OPTION: "#D2691E",     # Chocolate
-    AssetType.FUTURE: "#8B4513",     # Saddle brown
+    AssetType.STOCK: "#D4AF37",  # Gold
+    AssetType.ETF: "#B8860B",  # Dark golden rod
+    AssetType.REIT: "#DAA520",  # Goldenrod
+    AssetType.BDR: "#FFD700",  # Gold (bright)
+    AssetType.FUND: "#F0E68C",  # Khaki
+    AssetType.FII: "#C5B358",  # Vegas gold
+    AssetType.FIAGRO: "#E6BE8A",  # Pale gold
+    AssetType.BOND: "#EEE8AA",  # Pale goldenrod
+    AssetType.TREASURY: "#FAFAD2",  # Light goldenrod yellow
+    AssetType.CRYPTO: "#CD853F",  # Peru
+    AssetType.OPTION: "#D2691E",  # Chocolate
+    AssetType.FUTURE: "#8B4513",  # Saddle brown
 }
 
 
@@ -355,7 +359,9 @@ async def get_portfolio_allocation(
     user: AuthenticatedUser,
     db: DBSession,
     account_id: UUID | None = Query(None, description="Filter by specific account"),
-    top_assets: int = Query(10, ge=1, le=50, description="Number of top assets to return"),
+    top_assets: int = Query(
+        10, ge=1, le=50, description="Number of top assets to return"
+    ),
 ) -> AllocationResponse:
     """
     Get portfolio allocation for charting.
@@ -504,7 +510,9 @@ def _get_period_start_date(period: PeriodType) -> date:
 async def get_portfolio_history(
     user: AuthenticatedUser,
     db: DBSession,
-    period: PeriodType = Query("YTD", description="Period for history (1M, 3M, 6M, 1Y, YTD, MAX)"),
+    period: PeriodType = Query(
+        "YTD", description="Period for history (1M, 3M, 6M, 1Y, YTD, MAX)"
+    ),
     account_id: UUID | None = Query(None, description="Filter by specific account"),
     limit: int = Query(365, ge=1, le=1000, description="Maximum number of data points"),
 ) -> PortfolioHistoryResponse:

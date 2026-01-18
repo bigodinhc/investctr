@@ -3,7 +3,6 @@ Asset schemas for request/response validation.
 """
 
 from datetime import datetime
-from uuid import UUID
 
 from pydantic import Field
 
@@ -23,7 +22,9 @@ class AssetBase(BaseSchema):
     exchange: str | None = Field(
         None, max_length=20, description="Exchange where asset is traded"
     )
-    sector: str | None = Field(None, max_length=100, description="Sector classification")
+    sector: str | None = Field(
+        None, max_length=100, description="Sector classification"
+    )
 
 
 class AssetCreate(AssetBase):

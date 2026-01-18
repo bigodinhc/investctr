@@ -6,7 +6,7 @@ Runs after NAV calculation (19:00) at 19:30 BRT.
 """
 
 import asyncio
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 

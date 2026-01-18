@@ -28,6 +28,7 @@ from app.models import (  # noqa: F401 - import all models to register them
 # Alembic Config object
 config = context.config
 
+
 # Set the database URL from settings
 def get_database_url() -> str:
     """Get database URL for migrations."""
@@ -38,6 +39,7 @@ def get_database_url() -> str:
     elif url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     return url
+
 
 config.set_main_option("sqlalchemy.url", get_database_url())
 

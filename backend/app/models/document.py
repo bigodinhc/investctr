@@ -43,8 +43,12 @@ class Document(Base, UUIDMixin):
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    raw_extracted_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    parsed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    raw_extracted_data: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True
+    )
     parsing_status: Mapped[ParsingStatus] = mapped_column(
         SAEnum(
             ParsingStatus,
@@ -62,7 +66,9 @@ class Document(Base, UUIDMixin):
     )
 
     # Relationships
-    account: Mapped["Account | None"] = relationship("Account", back_populates="documents")
+    account: Mapped["Account | None"] = relationship(
+        "Account", back_populates="documents"
+    )
     transactions: Mapped[list["Transaction"]] = relationship(
         "Transaction", back_populates="document"
     )

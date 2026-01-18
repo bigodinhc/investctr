@@ -61,8 +61,12 @@ class PositionWithMarketData(PositionWithAsset):
     current_price: Decimal | None = Field(None, description="Current market price")
     market_value: Decimal | None = Field(None, description="Current market value")
     unrealized_pnl: Decimal | None = Field(None, description="Unrealized P&L")
-    unrealized_pnl_pct: Decimal | None = Field(None, description="Unrealized P&L percentage")
-    price_updated_at: datetime | None = Field(None, description="Last price update time")
+    unrealized_pnl_pct: Decimal | None = Field(
+        None, description="Unrealized P&L percentage"
+    )
+    price_updated_at: datetime | None = Field(
+        None, description="Last price update time"
+    )
 
     @computed_field
     @property
@@ -92,10 +96,14 @@ class PositionsWithMarketDataResponse(BaseSchema):
 
     items: list[PositionWithMarketData]
     total: int
-    total_market_value: Decimal = Field(..., description="Sum of all position market values")
+    total_market_value: Decimal = Field(
+        ..., description="Sum of all position market values"
+    )
     total_cost: Decimal = Field(..., description="Sum of all position costs")
     total_unrealized_pnl: Decimal = Field(..., description="Sum of all unrealized P&L")
-    total_unrealized_pnl_pct: Decimal | None = Field(None, description="Total unrealized P&L %")
+    total_unrealized_pnl_pct: Decimal | None = Field(
+        None, description="Total unrealized P&L %"
+    )
 
 
 # ============================================================================
@@ -117,7 +125,9 @@ class ConsolidatedPosition(BaseSchema):
     market_value: Decimal | None = None
     unrealized_pnl: Decimal | None = None
     unrealized_pnl_pct: Decimal | None = None
-    accounts_count: int = Field(..., description="Number of accounts holding this asset")
+    accounts_count: int = Field(
+        ..., description="Number of accounts holding this asset"
+    )
 
 
 class ConsolidatedPositionsResponse(BaseSchema):

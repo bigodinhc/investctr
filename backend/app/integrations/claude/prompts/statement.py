@@ -23,7 +23,7 @@ class BTGStatementPrompt(BasePrompt):
 
     @property
     def prompt_template(self) -> str:
-        return '''You are a financial document parser specialized in Brazilian BTG Pactual monthly statements (Extrato Mensal).
+        return """You are a financial document parser specialized in Brazilian BTG Pactual monthly statements (Extrato Mensal).
 
 Analyze this BTG Pactual statement PDF and extract ALL data from the following sections:
 
@@ -221,4 +221,4 @@ ALL cash movements including:
 
 6. **Do NOT skip any data** - extract everything visible in the document.
 
-''' + self.get_json_instruction()
+""" + self.get_json_instruction()

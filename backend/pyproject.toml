@@ -68,15 +68,22 @@ select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "F",   # Pyflakes
-    "I",   # isort
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
 ]
 ignore = [
     "E501",  # line too long (handled by formatter)
+    "E712",  # comparison to True/False (needed for SQLAlchemy filters)
+    "E402",  # module level import not at top (needed for some patterns)
     "B008",  # do not perform function calls in argument defaults
+    "B904",  # raise without from (stylistic)
+    "B905",  # zip without strict (not needed for our use cases)
+    "C401",  # unnecessary generator (stylistic preference)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy models use string forward references
+"app/models/*.py" = ["F821"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

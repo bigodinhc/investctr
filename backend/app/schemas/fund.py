@@ -24,10 +24,14 @@ class NAVResponse(BaseSchema):
     user_id: UUID = Field(..., description="User ID")
     date: dt.date = Field(..., description="Date of NAV calculation")
     nav: Decimal = Field(..., description="Net Asset Value")
-    total_market_value: Decimal = Field(..., description="Total market value of positions")
+    total_market_value: Decimal = Field(
+        ..., description="Total market value of positions"
+    )
     total_cash: Decimal = Field(..., description="Total cash balance")
     positions_count: int = Field(..., description="Number of positions")
-    positions_with_prices: int = Field(..., description="Positions with available prices")
+    positions_with_prices: int = Field(
+        ..., description="Positions with available prices"
+    )
 
     class Config:
         json_schema_extra = {
@@ -56,8 +60,12 @@ class FundShareResponse(BaseSchema, IDMixin):
     nav: Decimal = Field(..., description="Net Asset Value")
     shares_outstanding: Decimal = Field(..., description="Total shares outstanding")
     share_value: Decimal = Field(..., description="Value per share")
-    daily_return: Decimal | None = Field(None, description="Daily return as decimal (0.01 = 1%)")
-    cumulative_return: Decimal | None = Field(None, description="Cumulative return since inception")
+    daily_return: Decimal | None = Field(
+        None, description="Daily return as decimal (0.01 = 1%)"
+    )
+    cumulative_return: Decimal | None = Field(
+        None, description="Cumulative return since inception"
+    )
     created_at: dt.datetime = Field(..., description="Record creation timestamp")
 
     class Config:
@@ -94,7 +102,9 @@ class FundPerformanceResponse(BaseSchema):
     current_nav: Decimal = Field(..., description="Current NAV")
     current_share_value: Decimal = Field(..., description="Current value per share")
     shares_outstanding: Decimal = Field(..., description="Total shares outstanding")
-    total_return: Decimal | None = Field(None, description="Cumulative return since inception")
+    total_return: Decimal | None = Field(
+        None, description="Cumulative return since inception"
+    )
     daily_return: Decimal | None = Field(None, description="Latest daily return")
     mtd_return: Decimal | None = Field(None, description="Month-to-date return")
     ytd_return: Decimal | None = Field(None, description="Year-to-date return")
@@ -130,8 +140,12 @@ class SharesOperationResponse(BaseSchema):
     cash_flow_id: UUID = Field(..., description="Related cash flow ID")
     amount: Decimal = Field(..., description="Amount in BRL")
     share_value: Decimal = Field(..., description="Share value used (D-1)")
-    shares_affected: Decimal = Field(..., description="Shares issued (+) or redeemed (-)")
-    new_shares_outstanding: Decimal = Field(..., description="New total shares outstanding")
+    shares_affected: Decimal = Field(
+        ..., description="Shares issued (+) or redeemed (-)"
+    )
+    new_shares_outstanding: Decimal = Field(
+        ..., description="New total shares outstanding"
+    )
 
     class Config:
         json_schema_extra = {
@@ -176,7 +190,9 @@ class PortfolioHistoryResponse(BaseSchema):
 
     items: list[PortfolioHistoryItem] = Field(default_factory=list)
     total: int = Field(..., description="Total number of records")
-    period_return: Decimal | None = Field(None, description="Return for the selected period")
+    period_return: Decimal | None = Field(
+        None, description="Return for the selected period"
+    )
     start_nav: Decimal | None = Field(None, description="NAV at period start")
     end_nav: Decimal | None = Field(None, description="NAV at period end")
 

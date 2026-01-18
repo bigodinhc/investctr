@@ -12,10 +12,9 @@ from uuid import UUID
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
-from app.models import Account, CashFlow, FundShare, Position
+from app.models import Account, CashFlow, FundShare
 from app.schemas.enums import CashFlowType
 from app.services.position_service import PositionService
 from app.services.quote_service import QuoteService
@@ -456,9 +455,13 @@ class NAVService:
         if previous:
             daily_return = (share_value - previous.share_value) / previous.share_value
             # Cumulative return from initial value
-            cumulative_return = (share_value - INITIAL_SHARE_VALUE) / INITIAL_SHARE_VALUE
+            cumulative_return = (
+                share_value - INITIAL_SHARE_VALUE
+            ) / INITIAL_SHARE_VALUE
         else:
-            cumulative_return = (share_value - INITIAL_SHARE_VALUE) / INITIAL_SHARE_VALUE
+            cumulative_return = (
+                share_value - INITIAL_SHARE_VALUE
+            ) / INITIAL_SHARE_VALUE
 
         # Upsert the FundShare record
         fund_share = await self._upsert_fund_share(
@@ -653,22 +656,32 @@ class NAVService:
         one_year_ago = today - timedelta(days=365)
 
         # Get MTD start value
-        mtd_start = await self._get_fund_share_at_date(user_id, start_of_month - timedelta(days=1))
+        mtd_start = await self._get_fund_share_at_date(
+            user_id, start_of_month - timedelta(days=1)
+        )
         mtd_return: Decimal | None = None
         if mtd_start and mtd_start.share_value > 0:
-            mtd_return = (latest.share_value - mtd_start.share_value) / mtd_start.share_value
+            mtd_return = (
+                latest.share_value - mtd_start.share_value
+            ) / mtd_start.share_value
 
         # Get YTD start value
-        ytd_start = await self._get_fund_share_at_date(user_id, start_of_year - timedelta(days=1))
+        ytd_start = await self._get_fund_share_at_date(
+            user_id, start_of_year - timedelta(days=1)
+        )
         ytd_return: Decimal | None = None
         if ytd_start and ytd_start.share_value > 0:
-            ytd_return = (latest.share_value - ytd_start.share_value) / ytd_start.share_value
+            ytd_return = (
+                latest.share_value - ytd_start.share_value
+            ) / ytd_start.share_value
 
         # Get 1Y return
         one_year_start = await self._get_fund_share_at_date(user_id, one_year_ago)
         one_year_return: Decimal | None = None
         if one_year_start and one_year_start.share_value > 0:
-            one_year_return = (latest.share_value - one_year_start.share_value) / one_year_start.share_value
+            one_year_return = (
+                latest.share_value - one_year_start.share_value
+            ) / one_year_start.share_value
 
         # Calculate max drawdown and volatility (last 252 trading days)
         history = await self.get_fund_shares_history(user_id, limit=252)
@@ -744,8 +757,7 @@ class NAVService:
 
         # Get daily returns
         returns = [
-            float(fs.daily_return) for fs in history
-            if fs.daily_return is not None
+            float(fs.daily_return) for fs in history if fs.daily_return is not None
         ]
 
         if len(returns) < 20:
@@ -754,10 +766,10 @@ class NAVService:
         # Calculate standard deviation
         mean = sum(returns) / len(returns)
         variance = sum((r - mean) ** 2 for r in returns) / len(returns)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
 
         # Annualize (252 trading days)
-        annualized = std_dev * (252 ** 0.5)
+        annualized = std_dev * (252**0.5)
 
         return Decimal(str(round(annualized, 6)))
 

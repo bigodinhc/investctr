@@ -14,7 +14,7 @@ class BTGTradeNotePrompt(BasePrompt):
 
     @property
     def prompt_template(self) -> str:
-        return '''You are a financial document parser specialized in Brazilian B3 trade notes (Notas de Negociacao).
+        return """You are a financial document parser specialized in Brazilian B3 trade notes (Notas de Negociacao).
 
 Analyze this BTG Pactual trade note PDF and extract ALL trade operations.
 
@@ -102,4 +102,4 @@ RULES:
 - net_total should match: operations total +/- fees
 - For day trades (D observation), there may be IRRF withheld
 
-''' + self.get_json_instruction()
+""" + self.get_json_instruction()

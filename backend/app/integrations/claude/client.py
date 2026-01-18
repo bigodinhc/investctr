@@ -108,7 +108,9 @@ async def parse_pdf_with_claude(
                 json_str = response_text[json_start:json_end].strip()
                 return json.loads(json_str)
             else:
-                raise ValueError(f"Could not parse JSON from response: {response_text[:500]}")
+                raise ValueError(
+                    f"Could not parse JSON from response: {response_text[:500]}"
+                )
 
     except anthropic.APIError as e:
         logger.error(

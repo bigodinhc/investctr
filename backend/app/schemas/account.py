@@ -16,7 +16,9 @@ class AccountBase(BaseSchema):
 
     name: str = Field(..., min_length=1, max_length=100, description="Account name")
     type: AccountType = Field(..., description="Account type (broker)")
-    currency: Currency = Field(default=Currency.BRL, description="Account base currency")
+    currency: Currency = Field(
+        default=Currency.BRL, description="Account base currency"
+    )
 
 
 class AccountCreate(AccountBase):

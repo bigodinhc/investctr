@@ -16,18 +16,30 @@ class CashFlowBase(BaseSchema):
     """Base cash flow schema with common fields."""
 
     account_id: UUID = Field(..., description="Account ID for the cash flow")
-    type: CashFlowType = Field(..., description="Type of cash flow (deposit/withdrawal)")
-    amount: Decimal = Field(..., gt=0, description="Amount of the cash flow (always positive)")
-    currency: Currency = Field(default=Currency.BRL, description="Currency of the cash flow")
-    exchange_rate: Decimal = Field(default=Decimal("1"), description="Exchange rate to BRL")
-    executed_at: datetime = Field(..., description="Date and time the cash flow was executed")
+    type: CashFlowType = Field(
+        ..., description="Type of cash flow (deposit/withdrawal)"
+    )
+    amount: Decimal = Field(
+        ..., gt=0, description="Amount of the cash flow (always positive)"
+    )
+    currency: Currency = Field(
+        default=Currency.BRL, description="Currency of the cash flow"
+    )
+    exchange_rate: Decimal = Field(
+        default=Decimal("1"), description="Exchange rate to BRL"
+    )
+    executed_at: datetime = Field(
+        ..., description="Date and time the cash flow was executed"
+    )
     notes: str | None = Field(None, max_length=500, description="Optional notes")
 
 
 class CashFlowCreate(CashFlowBase):
     """Schema for creating a new cash flow."""
 
-    shares_affected: Decimal | None = Field(None, description="Shares affected (for fund operations)")
+    shares_affected: Decimal | None = Field(
+        None, description="Shares affected (for fund operations)"
+    )
 
 
 class CashFlowUpdate(BaseSchema):

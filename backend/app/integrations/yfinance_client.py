@@ -8,7 +8,7 @@ for Brazilian assets (B3) and other markets.
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -124,7 +124,9 @@ def _fetch_quote_sync(ticker: str, start_date: date, end_date: date) -> list[Quo
 
             # Handle NaN values
             def safe_decimal(value: Any) -> Decimal | None:
-                if value is None or (hasattr(value, "__float__") and str(value) == "nan"):
+                if value is None or (
+                    hasattr(value, "__float__") and str(value) == "nan"
+                ):
                     return None
                 try:
                     return Decimal(str(float(value)))
@@ -132,7 +134,9 @@ def _fetch_quote_sync(ticker: str, start_date: date, end_date: date) -> list[Quo
                     return None
 
             def safe_int(value: Any) -> int | None:
-                if value is None or (hasattr(value, "__float__") and str(value) == "nan"):
+                if value is None or (
+                    hasattr(value, "__float__") and str(value) == "nan"
+                ):
                     return None
                 try:
                     return int(value)

@@ -6,7 +6,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import AuthenticatedUser, DBSession, Pagination
@@ -16,7 +16,6 @@ from app.schemas.enums import TransactionType
 from app.schemas.transaction import (
     TransactionCreate,
     TransactionResponse,
-    TransactionsListResponse,
     TransactionsWithAssetListResponse,
     TransactionUpdate,
     TransactionWithAsset,
@@ -117,7 +116,9 @@ async def list_transactions(
     return TransactionsWithAssetListResponse(items=items, total=total)
 
 
-@router.post("", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_transaction(
     user: AuthenticatedUser,
     db: DBSession,

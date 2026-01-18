@@ -6,7 +6,11 @@ from typing import Annotated
 
 from fastapi import Depends, Header
 
-from app.core.security import CurrentUser, extract_token_from_header, get_user_from_token
+from app.core.security import (
+    CurrentUser,
+    extract_token_from_header,
+    get_user_from_token,
+)
 
 
 async def get_current_user(

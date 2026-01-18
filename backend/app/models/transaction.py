@@ -52,10 +52,14 @@ class Transaction(Base, UUIDMixin, TimestampMixin):
     fees: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0"))
     currency: Mapped[str] = mapped_column(String(3), default="BRL", nullable=False)
     exchange_rate: Mapped[Decimal] = mapped_column(Numeric(10, 6), default=Decimal("1"))
-    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    executed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
     account: Mapped["Account"] = relationship("Account", back_populates="transactions")
     asset: Mapped["Asset"] = relationship("Asset", back_populates="transactions")
-    document: Mapped["Document | None"] = relationship("Document", back_populates="transactions")
+    document: Mapped["Document | None"] = relationship(
+        "Document", back_populates="transactions"
+    )

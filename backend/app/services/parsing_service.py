@@ -91,8 +91,8 @@ class ParsingService:
             # Update document with results
             if result.success:
                 # Validate and normalize the extracted data
-                validated_data, validation_errors = self.validation_service.validate_statement_data(
-                    result.raw_data
+                validated_data, validation_errors = (
+                    self.validation_service.validate_statement_data(result.raw_data)
                 )
 
                 if validation_errors:
@@ -103,8 +103,10 @@ class ParsingService:
                     )
 
                 # Count transactions
-                txn_count, count_warnings = self.validation_service.validate_and_count_transactions(
-                    result.raw_data
+                txn_count, count_warnings = (
+                    self.validation_service.validate_and_count_transactions(
+                        result.raw_data
+                    )
                 )
 
                 # Extract summary
@@ -112,7 +114,9 @@ class ParsingService:
 
                 # Store validated data if validation succeeded, otherwise raw data
                 document.parsing_status = ParsingStatus.COMPLETED
-                document.raw_extracted_data = validated_data if validated_data else result.raw_data
+                document.raw_extracted_data = (
+                    validated_data if validated_data else result.raw_data
+                )
                 document.parsed_at = datetime.utcnow()
                 document.parsing_error = None
 

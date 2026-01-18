@@ -74,7 +74,9 @@ def get_jwks_client():
         logger.info("jwks_client_created_successfully")
         return _jwks_client
     except Exception as e:
-        logger.error("jwks_client_creation_failed", error=str(e), error_type=type(e).__name__)
+        logger.error(
+            "jwks_client_creation_failed", error=str(e), error_type=type(e).__name__
+        )
         return None
 
 
@@ -125,7 +127,12 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
                 logger.error("invalid_audience", error=str(e), expected="authenticated")
                 raise AuthenticationError("Invalid token audience.")
             except Exception as e:
-                logger.error("jwks_verification_failed", algorithm=alg, error=str(e), error_type=type(e).__name__)
+                logger.error(
+                    "jwks_verification_failed",
+                    algorithm=alg,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
                 raise AuthenticationError(f"Token verification failed: {e}")
         else:
             raise AuthenticationError(
@@ -157,7 +164,9 @@ def decode_supabase_jwt(token: str) -> dict[str, Any]:
             logger.error("invalid_audience", error=str(e), expected="authenticated")
             raise AuthenticationError("Invalid token audience.")
         except Exception as e:
-            logger.error("hs256_verification_failed", error=str(e), error_type=type(e).__name__)
+            logger.error(
+                "hs256_verification_failed", error=str(e), error_type=type(e).__name__
+            )
             raise AuthenticationError(f"Token verification failed: {e}")
 
     else:

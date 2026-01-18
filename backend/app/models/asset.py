@@ -15,7 +15,9 @@ class Asset(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "assets"
 
-    ticker: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    ticker: Mapped[str] = mapped_column(
+        String(20), unique=True, nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     asset_type: Mapped[AssetType] = mapped_column(
         SAEnum(

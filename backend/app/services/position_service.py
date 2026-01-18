@@ -212,6 +212,7 @@ class PositionService:
 
         if user_id:
             from app.models import Account
+
             query = query.join(Position.account).where(Account.user_id == user_id)
 
         result = await self.db.execute(query)
@@ -264,22 +265,26 @@ class PositionService:
             total_quantity = row.total_quantity or Decimal("0")
             total_cost = row.total_cost or Decimal("0")
 
-            consolidated.append({
-                "asset_id": row.asset_id,
-                "ticker": row.ticker,
-                "asset_name": row.asset_name,
-                "asset_type": row.asset_type,
-                "total_quantity": total_quantity,
-                "weighted_avg_price": (
-                    total_cost / total_quantity if total_quantity > 0 else Decimal("0")
-                ),
-                "total_cost": total_cost,
-                "current_price": None,  # To be filled by market data
-                "market_value": None,
-                "unrealized_pnl": None,
-                "unrealized_pnl_pct": None,
-                "accounts_count": row.accounts_count,
-            })
+            consolidated.append(
+                {
+                    "asset_id": row.asset_id,
+                    "ticker": row.ticker,
+                    "asset_name": row.asset_name,
+                    "asset_type": row.asset_type,
+                    "total_quantity": total_quantity,
+                    "weighted_avg_price": (
+                        total_cost / total_quantity
+                        if total_quantity > 0
+                        else Decimal("0")
+                    ),
+                    "total_cost": total_cost,
+                    "current_price": None,  # To be filled by market data
+                    "market_value": None,
+                    "unrealized_pnl": None,
+                    "unrealized_pnl_pct": None,
+                    "accounts_count": row.accounts_count,
+                }
+            )
 
         return consolidated
 

@@ -20,7 +20,12 @@ class Position(Base, UUIDMixin):
 
     __tablename__ = "positions"
     __table_args__ = (
-        UniqueConstraint("account_id", "asset_id", "position_type", name="uq_positions_account_asset_type"),
+        UniqueConstraint(
+            "account_id",
+            "asset_id",
+            "position_type",
+            name="uq_positions_account_asset_type",
+        ),
     )
 
     account_id: Mapped[UUID] = mapped_column(
@@ -47,7 +52,9 @@ class Position(Base, UUIDMixin):
         ),
         default=PositionType.LONG,
     )
-    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    opened_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.utcnow,

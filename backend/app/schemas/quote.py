@@ -2,7 +2,7 @@
 Quote schemas for API responses.
 """
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 

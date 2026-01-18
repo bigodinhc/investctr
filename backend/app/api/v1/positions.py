@@ -17,12 +17,8 @@ from app.schemas.position import (
     ConsolidatedPosition,
     ConsolidatedPositionsResponse,
     PortfolioSummary,
-    PositionResponse,
-    PositionsListResponse,
     PositionSummary,
-    PositionsWithAssetListResponse,
     PositionsWithMarketDataResponse,
-    PositionWithAsset,
     PositionWithMarketData,
 )
 from app.services.pnl_service import PnLService
@@ -40,7 +36,9 @@ async def list_positions(
     pagination: Pagination,
     account_id: UUID | None = Query(None, description="Filter by account"),
     asset_type: AssetType | None = Query(None, description="Filter by asset type"),
-    min_value: Decimal | None = Query(None, description="Filter by minimum market value"),
+    min_value: Decimal | None = Query(
+        None, description="Filter by minimum market value"
+    ),
 ) -> PositionsWithMarketDataResponse:
     """
     List all positions for the authenticated user.
@@ -89,11 +87,15 @@ async def list_positions(
     # Get current prices for all positions
     asset_ids = [pos.asset_id for pos in positions]
     quote_service = QuoteService(db)
-    current_prices = await quote_service.get_latest_prices(asset_ids) if asset_ids else {}
+    current_prices = (
+        await quote_service.get_latest_prices(asset_ids) if asset_ids else {}
+    )
 
     # Calculate unrealized P&L using PnLService
     pnl_service = PnLService(db)
-    unrealized_summary = await pnl_service.calculate_unrealized_pnl(positions, current_prices)
+    unrealized_summary = await pnl_service.calculate_unrealized_pnl(
+        positions, current_prices
+    )
 
     # Build a lookup map for unrealized P&L by position_id
     unrealized_by_position = {
@@ -128,12 +130,18 @@ async def list_positions(
 
     # Filter by min_value after market data enrichment
     if min_value is not None:
-        items = [item for item in items if (item.market_value or item.total_cost) >= min_value]
+        items = [
+            item
+            for item in items
+            if (item.market_value or item.total_cost) >= min_value
+        ]
 
     return PositionsWithMarketDataResponse(
         items=items,
         total=total,
-        total_market_value=unrealized_summary.total_market_value if unrealized_summary.total_market_value > 0 else unrealized_summary.total_cost,
+        total_market_value=unrealized_summary.total_market_value
+        if unrealized_summary.total_market_value > 0
+        else unrealized_summary.total_cost,
         total_cost=unrealized_summary.total_cost,
         total_unrealized_pnl=unrealized_summary.total_unrealized_pnl,
         total_unrealized_pnl_pct=unrealized_summary.total_unrealized_pnl_pct,
@@ -157,7 +165,9 @@ async def get_consolidated_positions(
 
     # Apply asset type filter
     if asset_type:
-        consolidated_data = [p for p in consolidated_data if p["asset_type"] == asset_type]
+        consolidated_data = [
+            p for p in consolidated_data if p["asset_type"] == asset_type
+        ]
 
     # Calculate totals
     total_cost = Decimal("0")
@@ -185,9 +195,13 @@ async def get_consolidated_positions(
         if data["market_value"] is not None:
             total_market_value += data["market_value"]
 
-    total_unrealized_pnl = total_market_value - total_cost if total_market_value > 0 else Decimal("0")
+    total_unrealized_pnl = (
+        total_market_value - total_cost if total_market_value > 0 else Decimal("0")
+    )
     total_unrealized_pnl_pct = (
-        (total_unrealized_pnl / total_cost * 100) if total_cost > 0 and total_market_value > 0 else None
+        (total_unrealized_pnl / total_cost * 100)
+        if total_cost > 0 and total_market_value > 0
+        else None
     )
 
     return ConsolidatedPositionsResponse(

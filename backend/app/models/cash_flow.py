@@ -39,8 +39,12 @@ class CashFlow(Base, UUIDMixin):
     currency: Mapped[str] = mapped_column(String(3), default="BRL", nullable=False)
     exchange_rate: Mapped[Decimal] = mapped_column(Numeric(10, 6), default=Decimal("1"))
     # amount_brl is a generated column in the database
-    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    shares_affected: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    executed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    shares_affected: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 8), nullable=True
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

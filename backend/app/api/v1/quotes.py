@@ -9,11 +9,10 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
-from app.api.deps import AuthenticatedUser, DBSession, Pagination
+from app.api.deps import AuthenticatedUser, DBSession
 from app.core.logging import get_logger
-from app.models import Asset, Quote
+from app.models import Asset
 from app.schemas.quote import (
     LatestPriceResponse,
     LatestPricesResponse,

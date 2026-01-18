@@ -10,12 +10,12 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
-from app.models import Account, Asset, Position, Transaction
+from app.models import Account, Position, Transaction
 from app.schemas.enums import TransactionType
 
 logger = get_logger(__name__)
@@ -135,10 +135,16 @@ class PnLService:
             query = query.join(Transaction.account).where(Account.user_id == user_id)
 
         if start_date:
-            query = query.where(Transaction.executed_at >= datetime.combine(start_date, datetime.min.time()))
+            query = query.where(
+                Transaction.executed_at
+                >= datetime.combine(start_date, datetime.min.time())
+            )
 
         if end_date:
-            query = query.where(Transaction.executed_at <= datetime.combine(end_date, datetime.max.time()))
+            query = query.where(
+                Transaction.executed_at
+                <= datetime.combine(end_date, datetime.max.time())
+            )
 
         result = await self.db.execute(query)
         transactions = list(result.scalars().all())
@@ -428,7 +434,11 @@ class PnLService:
             entries.append(entry)
 
         # Calculate totals
-        total_unrealized_pnl = total_market_value - total_cost if positions_with_prices > 0 else Decimal("0")
+        total_unrealized_pnl = (
+            total_market_value - total_cost
+            if positions_with_prices > 0
+            else Decimal("0")
+        )
         total_unrealized_pnl_pct = (
             (total_unrealized_pnl / total_cost * 100)
             if total_cost > 0 and positions_with_prices > 0

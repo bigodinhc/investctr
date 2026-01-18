@@ -108,7 +108,9 @@ class StockPosition(BaseModel):
     def validate_ticker(cls, v: Any) -> str:
         return normalize_ticker(v)
 
-    @field_validator("quantity", "average_price", "current_price", "total_value", mode="before")
+    @field_validator(
+        "quantity", "average_price", "current_price", "total_value", mode="before"
+    )
     @classmethod
     def validate_decimal(cls, v: Any) -> Decimal | None:
         if v is None:
@@ -500,7 +502,9 @@ def normalize_transaction_type(value: str) -> str:
 class ValidationService:
     """Service for validating and normalizing parsed document data."""
 
-    def validate_statement_data(self, raw_data: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    def validate_statement_data(
+        self, raw_data: dict[str, Any]
+    ) -> tuple[dict[str, Any], list[str]]:
         """
         Validate and normalize statement data.
 
@@ -522,7 +526,9 @@ class ValidationService:
             logger.error("statement_validation_failed", error=str(e), raw_data=raw_data)
             return {}, errors
 
-    def validate_and_count_transactions(self, raw_data: dict[str, Any]) -> tuple[int, list[str]]:
+    def validate_and_count_transactions(
+        self, raw_data: dict[str, Any]
+    ) -> tuple[int, list[str]]:
         """
         Count valid transactions in the data.
 

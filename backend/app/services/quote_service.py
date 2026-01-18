@@ -7,19 +7,17 @@ Provides functions to:
 - Get price history
 """
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
 from app.integrations.yfinance_client import (
     QuoteData,
-    fetch_quote,
     fetch_quotes_batch,
 )
 from app.models import Asset, Quote
@@ -77,7 +75,9 @@ class QuoteService:
         quotes_by_ticker = await fetch_quotes_batch(tickers, start_date, end_date)
 
         # Get or create assets for all tickers
-        ticker_to_asset = await self._get_or_create_assets(list(quotes_by_ticker.keys()))
+        ticker_to_asset = await self._get_or_create_assets(
+            list(quotes_by_ticker.keys())
+        )
 
         # Save quotes to database
         saved_quotes: list[Quote] = []
@@ -313,15 +313,12 @@ class QuoteService:
         )
 
         # Join to get the actual quote records for those dates
-        query = (
-            select(Quote)
-            .join(
-                max_date_subq,
-                and_(
-                    Quote.asset_id == max_date_subq.c.asset_id,
-                    Quote.date == max_date_subq.c.max_date,
-                ),
-            )
+        query = select(Quote).join(
+            max_date_subq,
+            and_(
+                Quote.asset_id == max_date_subq.c.asset_id,
+                Quote.date == max_date_subq.c.max_date,
+            ),
         )
 
         result = await self.db.execute(query)
@@ -465,15 +462,12 @@ class QuoteService:
             .subquery()
         )
 
-        query = (
-            select(Quote)
-            .join(
-                max_date_subq,
-                and_(
-                    Quote.asset_id == max_date_subq.c.asset_id,
-                    Quote.date == max_date_subq.c.max_date,
-                ),
-            )
+        query = select(Quote).join(
+            max_date_subq,
+            and_(
+                Quote.asset_id == max_date_subq.c.asset_id,
+                Quote.date == max_date_subq.c.max_date,
+            ),
         )
 
         result = await self.db.execute(query)

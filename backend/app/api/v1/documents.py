@@ -10,7 +10,6 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 
 from app.api.deps import AuthenticatedUser, DBSession, Pagination
-from app.config import settings
 from app.core.logging import get_logger
 from app.models import Account, Asset, Document, Transaction
 from app.schemas.document import (
@@ -66,7 +65,9 @@ async def list_documents(
     )
 
 
-@router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED
+)
 async def upload_document(
     user: AuthenticatedUser,
     db: DBSession,
@@ -283,8 +284,11 @@ async def parse_document(
             return ParseTaskResponse(
                 document_id=document_id,
                 task_id="sync",
-                status=ParsingStatus.COMPLETED if parse_result.success else ParsingStatus.FAILED,
-                message=parse_result.error or f"Parsed {parse_result.transaction_count} transactions",
+                status=ParsingStatus.COMPLETED
+                if parse_result.success
+                else ParsingStatus.FAILED,
+                message=parse_result.error
+                or f"Parsed {parse_result.transaction_count} transactions",
             )
         except ValueError as e:
             raise HTTPException(
@@ -469,7 +473,9 @@ async def commit_document_transactions(
             try:
                 executed_at = datetime.strptime(txn_data.date, "%Y-%m-%d")
             except ValueError:
-                errors.append(f"Transaction {idx + 1}: Invalid date format '{txn_data.date}'")
+                errors.append(
+                    f"Transaction {idx + 1}: Invalid date format '{txn_data.date}'"
+                )
                 continue
 
             # Create transaction

@@ -32,7 +32,9 @@ class Quote(Base, UUIDMixin):
     high: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
     low: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
     close: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
-    adjusted_close: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    adjusted_close: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 6), nullable=True
+    )
     volume: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     source: Mapped[str] = mapped_column(String(20), default="yfinance")
     created_at: Mapped[datetime] = mapped_column(

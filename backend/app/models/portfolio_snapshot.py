@@ -19,7 +19,9 @@ class PortfolioSnapshot(Base, UUIDMixin):
 
     __tablename__ = "portfolio_snapshots"
     __table_args__ = (
-        UniqueConstraint("user_id", "date", "account_id", name="uq_snapshots_user_date_account"),
+        UniqueConstraint(
+            "user_id", "date", "account_id", name="uq_snapshots_user_date_account"
+        ),
     )
 
     user_id: Mapped[UUID] = mapped_column(
@@ -37,7 +39,9 @@ class PortfolioSnapshot(Base, UUIDMixin):
     nav: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
     total_cost: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
     realized_pnl: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0"))
-    unrealized_pnl: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0"))
+    unrealized_pnl: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), default=Decimal("0")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.utcnow,

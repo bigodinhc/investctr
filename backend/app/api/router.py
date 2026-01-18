@@ -4,7 +4,17 @@ Main API router that includes all v1 routes.
 
 from fastapi import APIRouter
 
-from app.api.v1 import accounts, assets, cash_flows, documents, fund, portfolio, positions, quotes, transactions
+from app.api.v1 import (
+    accounts,
+    assets,
+    cash_flows,
+    documents,
+    fund,
+    portfolio,
+    positions,
+    quotes,
+    transactions,
+)
 
 api_router = APIRouter()
 
