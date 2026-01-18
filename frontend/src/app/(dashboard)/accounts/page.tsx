@@ -39,7 +39,7 @@ import {
 import type { Account, AccountCreate, AccountType, Currency } from "@/lib/api";
 
 const ACCOUNT_TYPES: { value: AccountType; label: string; color: string }[] = [
-  { value: "btg_personal", label: "BTG Pactual (PF)", color: "gold" },
+  { value: "btg_personal", label: "BTG Pactual (PF)", color: "secondary" },
   { value: "btg_corporate", label: "BTG Pactual (PJ)", color: "info" },
   { value: "xp", label: "XP Investimentos", color: "success" },
   { value: "btg_cayman", label: "BTG Cayman", color: "warning" },
@@ -138,7 +138,7 @@ export default function AccountsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-3xl tracking-tight">
-            <span className="text-gradient-gold">Contas</span>
+            <span className="text-foreground">Contas</span>
           </h1>
           <p className="text-foreground-muted">
             Gerencie suas contas de investimento
@@ -154,8 +154,8 @@ export default function AccountsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card variant="elevated" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <Wallet className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface">
+              <Wallet className="h-5 w-5 text-foreground" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Total de Contas</p>
@@ -197,8 +197,8 @@ export default function AccountsPage() {
       <Card variant="elevated">
         <CardHeader className="pb-4">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <Building2 className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-surface">
+              <Building2 className="h-4 w-4 text-foreground" />
             </div>
             MINHAS CONTAS
           </CardTitle>
@@ -219,8 +219,8 @@ export default function AccountsPage() {
             </div>
           ) : !data?.items.length ? (
             <div className="text-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10 mx-auto mb-6">
-                <Building2 className="h-8 w-8 text-gold" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-background-surface mx-auto mb-6">
+                <Building2 className="h-8 w-8 text-foreground" />
               </div>
               <h3 className="font-display text-xl mb-2">Nenhuma conta cadastrada</h3>
               <p className="text-foreground-muted mb-6 max-w-sm mx-auto">
@@ -253,8 +253,8 @@ export default function AccountsPage() {
                     >
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 border border-gold/20">
-                            <span className="font-mono text-xs font-semibold text-gold">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface border border-border">
+                            <span className="font-mono text-xs font-semibold text-foreground">
                               {account.name.slice(0, 2).toUpperCase()}
                             </span>
                           </div>
@@ -269,7 +269,6 @@ export default function AccountsPage() {
                       <TableCell>
                         <Badge
                           variant={
-                            accountType.color === "gold" ? "gold" :
                             accountType.color === "info" ? "info" :
                             accountType.color === "success" ? "success" :
                             accountType.color === "warning" ? "warning" :
@@ -291,7 +290,7 @@ export default function AccountsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openEdit(account)}
-                            className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                            className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>

@@ -11,20 +11,16 @@ const cardVariants = cva(
         default:
           "bg-card border border-border text-card-foreground",
         elevated:
-          "bg-background-elevated border border-border shadow-lg text-card-foreground",
-        glass:
-          "glass text-card-foreground",
-        "glass-gold":
-          "glass-gold text-card-foreground",
+          "bg-background-elevated border border-border text-card-foreground",
         bordered:
-          "bg-card border-2 border-border hover:border-gold/30 text-card-foreground",
+          "bg-card border-2 border-border hover:border-border-hover text-card-foreground",
         ghost:
           "bg-transparent text-card-foreground",
       },
       hover: {
         none: "",
         lift: "hover:-translate-y-1 hover:shadow-lg hover:border-border-hover",
-        glow: "hover:shadow-glow-gold-sm hover:border-gold/30",
+        subtle: "hover:bg-background-surface",
         scale: "hover:scale-[1.02]",
       },
     },

@@ -64,23 +64,23 @@ export default function RegisterPage() {
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(212,168,83,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(212,168,83,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-background-deep via-background to-background-elevated" />
 
-        {/* Glow Effects */}
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-gold/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 left-1/4 w-64 h-64 bg-success/5 rounded-full blur-3xl" />
+        {/* Subtle Glow Effects */}
+        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-foreground/3 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 left-1/4 w-64 h-64 bg-positive/5 rounded-full blur-3xl" />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-16 py-12">
           {/* Logo */}
           <div className="flex items-center gap-4 mb-12">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/10 border border-gold/20">
-              <TrendingUp className="h-7 w-7 text-gold" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-foreground/10 border border-foreground/20">
+              <TrendingUp className="h-7 w-7 text-foreground" />
             </div>
-            <span className="font-display text-4xl text-gradient-gold tracking-wider">
+            <span className="font-display text-4xl text-foreground tracking-wider">
               INVESTCTR
             </span>
           </div>
@@ -89,7 +89,7 @@ export default function RegisterPage() {
           <h1 className="font-display text-5xl leading-tight mb-6">
             COMECE A
             <br />
-            <span className="text-gradient-gold">INVESTIR</span>
+            <span className="text-foreground">INVESTIR</span>
             <br />
             MELHOR HOJE
           </h1>
@@ -125,10 +125,10 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold/10 border border-gold/20">
-              <TrendingUp className="h-6 w-6 text-gold" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-foreground/10 border border-foreground/20">
+              <TrendingUp className="h-6 w-6 text-foreground" />
             </div>
-            <span className="font-display text-3xl text-gradient-gold tracking-wider">
+            <span className="font-display text-3xl text-foreground tracking-wider">
               INVESTCTR
             </span>
           </div>
@@ -258,7 +258,7 @@ export default function RegisterPage() {
                   Já tem uma conta?{" "}
                   <Link
                     href="/auth/login"
-                    className="text-gold hover:text-gold-light font-medium transition-colors"
+                    className="text-foreground hover:text-foreground/80 font-medium transition-colors"
                   >
                     Entrar
                   </Link>
@@ -270,11 +270,11 @@ export default function RegisterPage() {
           {/* Footer */}
           <p className="text-center text-xs text-foreground-dim mt-8">
             Ao criar sua conta, você concorda com nossos{" "}
-            <Link href="/terms" className="text-foreground-muted hover:text-gold">
+            <Link href="/terms" className="text-foreground-muted hover:text-foreground">
               Termos de Uso
             </Link>{" "}
             e{" "}
-            <Link href="/privacy" className="text-foreground-muted hover:text-gold">
+            <Link href="/privacy" className="text-foreground-muted hover:text-foreground">
               Política de Privacidade
             </Link>
           </p>

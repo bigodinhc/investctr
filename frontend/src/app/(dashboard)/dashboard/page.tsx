@@ -26,19 +26,19 @@ import type { AssetType } from "@/lib/api/types";
 
 // Asset type display configuration
 const assetTypeConfig: Record<AssetType, { label: string; color: string }> = {
-  stock: { label: "Ações", color: "bg-gold" },
-  etf: { label: "ETFs", color: "bg-blue-500" },
+  stock: { label: "Ações", color: "bg-foreground" },
+  etf: { label: "ETFs", color: "bg-foreground-muted" },
   reit: { label: "FIIs", color: "bg-info" },
-  bdr: { label: "BDRs", color: "bg-purple-500" },
-  fund: { label: "Fundos", color: "bg-cyan-500" },
+  bdr: { label: "BDRs", color: "bg-foreground-dim" },
+  fund: { label: "Fundos", color: "bg-foreground-muted" },
   fixed_income: { label: "Renda Fixa", color: "bg-success" },
-  crypto: { label: "Crypto", color: "bg-orange-500" },
-  option: { label: "Opções", color: "bg-pink-500" },
-  future: { label: "Futuros", color: "bg-red-500" },
-  currency: { label: "Câmbio", color: "bg-emerald-500" },
+  crypto: { label: "Crypto", color: "bg-warning" },
+  option: { label: "Opções", color: "bg-foreground-muted" },
+  future: { label: "Futuros", color: "bg-destructive" },
+  currency: { label: "Câmbio", color: "bg-success" },
   bond: { label: "Renda Fixa", color: "bg-success" },
-  treasury: { label: "Tesouro", color: "bg-teal-500" },
-  other: { label: "Outros", color: "bg-gray-500" },
+  treasury: { label: "Tesouro", color: "bg-foreground-muted" },
+  other: { label: "Outros", color: "bg-foreground-dim" },
 };
 
 export default function DashboardPage() {
@@ -93,15 +93,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Hero Section - Main NAV */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background-elevated via-background to-background-surface border border-border p-8">
-        {/* Background glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-
-        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div className="rounded-xl bg-background-elevated border border-border p-8">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               {portfolioSummary?.last_price_update ? (
-                <Badge variant="gold" size="lg">
+                <Badge variant="muted" size="lg">
                   <Calendar className="h-3 w-3 mr-1" />
                   Atualizado {new Date(portfolioSummary.last_price_update).toLocaleString("pt-BR", {
                     day: "2-digit",
@@ -125,8 +122,8 @@ export default function DashboardPage() {
               {isLoading ? (
                 <div className="h-14 w-64 skeleton rounded" />
               ) : (
-                <h1 className="font-display text-5xl lg:text-6xl tracking-tight">
-                  <span className="text-gradient-gold">{formatCurrency(totalValue)}</span>
+                <h1 className="font-display text-5xl lg:text-6xl tracking-tight text-foreground">
+                  {formatCurrency(totalValue)}
                 </h1>
               )}
             </div>
@@ -316,8 +313,8 @@ export default function DashboardPage() {
                       >
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 border border-gold/20">
-                              <span className="font-mono text-xs font-semibold text-gold">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface border border-border">
+                              <span className="font-mono text-xs font-semibold text-foreground">
                                 {position.ticker.slice(0, 2)}
                               </span>
                             </div>

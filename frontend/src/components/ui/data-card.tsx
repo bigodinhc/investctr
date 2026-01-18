@@ -34,7 +34,7 @@ export function DataCard({
 
   const variants = {
     default: "bg-card border-border",
-    highlight: "bg-gold/5 border-gold/20",
+    highlight: "bg-background-surface border-border-hover",
     success: "bg-success/5 border-success/20",
     destructive: "bg-destructive/5 border-destructive/20",
   };
@@ -63,7 +63,7 @@ export function DataCard({
   return (
     <div
       className={cn(
-        "rounded-lg border p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5",
+        "rounded-lg border p-6 transition-all duration-300 hover:border-border-hover",
         variants[variant],
         className
       )}
@@ -105,7 +105,7 @@ export function DataCard({
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-lg",
               variant === "highlight"
-                ? "bg-gold/10 text-gold"
+                ? "bg-foreground/10 text-foreground"
                 : variant === "success"
                 ? "bg-success/10 text-success"
                 : variant === "destructive"

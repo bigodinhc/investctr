@@ -186,7 +186,7 @@ export default function DocumentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-3xl tracking-tight">
-            <span className="text-gradient-gold">Documentos</span>
+            <span className="text-foreground">Documentos</span>
           </h1>
           <p className="text-foreground-muted">
             Faça upload de extratos e notas de corretagem para importar transações
@@ -208,8 +208,8 @@ export default function DocumentsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card variant="elevated" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <FileText className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface">
+              <FileText className="h-5 w-5 text-foreground" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Total</p>
@@ -264,8 +264,8 @@ export default function DocumentsPage() {
       <Card variant="elevated">
         <CardHeader className="pb-4">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <FileText className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-surface">
+              <FileText className="h-4 w-4 text-foreground" />
             </div>
             MEUS DOCUMENTOS
           </CardTitle>
@@ -286,8 +286,8 @@ export default function DocumentsPage() {
             </div>
           ) : !data?.items.length ? (
             <div className="text-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10 mx-auto mb-6">
-                <FileText className="h-8 w-8 text-gold" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-background-surface mx-auto mb-6">
+                <FileText className="h-8 w-8 text-foreground" />
               </div>
               <h3 className="font-display text-xl mb-2">Nenhum documento</h3>
               <p className="text-foreground-muted mb-6 max-w-sm mx-auto">
@@ -318,8 +318,8 @@ export default function DocumentsPage() {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 border border-gold/20">
-                          <FileText className="h-5 w-5 text-gold" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface border border-border">
+                          <FileText className="h-5 w-5 text-foreground" />
                         </div>
                         <div>
                           <p className="font-medium truncate max-w-[200px]">
@@ -362,7 +362,7 @@ export default function DocumentsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                            className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                             onClick={() => setSelectedDocumentId(doc.id)}
                           >
                             <Eye className="h-4 w-4" />
@@ -426,14 +426,14 @@ export default function DocumentsPage() {
           {isParseLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="h-12 w-12 rounded-full border-4 border-gold/30 border-t-gold animate-spin mx-auto mb-4" />
+                <div className="h-12 w-12 rounded-full border-4 border-foreground-muted/30 border-t-foreground animate-spin mx-auto mb-4" />
                 <p className="text-foreground-muted">Processando documento...</p>
               </div>
             </div>
           ) : parseResult?.status === "processing" ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="h-12 w-12 rounded-full border-4 border-gold/30 border-t-gold animate-spin mx-auto mb-4" />
+                <div className="h-12 w-12 rounded-full border-4 border-foreground-muted/30 border-t-foreground animate-spin mx-auto mb-4" />
                 <p className="text-foreground-muted">
                   O Claude está analisando o documento...
                 </p>
