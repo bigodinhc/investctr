@@ -43,23 +43,23 @@ export default function LoginPage() {
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(212,168,83,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(212,168,83,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(237,57,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(237,57,0,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-background-deep via-background to-background-elevated" />
 
         {/* Glow Effects */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gold/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-vermillion/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-vermillion/12 rounded-full blur-3xl" />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-16 py-12">
           {/* Logo */}
           <div className="flex items-center gap-4 mb-12">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/10 border border-gold/20">
-              <TrendingUp className="h-7 w-7 text-gold" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-vermillion/10 border border-vermillion/20">
+              <TrendingUp className="h-7 w-7 text-vermillion" />
             </div>
-            <span className="font-display text-4xl text-gradient-gold tracking-wider">
+            <span className="font-display text-4xl text-gradient-vermillion tracking-wider">
               INVESTCTR
             </span>
           </div>
@@ -68,7 +68,7 @@ export default function LoginPage() {
           <h1 className="font-display text-5xl leading-tight mb-6">
             GERENCIE SEUS
             <br />
-            <span className="text-gradient-gold">INVESTIMENTOS</span>
+            <span className="text-gradient-vermillion">INVESTIMENTOS</span>
             <br />
             COM PRECISÃO
           </h1>
@@ -89,7 +89,7 @@ export default function LoginPage() {
                 key={i}
                 className="flex items-center gap-3 text-foreground-muted"
               >
-                <div className="h-1.5 w-1.5 rounded-full bg-gold" />
+                <div className="h-1.5 w-1.5 rounded-full bg-vermillion" />
                 <span>{feature}</span>
               </div>
             ))}
@@ -102,15 +102,15 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold/10 border border-gold/20">
-              <TrendingUp className="h-6 w-6 text-gold" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-vermillion/10 border border-vermillion/20">
+              <TrendingUp className="h-6 w-6 text-vermillion" />
             </div>
-            <span className="font-display text-3xl text-gradient-gold tracking-wider">
+            <span className="font-display text-3xl text-gradient-vermillion tracking-wider">
               INVESTCTR
             </span>
           </div>
 
-          <Card variant="elevated" className="animate-fade-in">
+          <Card variant="glass" className="animate-fade-in">
             <CardHeader className="text-center pb-2">
               <h2 className="font-display text-3xl tracking-wide">ENTRAR</h2>
               <p className="text-foreground-muted text-sm mt-2">
@@ -154,7 +154,7 @@ export default function LoginPage() {
                     </label>
                     <Link
                       href="/auth/forgot-password"
-                      className="text-xs text-gold hover:text-gold-light transition-colors"
+                      className="text-xs text-vermillion hover:text-vermillion-light transition-colors"
                     >
                       Esqueceu a senha?
                     </Link>
@@ -189,7 +189,7 @@ export default function LoginPage() {
                   Não tem conta?{" "}
                   <Link
                     href="/auth/register"
-                    className="text-gold hover:text-gold-light font-medium transition-colors"
+                    className="text-vermillion hover:text-vermillion-light font-medium transition-colors"
                   >
                     Criar conta
                   </Link>
@@ -201,11 +201,11 @@ export default function LoginPage() {
           {/* Footer */}
           <p className="text-center text-xs text-foreground-dim mt-8">
             Ao entrar, você concorda com nossos{" "}
-            <Link href="/terms" className="text-foreground-muted hover:text-gold">
+            <Link href="/terms" className="text-foreground-muted hover:text-vermillion">
               Termos de Uso
             </Link>{" "}
             e{" "}
-            <Link href="/privacy" className="text-foreground-muted hover:text-gold">
+            <Link href="/privacy" className="text-foreground-muted hover:text-vermillion">
               Política de Privacidade
             </Link>
           </p>

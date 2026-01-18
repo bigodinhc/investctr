@@ -14,18 +14,18 @@ import { usePortfolioAllocation } from "@/hooks/use-portfolio";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { PieChart as PieChartIcon } from "lucide-react";
 
-// Gold-themed color palette
+// Vermillion Glass color palette - vibrant colors that work with glass
 const COLORS = [
-  "#D4AF37", // Gold
-  "#B8860B", // Dark golden rod
-  "#DAA520", // Goldenrod
-  "#FFD700", // Gold bright
-  "#F0E68C", // Khaki
-  "#CD853F", // Peru
-  "#DEB887", // Burlywood
-  "#D2691E", // Chocolate
-  "#8B4513", // Saddle brown
-  "#A0522D", // Sienna
+  "#ED3900", // Vermillion (primary)
+  "#FF5A30", // Vermillion light
+  "#22B573", // Success green
+  "#3D8BF5", // Info blue
+  "#F5A623", // Warning amber
+  "#9B59B6", // Purple
+  "#1ABC9C", // Teal
+  "#E91E63", // Pink
+  "#00BCD4", // Cyan
+  "#8BC34A", // Light green
 ];
 
 interface ChartDataPoint {
@@ -46,9 +46,9 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   const data = payload[0].payload;
 
   return (
-    <div className="bg-background-elevated border border-border rounded-lg p-3 shadow-lg">
+    <div className="glass-card-elevated p-3 shadow-lg">
       <p className="text-sm font-semibold mb-1">{data.name}</p>
-      <p className="text-lg font-mono font-semibold text-gradient-gold">
+      <p className="text-lg font-mono font-semibold text-gradient-vermillion">
         {formatCurrency(data.value)}
       </p>
       <p className="text-xs text-foreground-muted">
@@ -72,13 +72,13 @@ function CustomLegend({ payload }: CustomLegendProps) {
   return (
     <div className="space-y-2 mt-4">
       {payload.map((entry, index) => (
-        <div key={`legend-${index}`} className="flex items-center justify-between">
+        <div key={`legend-${index}`} className="flex items-center justify-between group">
           <div className="flex items-center gap-2">
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-3 h-3 rounded-full transition-transform group-hover:scale-125"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-sm text-foreground-muted truncate max-w-[120px]">
+            <span className="text-sm text-foreground-muted truncate max-w-[120px] group-hover:text-foreground transition-colors">
               {entry.value}
             </span>
           </div>
@@ -111,9 +111,9 @@ export function AllocationChart() {
     : 0;
 
   return (
-    <Card variant="elevated">
+    <Card variant="glass">
       <CardHeader className="pb-2">
-        <CardTitle className="font-display text-xl">ALOCACAO</CardTitle>
+        <CardTitle className="font-display text-xl">Alocacao</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -129,14 +129,14 @@ export function AllocationChart() {
             ))}
           </div>
         ) : error ? (
-          <div className="h-48 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center glass-card-subtle rounded-xl">
             <div className="text-center space-y-2">
               <PieChartIcon className="h-8 w-8 text-destructive mx-auto" />
               <p className="text-sm text-foreground-muted">Erro ao carregar alocacao</p>
             </div>
           </div>
         ) : !hasData ? (
-          <div className="h-48 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center glass-card-subtle rounded-xl">
             <div className="text-center space-y-2">
               <PieChartIcon className="h-8 w-8 text-foreground-dim mx-auto" />
               <p className="text-sm text-foreground-muted">Sem dados de alocacao</p>
@@ -154,8 +154,8 @@ export function AllocationChart() {
                   outerRadius={80}
                   paddingAngle={2}
                   dataKey="value"
-                  stroke="hsl(var(--background))"
-                  strokeWidth={2}
+                  stroke="rgba(0, 0, 0, 0.3)"
+                  strokeWidth={1}
                 >
                   {chartData.map((entry, index) => (
                     <Cell
@@ -171,8 +171,8 @@ export function AllocationChart() {
 
             {/* Center label */}
             <div className="text-center -mt-28 mb-24 pointer-events-none">
-              <p className="text-xs text-foreground-muted">Total</p>
-              <p className="font-mono text-sm font-semibold text-gradient-gold">
+              <p className="text-glass-label">Total</p>
+              <p className="font-mono text-sm font-semibold text-gradient-vermillion">
                 {formatCurrency(totalValue)}
               </p>
             </div>

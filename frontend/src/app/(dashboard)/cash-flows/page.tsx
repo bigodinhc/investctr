@@ -180,7 +180,7 @@ export default function CashFlowsPage() {
   if (error) {
     return (
       <div className="space-y-8 animate-fade-in">
-        <Card variant="elevated">
+        <Card variant="glass">
           <CardContent className="p-8">
             <div className="flex items-center gap-4 text-destructive">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
@@ -203,7 +203,7 @@ export default function CashFlowsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-3xl tracking-tight">
-            <span className="text-gradient-gold">Aportes e Saques</span>
+            <span className="text-gradient-vermillion">Aportes e Saques</span>
           </h1>
           <p className="text-foreground-muted">
             Gerencie seus aportes e retiradas de capital
@@ -218,7 +218,7 @@ export default function CashFlowsPage() {
             <Filter className="h-4 w-4 mr-2" />
             Filtros
             {hasFilters && (
-              <Badge variant="gold" className="ml-2">
+              <Badge variant="vermillion" className="ml-2">
                 {Object.values(filters).filter((v) => v).length}
               </Badge>
             )}
@@ -239,7 +239,7 @@ export default function CashFlowsPage() {
 
       {/* Filters Panel */}
       {isFiltersOpen && (
-        <Card variant="elevated" className="animate-slide-down">
+        <Card variant="glass" className="animate-slide-down">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 min-w-[200px]">
@@ -278,10 +278,10 @@ export default function CashFlowsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card variant="elevated" className="p-4">
+        <Card variant="glass" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <Wallet className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-vermillion/10">
+              <Wallet className="h-5 w-5 text-vermillion" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Total</p>
@@ -291,7 +291,7 @@ export default function CashFlowsPage() {
             </div>
           </div>
         </Card>
-        <Card variant="elevated" className="p-4">
+        <Card variant="glass" className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
               <ArrowDownLeft className="h-5 w-5 text-success" />
@@ -304,7 +304,7 @@ export default function CashFlowsPage() {
             </div>
           </div>
         </Card>
-        <Card variant="elevated" className="p-4">
+        <Card variant="glass" className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
               <ArrowUpRight className="h-5 w-5 text-destructive" />
@@ -317,7 +317,7 @@ export default function CashFlowsPage() {
             </div>
           </div>
         </Card>
-        <Card variant="elevated" className="p-4">
+        <Card variant="glass" className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-info/10">
               <Calendar className="h-5 w-5 text-info" />
@@ -333,11 +333,11 @@ export default function CashFlowsPage() {
       </div>
 
       {/* Cash Flows Table */}
-      <Card variant="elevated">
+      <Card variant="glass">
         <CardHeader className="pb-4">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <Wallet className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-vermillion/10">
+              <Wallet className="h-4 w-4 text-vermillion" />
             </div>
             HISTORICO DE MOVIMENTACOES
           </CardTitle>
@@ -358,8 +358,8 @@ export default function CashFlowsPage() {
             </div>
           ) : cashFlows.length === 0 ? (
             <div className="text-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10 mx-auto mb-6">
-                <Wallet className="h-8 w-8 text-gold" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-vermillion/10 mx-auto mb-6">
+                <Wallet className="h-8 w-8 text-vermillion" />
               </div>
               <h3 className="font-display text-xl mb-2">Nenhuma movimentacao</h3>
               <p className="text-foreground-muted max-w-sm mx-auto mb-6">
@@ -427,7 +427,7 @@ export default function CashFlowsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                              className="h-8 w-8 hover:bg-vermillion/10 hover:text-vermillion"
                               onClick={() => handleEdit(cf)}
                             >
                               <Pencil className="h-4 w-4" />

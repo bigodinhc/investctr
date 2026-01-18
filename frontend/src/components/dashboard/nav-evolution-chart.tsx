@@ -25,6 +25,10 @@ const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
   { value: "MAX", label: "MAX" },
 ];
 
+// Vermillion color for chart
+const VERMILLION = "#ED3900";
+const VERMILLION_LIGHT = "#FF5A30";
+
 interface ChartDataPoint {
   date: string;
   nav: number;
@@ -57,11 +61,11 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   const data = payload[0].payload;
 
   return (
-    <div className="bg-background-elevated border border-border rounded-lg p-3 shadow-lg">
+    <div className="glass-card-elevated p-3 shadow-lg">
       <p className="text-xs text-foreground-muted mb-1">
         {formatDateForTooltip(data.date)}
       </p>
-      <p className="text-lg font-mono font-semibold text-gradient-gold">
+      <p className="text-lg font-mono font-semibold text-gradient-vermillion">
         {formatCurrency(data.nav)}
       </p>
     </div>
@@ -107,11 +111,11 @@ export function NavEvolutionChart() {
   }, [chartData]);
 
   return (
-    <Card variant="elevated" className="lg:col-span-2">
+    <Card variant="glass" className="lg:col-span-2">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="space-y-1">
           <CardTitle className="font-display text-xl">
-            EVOLUCAO DO PATRIMONIO
+            Evolucao do Patrimonio
           </CardTitle>
           {periodReturn !== null && hasData && (
             <div className="flex items-center gap-2">
@@ -132,15 +136,15 @@ export function NavEvolutionChart() {
             </div>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 glass-card-subtle p-1 rounded-xl">
           {PERIOD_OPTIONS.map((option) => (
             <button
               key={option.value}
               onClick={() => setSelectedPeriod(option.value)}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                 selectedPeriod === option.value
-                  ? "bg-gold/10 text-gold"
-                  : "text-foreground-muted hover:text-foreground hover:bg-background-surface"
+                  ? "bg-vermillion/20 text-vermillion shadow-glow-vermillion-sm"
+                  : "text-foreground-muted hover:text-foreground hover:bg-white/5"
               }`}
             >
               {option.label}
@@ -152,12 +156,12 @@ export function NavEvolutionChart() {
         {isLoading ? (
           <div className="h-72 flex items-center justify-center">
             <div className="animate-pulse space-y-4 w-full">
-              <div className="h-4 bg-background-surface rounded w-3/4 mx-auto" />
-              <div className="h-48 bg-background-surface rounded" />
+              <div className="h-4 bg-white/5 rounded w-3/4 mx-auto" />
+              <div className="h-48 bg-white/5 rounded" />
             </div>
           </div>
         ) : error ? (
-          <div className="h-72 flex items-center justify-center border border-dashed border-border rounded-lg bg-background-surface/50">
+          <div className="h-72 flex items-center justify-center glass-card-subtle rounded-xl">
             <div className="text-center space-y-3">
               <BarChart3 className="h-12 w-12 text-destructive mx-auto" />
               <p className="text-foreground-muted">
@@ -166,7 +170,7 @@ export function NavEvolutionChart() {
             </div>
           </div>
         ) : !hasData ? (
-          <div className="h-72 flex items-center justify-center border border-dashed border-border rounded-lg bg-background-surface/50">
+          <div className="h-72 flex items-center justify-center glass-card-subtle rounded-xl">
             <div className="text-center space-y-3">
               <BarChart3 className="h-12 w-12 text-foreground-dim mx-auto" />
               <p className="text-foreground-muted">
@@ -185,13 +189,13 @@ export function NavEvolutionChart() {
             >
               <defs>
                 <linearGradient id="navGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
+                  <stop offset="5%" stopColor={VERMILLION} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={VERMILLION} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
+                stroke="rgba(255, 255, 255, 0.05)"
                 vertical={false}
               />
               <XAxis
@@ -220,14 +224,14 @@ export function NavEvolutionChart() {
               <Area
                 type="monotone"
                 dataKey="nav"
-                stroke="#D4AF37"
+                stroke={VERMILLION}
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#navGradient)"
                 dot={false}
                 activeDot={{
                   r: 6,
-                  fill: "#D4AF37",
+                  fill: VERMILLION,
                   stroke: "hsl(var(--background))",
                   strokeWidth: 2,
                 }}

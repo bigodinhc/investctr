@@ -21,21 +21,21 @@ import { formatCurrency, formatPercent } from "@/lib/utils";
 import { usePortfolioSummary } from "@/hooks/use-portfolio";
 import { usePositions } from "@/hooks/use-positions";
 import { useLatestFundShare } from "@/hooks/use-fund";
-import { NavEvolutionChart, AllocationChart } from "@/components/dashboard";
+import { NavEvolutionChart, AllocationChart, GlassHeroCard } from "@/components/dashboard";
 import type { AssetType } from "@/lib/api/types";
 
-// Asset type display configuration
+// Asset type display configuration with vermillion palette
 const assetTypeConfig: Record<AssetType, { label: string; color: string }> = {
-  stock: { label: "Ações", color: "bg-gold" },
-  etf: { label: "ETFs", color: "bg-blue-500" },
-  reit: { label: "FIIs", color: "bg-info" },
-  bdr: { label: "BDRs", color: "bg-purple-500" },
-  fund: { label: "Fundos", color: "bg-cyan-500" },
+  stock: { label: "Acoes", color: "bg-vermillion" },
+  etf: { label: "ETFs", color: "bg-info" },
+  reit: { label: "FIIs", color: "bg-purple-500" },
+  bdr: { label: "BDRs", color: "bg-cyan-500" },
+  fund: { label: "Fundos", color: "bg-teal-500" },
   fixed_income: { label: "Renda Fixa", color: "bg-success" },
   crypto: { label: "Crypto", color: "bg-orange-500" },
-  option: { label: "Opções", color: "bg-pink-500" },
+  option: { label: "Opcoes", color: "bg-pink-500" },
   future: { label: "Futuros", color: "bg-red-500" },
-  currency: { label: "Câmbio", color: "bg-emerald-500" },
+  currency: { label: "Cambio", color: "bg-emerald-500" },
   bond: { label: "Renda Fixa", color: "bg-success" },
   treasury: { label: "Tesouro", color: "bg-teal-500" },
   other: { label: "Outros", color: "bg-gray-500" },
@@ -75,11 +75,11 @@ export default function DashboardPage() {
   if (hasError) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-4">
+        <div className="glass-card p-8 text-center space-y-4 max-w-md">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-          <h2 className="text-lg font-semibold">Erro ao carregar dados</h2>
+          <h2 className="text-lg font-display font-semibold">Erro ao carregar dados</h2>
           <p className="text-foreground-muted">
-            Não foi possível carregar os dados do portfolio. Tente novamente.
+            Nao foi possivel carregar os dados do portfolio. Tente novamente.
           </p>
           <Button onClick={() => window.location.reload()}>
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -92,85 +92,34 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Hero Section - Main NAV */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-background-elevated via-background to-background-surface border border-border p-8">
-        {/* Background glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-
-        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              {portfolioSummary?.last_price_update ? (
-                <Badge variant="gold" size="lg">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Atualizado {new Date(portfolioSummary.last_price_update).toLocaleString("pt-BR", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                  })}
-                </Badge>
-              ) : (
-                <Badge variant="outline" size="lg">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Cotações não sincronizadas
-                </Badge>
-              )}
-            </div>
-
-            <div>
-              <p className="text-sm text-foreground-muted uppercase tracking-wider mb-2">
-                Patrimônio Líquido
-              </p>
-              {isLoading ? (
-                <div className="h-14 w-64 skeleton rounded" />
-              ) : (
-                <h1 className="font-display text-5xl lg:text-6xl tracking-tight">
-                  <span className="text-gradient-gold">{formatCurrency(totalValue)}</span>
-                </h1>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              {isLoading ? (
-                <div className="h-8 w-40 skeleton rounded" />
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-mono font-semibold ${
-                        dailyChange >= 0
-                          ? "bg-success/10 text-success"
-                          : "bg-destructive/10 text-destructive"
-                      }`}
-                    >
-                      {dailyChange >= 0 ? (
-                        <ArrowUpRight className="h-4 w-4" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4" />
-                      )}
-                      {formatPercent(dailyChange)}
-                    </span>
-                    <span className="text-sm text-foreground-muted">variação</span>
-                  </div>
-                  {totalUnrealizedPnlPct !== null && (
-                    <>
-                      <div className="h-6 w-px bg-border" />
-                      <span className="text-sm text-foreground-muted">
-                        <span className={`font-mono font-semibold ${totalUnrealizedPnlPct >= 0 ? "text-success" : "text-destructive"}`}>
-                          {formatPercent(totalUnrealizedPnlPct)}
-                        </span>{" "}
-                        total
-                      </span>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <Button variant="outline" size="lg" onClick={() => window.location.reload()}>
+      {/* Hero Section - Glass NAV Card */}
+      <GlassHeroCard
+        label="Patrimonio Liquido"
+        value={formatCurrency(totalValue)}
+        change={dailyChange}
+        changeLabel="variacao"
+        isLoading={isLoading}
+        badge={
+          portfolioSummary?.last_price_update ? (
+            <Badge variant="vermillion" size="lg">
+              <Calendar className="h-3 w-3 mr-1" />
+              Atualizado {new Date(portfolioSummary.last_price_update).toLocaleString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+              })}
+            </Badge>
+          ) : (
+            <Badge variant="outline" size="lg">
+              <Calendar className="h-3 w-3 mr-1" />
+              Cotacoes nao sincronizadas
+            </Badge>
+          )
+        }
+        actions={
+          <>
+            <Button variant="glass" size="lg" onClick={() => window.location.reload()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar
             </Button>
@@ -180,24 +129,25 @@ export default function DashboardPage() {
                 Importar Extrato
               </a>
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {/* Summary Cards */}
+      {/* Summary Cards - Glass Style */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <DataCard
           title="Valor da Cota"
           value={shareValue !== null ? formatCurrency(shareValue) : "R$ --"}
           change={dailyReturn !== null ? dailyReturn * 100 : undefined}
           icon={Coins}
-          variant="highlight"
+          variant="glass-accent"
           isLoading={isLoading || isLoadingFundShare}
         />
         <DataCard
           title="Custo Total"
           value={formatCurrency(totalCost)}
           icon={TrendingUp}
+          variant="glass"
           isLoading={isLoading}
         />
         <DataCard
@@ -212,18 +162,19 @@ export default function DashboardPage() {
           title="P&L Realizado"
           value={formatCurrency(totalRealizedPnl)}
           icon={Wallet}
-          variant={totalRealizedPnl >= 0 ? "default" : "destructive"}
+          variant="glass"
           isLoading={isLoading}
         />
         <DataCard
           title="Posicoes Ativas"
           value={portfolioSummary?.total_positions.toString() || "0"}
           icon={TrendingDown}
+          variant="glass"
           isLoading={isLoading}
         />
       </div>
 
-      {/* Charts Section */}
+      {/* Charts Section - Glass Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Chart - NAV Evolution */}
         <NavEvolutionChart />
@@ -232,11 +183,11 @@ export default function DashboardPage() {
         <AllocationChart />
       </div>
 
-      {/* Positions Table */}
-      <Card variant="elevated">
+      {/* Positions Table - Glass Style */}
+      <Card variant="glass">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="font-display text-xl">POSIÇÕES ABERTAS</CardTitle>
-          <Button variant="outline" size="sm" asChild>
+          <CardTitle className="font-display text-xl">Posicoes Abertas</CardTitle>
+          <Button variant="glass" size="sm" asChild>
             <a href="/positions">
               Ver todas
               <ArrowUpRight className="h-4 w-4 ml-2" />
@@ -247,9 +198,9 @@ export default function DashboardPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center justify-between py-4 border-b border-border/50">
+                <div key={i} className="flex items-center justify-between py-4 border-b border-white/5">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 skeleton rounded-lg" />
+                    <div className="h-10 w-10 skeleton rounded-xl" />
                     <div className="space-y-2">
                       <div className="h-4 w-20 skeleton rounded" />
                       <div className="h-3 w-32 skeleton rounded" />
@@ -260,13 +211,13 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : positions.length === 0 || hasNoData ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 glass-card-subtle rounded-xl">
               <Wallet className="h-12 w-12 text-foreground-dim mx-auto mb-4" />
               <p className="text-foreground-muted mb-2">
-                Nenhuma posição encontrada
+                Nenhuma posicao encontrada
               </p>
               <p className="text-sm text-foreground-dim mb-6">
-                Importe um extrato para começar a acompanhar seus investimentos
+                Importe um extrato para comecar a acompanhar seus investimentos
               </p>
               <Button asChild>
                 <a href="/documents">
@@ -279,24 +230,24 @@ export default function DashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-xs uppercase tracking-wider text-foreground-muted font-medium">
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-3 px-4 text-glass-label font-medium">
                       Ativo
                     </th>
-                    <th className="text-right py-3 px-4 text-xs uppercase tracking-wider text-foreground-muted font-medium">
+                    <th className="text-right py-3 px-4 text-glass-label font-medium">
                       Quantidade
                     </th>
-                    <th className="text-right py-3 px-4 text-xs uppercase tracking-wider text-foreground-muted font-medium">
-                      Preço Médio
+                    <th className="text-right py-3 px-4 text-glass-label font-medium">
+                      Preco Medio
                     </th>
-                    <th className="text-right py-3 px-4 text-xs uppercase tracking-wider text-foreground-muted font-medium">
-                      Preço Atual
+                    <th className="text-right py-3 px-4 text-glass-label font-medium">
+                      Preco Atual
                     </th>
-                    <th className="text-right py-3 px-4 text-xs uppercase tracking-wider text-foreground-muted font-medium">
+                    <th className="text-right py-3 px-4 text-glass-label font-medium">
                       P&L
                     </th>
-                    <th className="text-right py-3 px-4 text-xs uppercase tracking-wider text-foreground-muted font-medium">
-                      Variação
+                    <th className="text-right py-3 px-4 text-glass-label font-medium">
+                      Variacao
                     </th>
                   </tr>
                 </thead>
@@ -311,13 +262,13 @@ export default function DashboardPage() {
                     return (
                       <tr
                         key={position.id}
-                        className="border-b border-border/50 hover:bg-background-surface/50 transition-colors cursor-pointer"
+                        className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer animate-fade-in"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 border border-gold/20">
-                              <span className="font-mono text-xs font-semibold text-gold">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-vermillion/10 border border-vermillion/20">
+                              <span className="font-mono text-xs font-semibold text-vermillion">
                                 {position.ticker.slice(0, 2)}
                               </span>
                             </div>
