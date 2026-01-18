@@ -23,8 +23,11 @@ module.exports = {
         mono: ['var(--font-mono)', ...defaultTheme.fontFamily.mono],
       },
       colors: {
-        border: "hsl(var(--border))",
-        "border-hover": "hsl(var(--border-hover))",
+        border: {
+          DEFAULT: "hsl(var(--border))",
+          hover: "hsl(var(--border-hover))",
+          subtle: "hsl(var(--border-subtle))",
+        },
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: {
@@ -48,7 +51,6 @@ module.exports = {
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
-          dark: "hsl(var(--destructive-dark))",
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
@@ -67,15 +69,15 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Semantic colors
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          light: "hsl(var(--gold-light))",
-          dark: "hsl(var(--gold-dark))",
+        // Performance colors (the only vibrant colors in the terminal theme)
+        positive: {
+          DEFAULT: "hsl(var(--positive))",
+        },
+        negative: {
+          DEFAULT: "hsl(var(--negative))",
         },
         success: {
           DEFAULT: "hsl(var(--success))",
-          vibrant: "hsl(var(--success-vibrant))",
           foreground: "hsl(var(--success-foreground))",
         },
         warning: {
@@ -91,13 +93,6 @@ module.exports = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-      },
-      boxShadow: {
-        'glow-gold': '0 0 20px hsl(var(--gold) / 0.3)',
-        'glow-gold-sm': '0 0 10px hsl(var(--gold) / 0.2)',
-        'glow-gold-lg': '0 0 30px hsl(var(--gold) / 0.4)',
-        'glow-success': '0 0 15px hsl(var(--success) / 0.3)',
-        'glow-destructive': '0 0 15px hsl(var(--destructive) / 0.3)',
       },
       keyframes: {
         "accordion-down": {
@@ -124,10 +119,6 @@ module.exports = {
           from: { opacity: 0, transform: "translateX(-20px)" },
           to: { opacity: 1, transform: "translateX(0)" },
         },
-        "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 15px hsl(var(--gold) / 0.2)" },
-          "50%": { boxShadow: "0 0 25px hsl(var(--gold) / 0.4)" },
-        },
         "shimmer": {
           from: { backgroundPosition: "-200% 0" },
           to: { backgroundPosition: "200% 0" },
@@ -148,7 +139,6 @@ module.exports = {
         "fade-in-up": "fade-in-up 0.5s ease-out forwards",
         "slide-in-right": "slide-in-right 0.4s ease-out forwards",
         "slide-in-left": "slide-in-left 0.4s ease-out forwards",
-        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "shimmer": "shimmer 1.5s infinite",
         "scale-in": "scale-in 0.3s ease-out forwards",
         "number-tick": "number-tick 0.3s ease-out forwards",
@@ -158,8 +148,6 @@ module.exports = {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-gold': 'linear-gradient(135deg, hsl(var(--gold-light)), hsl(var(--gold)))',
-        'gradient-dark': 'linear-gradient(180deg, hsl(var(--background-elevated)), hsl(var(--background)))',
       },
     },
   },

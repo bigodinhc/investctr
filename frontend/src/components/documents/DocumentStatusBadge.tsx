@@ -11,7 +11,7 @@ interface DocumentStatusBadgeProps {
 
 const STATUS_CONFIG: Record<ParsingStatus, {
   label: string;
-  variant: "default" | "secondary" | "success" | "destructive" | "warning" | "info" | "gold";
+  variant: "default" | "secondary" | "success" | "destructive" | "warning" | "info" | "muted";
   icon: React.ReactNode;
 }> = {
   pending: {

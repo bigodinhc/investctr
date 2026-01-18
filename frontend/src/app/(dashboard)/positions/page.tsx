@@ -170,8 +170,8 @@ export default function PositionsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="font-display text-3xl tracking-tight">
-            <span className="text-gradient-gold">Posições</span>
+          <h1 className="font-display text-3xl tracking-tight text-foreground">
+            Posições
           </h1>
           <p className="text-foreground-muted">
             Visualize seu portfólio e posições atuais
@@ -194,7 +194,7 @@ export default function PositionsPage() {
               <Filter className="h-4 w-4 mr-2" />
               Filtros
               {hasFilters && (
-                <Badge variant="gold" className="ml-2">
+                <Badge variant="muted" className="ml-2">
                   {Object.values(filters).filter((v) => v).length}
                 </Badge>
               )}
@@ -300,8 +300,8 @@ export default function PositionsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card variant="elevated" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <PieChart className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface">
+              <PieChart className="h-5 w-5 text-foreground" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Posições</p>
@@ -326,8 +326,8 @@ export default function PositionsPage() {
         </Card>
         <Card variant="elevated" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <BarChart3 className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface">
+              <BarChart3 className="h-5 w-5 text-foreground" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Valor de Mercado</p>
@@ -375,8 +375,8 @@ export default function PositionsPage() {
         <Card variant="elevated">
           <CardHeader className="pb-4">
             <CardTitle className="font-display text-xl flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-                <PieChart className="h-4 w-4 text-gold" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-surface">
+                <PieChart className="h-4 w-4 text-foreground" />
               </div>
               ALOCAÇÃO POR TIPO
             </CardTitle>
@@ -392,7 +392,7 @@ export default function PositionsPage() {
                     className="p-4 rounded-lg bg-background-surface border border-border-subtle"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <Icon className="h-4 w-4 text-gold" />
+                      <Icon className="h-4 w-4 text-foreground" />
                       <span className="text-sm font-medium">{typeInfo.label}</span>
                     </div>
                     <p className="font-mono text-lg font-semibold">
@@ -418,8 +418,8 @@ export default function PositionsPage() {
       <Card variant="elevated">
         <CardHeader className="pb-4">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <TrendingUp className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-surface">
+              <TrendingUp className="h-4 w-4 text-foreground" />
             </div>
             {viewMode === "detailed" ? "MINHAS POSIÇÕES" : "POSIÇÕES CONSOLIDADAS"}
           </CardTitle>
@@ -441,8 +441,8 @@ export default function PositionsPage() {
             </div>
           ) : positions.length === 0 ? (
             <div className="text-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10 mx-auto mb-6">
-                <TrendingUp className="h-8 w-8 text-gold" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-background-surface mx-auto mb-6">
+                <TrendingUp className="h-8 w-8 text-foreground" />
               </div>
               <h3 className="font-display text-xl mb-2">Nenhuma posição</h3>
               <p className="text-foreground-muted max-w-sm mx-auto">

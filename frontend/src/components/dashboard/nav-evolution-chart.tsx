@@ -25,6 +25,9 @@ const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
   { value: "MAX", label: "MAX" },
 ];
 
+// Terminal green color for positive performance
+const CHART_COLOR = "#22B573";
+
 interface ChartDataPoint {
   date: string;
   nav: number;
@@ -61,7 +64,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
       <p className="text-xs text-foreground-muted mb-1">
         {formatDateForTooltip(data.date)}
       </p>
-      <p className="text-lg font-mono font-semibold text-gradient-gold">
+      <p className="text-lg font-mono font-semibold text-foreground">
         {formatCurrency(data.nav)}
       </p>
     </div>
@@ -139,7 +142,7 @@ export function NavEvolutionChart() {
               onClick={() => setSelectedPeriod(option.value)}
               className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
                 selectedPeriod === option.value
-                  ? "bg-gold/10 text-gold"
+                  ? "bg-background-surface text-foreground"
                   : "text-foreground-muted hover:text-foreground hover:bg-background-surface"
               }`}
             >
@@ -185,8 +188,8 @@ export function NavEvolutionChart() {
             >
               <defs>
                 <linearGradient id="navGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
+                  <stop offset="5%" stopColor={CHART_COLOR} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={CHART_COLOR} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -220,14 +223,14 @@ export function NavEvolutionChart() {
               <Area
                 type="monotone"
                 dataKey="nav"
-                stroke="#D4AF37"
+                stroke={CHART_COLOR}
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#navGradient)"
                 dot={false}
                 activeDot={{
                   r: 6,
-                  fill: "#D4AF37",
+                  fill: CHART_COLOR,
                   stroke: "hsl(var(--background))",
                   strokeWidth: 2,
                 }}

@@ -56,9 +56,9 @@ const TRANSACTION_TYPE_LABELS: Record<TransactionType, { label: string; color: s
   income: { label: "Rendimento", color: "info" },
   amortization: { label: "Amortização", color: "warning" },
   split: { label: "Desdobramento", color: "warning" },
-  subscription: { label: "Subscrição", color: "gold" },
-  transfer_in: { label: "Transf. Entrada", color: "gold" },
-  transfer_out: { label: "Transf. Saída", color: "gold" },
+  subscription: { label: "Subscrição", color: "secondary" },
+  transfer_in: { label: "Transf. Entrada", color: "secondary" },
+  transfer_out: { label: "Transf. Saída", color: "secondary" },
   rental: { label: "Aluguel", color: "secondary" },
   other: { label: "Outro", color: "secondary" },
 };
@@ -186,7 +186,7 @@ export default function TransactionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-3xl tracking-tight">
-            <span className="text-gradient-gold">Transações</span>
+            <span className="text-foreground">Transações</span>
           </h1>
           <p className="text-foreground-muted">
             Visualize e gerencie todas as suas transações
@@ -201,7 +201,7 @@ export default function TransactionsPage() {
             <Filter className="h-4 w-4 mr-2" />
             Filtros
             {hasFilters && (
-              <Badge variant="gold" className="ml-2">
+              <Badge variant="muted" className="ml-2">
                 {Object.values(filters).filter((v) => v).length}
               </Badge>
             )}
@@ -300,8 +300,8 @@ export default function TransactionsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card variant="elevated" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <TrendingUp className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface">
+              <TrendingUp className="h-5 w-5 text-foreground" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Total</p>
@@ -350,8 +350,8 @@ export default function TransactionsPage() {
       <Card variant="elevated">
         <CardHeader className="pb-4">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <TrendingUp className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-surface">
+              <TrendingUp className="h-4 w-4 text-foreground" />
             </div>
             HISTÓRICO DE TRANSAÇÕES
           </CardTitle>
@@ -373,8 +373,8 @@ export default function TransactionsPage() {
             </div>
           ) : transactions.length === 0 ? (
             <div className="text-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10 mx-auto mb-6">
-                <TrendingUp className="h-8 w-8 text-gold" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-background-surface mx-auto mb-6">
+                <TrendingUp className="h-8 w-8 text-foreground" />
               </div>
               <h3 className="font-display text-xl mb-2">Nenhuma transação</h3>
               <p className="text-foreground-muted max-w-sm mx-auto">
@@ -420,8 +420,6 @@ export default function TransactionsPage() {
                                 ? "info"
                                 : typeInfo.color === "warning"
                                 ? "warning"
-                                : typeInfo.color === "gold"
-                                ? "gold"
                                 : "secondary"
                             }
                           >
@@ -453,7 +451,7 @@ export default function TransactionsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                              className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                               onClick={() => handleEdit(txn)}
                             >
                               <Pencil className="h-4 w-4" />

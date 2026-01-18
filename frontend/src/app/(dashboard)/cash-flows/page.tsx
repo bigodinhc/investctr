@@ -203,7 +203,7 @@ export default function CashFlowsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-display text-3xl tracking-tight">
-            <span className="text-gradient-gold">Aportes e Saques</span>
+            <span className="text-foreground">Aportes e Saques</span>
           </h1>
           <p className="text-foreground-muted">
             Gerencie seus aportes e retiradas de capital
@@ -218,7 +218,7 @@ export default function CashFlowsPage() {
             <Filter className="h-4 w-4 mr-2" />
             Filtros
             {hasFilters && (
-              <Badge variant="gold" className="ml-2">
+              <Badge variant="muted" className="ml-2">
                 {Object.values(filters).filter((v) => v).length}
               </Badge>
             )}
@@ -280,8 +280,8 @@ export default function CashFlowsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card variant="elevated" className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10">
-              <Wallet className="h-5 w-5 text-gold" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface">
+              <Wallet className="h-5 w-5 text-foreground" />
             </div>
             <div>
               <p className="text-sm text-foreground-muted">Total</p>
@@ -336,8 +336,8 @@ export default function CashFlowsPage() {
       <Card variant="elevated">
         <CardHeader className="pb-4">
           <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10">
-              <Wallet className="h-4 w-4 text-gold" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background-surface">
+              <Wallet className="h-4 w-4 text-foreground" />
             </div>
             HISTORICO DE MOVIMENTACOES
           </CardTitle>
@@ -358,8 +358,8 @@ export default function CashFlowsPage() {
             </div>
           ) : cashFlows.length === 0 ? (
             <div className="text-center py-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/10 mx-auto mb-6">
-                <Wallet className="h-8 w-8 text-gold" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-background-surface mx-auto mb-6">
+                <Wallet className="h-8 w-8 text-foreground" />
               </div>
               <h3 className="font-display text-xl mb-2">Nenhuma movimentacao</h3>
               <p className="text-foreground-muted max-w-sm mx-auto mb-6">
@@ -427,7 +427,7 @@ export default function CashFlowsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                              className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
                               onClick={() => handleEdit(cf)}
                             >
                               <Pencil className="h-4 w-4" />

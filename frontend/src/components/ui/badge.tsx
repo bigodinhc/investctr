@@ -20,16 +20,15 @@ const badgeVariants = cva(
           "border-transparent bg-warning/15 text-warning",
         info:
           "border-transparent bg-info/15 text-info",
-        gold:
-          "border-transparent bg-gold/15 text-gold",
         outline:
           "border-border text-foreground",
-        "outline-gold":
-          "border-gold/50 text-gold bg-gold/5",
         "outline-success":
           "border-success/50 text-success bg-success/5",
         "outline-destructive":
           "border-destructive/50 text-destructive bg-destructive/5",
+        // Terminal-style muted badge
+        muted:
+          "border-border-subtle bg-background-surface text-foreground-muted",
       },
       size: {
         default: "px-2.5 py-0.5 text-xs",

@@ -175,8 +175,8 @@ export function UploadZone({ onUploadSuccess, onUploadError, className }: Upload
         {...getRootProps()}
         className={cn(
           "relative rounded-xl border-2 border-dashed p-8 transition-all duration-200 cursor-pointer",
-          "hover:border-gold/50 hover:bg-gold/5",
-          isDragActive && "border-gold bg-gold/10",
+          "hover:border-foreground/50 hover:bg-foreground/5",
+          isDragActive && "border-foreground bg-foreground/10",
           isDragReject && "border-destructive bg-destructive/10",
           !isDragActive && !isDragReject && "border-border-subtle bg-background-subtle"
         )}
@@ -186,13 +186,13 @@ export function UploadZone({ onUploadSuccess, onUploadError, className }: Upload
           <div
             className={cn(
               "flex h-16 w-16 items-center justify-center rounded-2xl mb-4 transition-colors",
-              isDragActive ? "bg-gold/20" : "bg-gold/10"
+              isDragActive ? "bg-foreground/20" : "bg-foreground/10"
             )}
           >
             <Upload
               className={cn(
                 "h-8 w-8 transition-colors",
-                isDragActive ? "text-gold" : "text-gold/70"
+                isDragActive ? "text-foreground" : "text-foreground/70"
               )}
             />
           </div>
@@ -253,7 +253,7 @@ export function UploadZone({ onUploadSuccess, onUploadError, className }: Upload
                   "flex items-center gap-3 p-3 rounded-lg border transition-colors",
                   fileData.status === "success" && "bg-success/5 border-success/20",
                   fileData.status === "error" && "bg-destructive/5 border-destructive/20",
-                  fileData.status === "uploading" && "bg-gold/5 border-gold/20",
+                  fileData.status === "uploading" && "bg-foreground/5 border-foreground/20",
                   fileData.status === "pending" && "bg-background-subtle border-border-subtle"
                 )}
               >
@@ -262,18 +262,18 @@ export function UploadZone({ onUploadSuccess, onUploadError, className }: Upload
                     "flex h-10 w-10 items-center justify-center rounded-lg",
                     fileData.status === "success" && "bg-success/10",
                     fileData.status === "error" && "bg-destructive/10",
-                    fileData.status === "uploading" && "bg-gold/10",
-                    fileData.status === "pending" && "bg-gold/10"
+                    fileData.status === "uploading" && "bg-foreground/10",
+                    fileData.status === "pending" && "bg-foreground/10"
                   )}
                 >
                   {fileData.status === "uploading" ? (
-                    <Loader2 className="h-5 w-5 text-gold animate-spin" />
+                    <Loader2 className="h-5 w-5 text-foreground animate-spin" />
                   ) : fileData.status === "success" ? (
                     <CheckCircle2 className="h-5 w-5 text-success" />
                   ) : fileData.status === "error" ? (
                     <AlertCircle className="h-5 w-5 text-destructive" />
                   ) : (
-                    <FileText className="h-5 w-5 text-gold" />
+                    <FileText className="h-5 w-5 text-foreground" />
                   )}
                 </div>
 

@@ -14,18 +14,18 @@ import { usePortfolioAllocation } from "@/hooks/use-portfolio";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { PieChart as PieChartIcon } from "lucide-react";
 
-// Gold-themed color palette
+// Terminal-style neutral color palette (grays with subtle variations)
 const COLORS = [
-  "#D4AF37", // Gold
-  "#B8860B", // Dark golden rod
-  "#DAA520", // Goldenrod
-  "#FFD700", // Gold bright
-  "#F0E68C", // Khaki
-  "#CD853F", // Peru
-  "#DEB887", // Burlywood
-  "#D2691E", // Chocolate
-  "#8B4513", // Saddle brown
-  "#A0522D", // Sienna
+  "#FAFAFA", // White (brightest)
+  "#A3A3A3", // Neutral gray
+  "#737373", // Medium gray
+  "#525252", // Dark gray
+  "#404040", // Darker gray
+  "#22B573", // Green (for accents)
+  "#D4D4D4", // Light gray
+  "#8A8A8A", // Mid gray
+  "#5C5C5C", // Charcoal
+  "#363636", // Near black
 ];
 
 interface ChartDataPoint {
@@ -48,7 +48,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   return (
     <div className="bg-background-elevated border border-border rounded-lg p-3 shadow-lg">
       <p className="text-sm font-semibold mb-1">{data.name}</p>
-      <p className="text-lg font-mono font-semibold text-gradient-gold">
+      <p className="text-lg font-mono font-semibold text-foreground">
         {formatCurrency(data.value)}
       </p>
       <p className="text-xs text-foreground-muted">
@@ -172,7 +172,7 @@ export function AllocationChart() {
             {/* Center label */}
             <div className="text-center -mt-28 mb-24 pointer-events-none">
               <p className="text-xs text-foreground-muted">Total</p>
-              <p className="font-mono text-sm font-semibold text-gradient-gold">
+              <p className="font-mono text-sm font-semibold text-foreground">
                 {formatCurrency(totalValue)}
               </p>
             </div>

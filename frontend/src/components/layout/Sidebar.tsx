@@ -50,11 +50,11 @@ export function Sidebar() {
             collapsed && "justify-center"
           )}
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 border border-gold/20">
-            <TrendingUp className="h-5 w-5 text-gold" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-foreground/10 border border-border">
+            <TrendingUp className="h-5 w-5 text-foreground" />
           </div>
           {!collapsed && (
-            <span className="font-display text-2xl text-gradient-gold tracking-wider">
+            <span className="font-display text-2xl text-foreground tracking-wider">
               INVESTCTR
             </span>
           )}
@@ -86,19 +86,19 @@ export function Sidebar() {
                 "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 collapsed && "justify-center px-2",
                 isActive
-                  ? "bg-gold/10 text-gold shadow-glow-gold-sm"
+                  ? "bg-background-surface text-foreground"
                   : "text-foreground-muted hover:bg-background-surface hover:text-foreground"
               )}
             >
               {/* Active indicator */}
               {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gold rounded-r-full" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-foreground rounded-r-full" />
               )}
 
               <item.icon
                 className={cn(
                   "h-5 w-5 shrink-0 transition-colors",
-                  isActive ? "text-gold" : "text-foreground-muted group-hover:text-foreground"
+                  isActive ? "text-foreground" : "text-foreground-muted group-hover:text-foreground"
                 )}
               />
 
@@ -132,18 +132,18 @@ export function Sidebar() {
                 "group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 collapsed && "justify-center px-2",
                 isActive
-                  ? "bg-gold/10 text-gold shadow-glow-gold-sm"
+                  ? "bg-background-surface text-foreground"
                   : "text-foreground-muted hover:bg-background-surface hover:text-foreground"
               )}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gold rounded-r-full" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-foreground rounded-r-full" />
               )}
 
               <item.icon
                 className={cn(
                   "h-5 w-5 shrink-0 transition-colors",
-                  isActive ? "text-gold" : "text-foreground-muted group-hover:text-foreground"
+                  isActive ? "text-foreground" : "text-foreground-muted group-hover:text-foreground"
                 )}
               />
 
@@ -166,7 +166,7 @@ export function Sidebar() {
         <div className="p-4 border-t border-border">
           <div className="flex items-center justify-between text-xs text-foreground-dim">
             <span>v1.0.0 MVP</span>
-            <span className="px-1.5 py-0.5 rounded bg-gold/10 text-gold text-[10px] font-medium">
+            <span className="px-1.5 py-0.5 rounded bg-background-surface text-foreground-muted text-[10px] font-medium">
               BETA
             </span>
           </div>
