@@ -537,9 +537,9 @@ async def get_portfolio_history(
     result = await db.execute(query)
     snapshots = list(result.scalars().all())
 
-    # If no consolidated snapshots, try getting all snapshots and aggregate
+    # If no consolidated snapshots found, try getting consolidated snapshots aggregated by date
     if not snapshots and not account_id:
-        # Get all snapshots grouped by date
+        # Get consolidated snapshots (account_id IS NULL) grouped by date
         subquery = (
             select(
                 PortfolioSnapshot.date,
@@ -549,6 +549,7 @@ async def get_portfolio_history(
                 func.sum(PortfolioSnapshot.unrealized_pnl).label("unrealized_pnl"),
             )
             .where(PortfolioSnapshot.user_id == user.id)
+            .where(PortfolioSnapshot.account_id.is_(None))
             .where(PortfolioSnapshot.date >= start_date)
             .where(PortfolioSnapshot.date <= today)
             .group_by(PortfolioSnapshot.date)
