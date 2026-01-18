@@ -4,6 +4,15 @@
 
 import { createClient } from "@/lib/supabase/client";
 
+// Singleton para manter consistência de sessão
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
+function getSupabase() {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient();
+  }
+  return supabaseInstance;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface ApiError {
@@ -24,10 +33,12 @@ export class ApiClient {
   }
 
   private async getAuthHeaders(): Promise<HeadersInit> {
-    const supabase = createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const supabase = getSupabase();
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error("[API] Error getting session:", error);
+    }
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -35,6 +46,8 @@ export class ApiClient {
 
     if (session?.access_token) {
       headers["Authorization"] = `Bearer ${session.access_token}`;
+    } else {
+      console.warn("[API] No access token - request will be unauthenticated");
     }
 
     return headers;
@@ -67,6 +80,7 @@ export class ApiClient {
     const response = await fetch(url.toString(), {
       method: "GET",
       headers: await this.getAuthHeaders(),
+      credentials: "include",
     });
 
     return this.handleResponse<T>(response);
@@ -76,6 +90,7 @@ export class ApiClient {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "POST",
       headers: await this.getAuthHeaders(),
+      credentials: "include",
       body: data ? JSON.stringify(data) : undefined,
     });
 
@@ -86,6 +101,7 @@ export class ApiClient {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "PUT",
       headers: await this.getAuthHeaders(),
+      credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -96,6 +112,7 @@ export class ApiClient {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "DELETE",
       headers: await this.getAuthHeaders(),
+      credentials: "include",
     });
 
     return this.handleResponse<T>(response);
@@ -106,10 +123,16 @@ export class ApiClient {
     file: File,
     additionalData?: Record<string, string>
   ): Promise<T> {
-    const supabase = createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const supabase = getSupabase();
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error("[API] Error getting session for upload:", error);
+    }
+
+    if (!session?.access_token) {
+      throw new Error("Você precisa estar logado para fazer upload");
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -120,14 +143,12 @@ export class ApiClient {
       });
     }
 
-    const headers: HeadersInit = {};
-    if (session?.access_token) {
-      headers["Authorization"] = `Bearer ${session.access_token}`;
-    }
-
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "POST",
-      headers,
+      headers: {
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      credentials: "include",
       body: formData,
     });
 

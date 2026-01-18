@@ -199,25 +199,26 @@ export default function CashFlowsPage() {
             variant={hasFilters ? "default" : "outline"}
             size="lg"
             onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            aria-label="Abrir filtros"
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
+            <Filter className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Filtros</span>
             {hasFilters && (
-              <Badge variant="muted" className="ml-2">
+              <Badge variant="muted" className="ml-1 sm:ml-2">
                 {Object.values(filters).filter((v) => v).length}
               </Badge>
             )}
           </Button>
-          <Button variant="outline" size="lg" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
+          <Button variant="outline" size="lg" onClick={() => refetch()} aria-label="Atualizar lista">
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
           <Button size="lg" onClick={() => {
             resetForm();
             setIsCreateOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Movimentacao
+          }} aria-label="Nova movimentacao">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nova</span>
           </Button>
         </div>
       </div>
@@ -361,80 +362,146 @@ export default function CashFlowsPage() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Conta</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Notas</TableHead>
-                    <TableHead className="w-[100px] text-right">Acoes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {cashFlows.map((cf, index) => {
-                    const typeInfo = CASH_FLOW_TYPE_LABELS[cf.type];
-                    return (
-                      <TableRow
-                        key={cf.id}
-                        style={{ animationDelay: `${index * 30}ms` }}
-                      >
-                        <TableCell className="font-mono text-sm">
-                          {formatDate(cf.executed_at, "medium")}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={typeInfo.color === "success" ? "success" : "destructive"}
-                          >
-                            <span className="flex items-center gap-1">
-                              {cf.type === "deposit" ? (
-                                <ArrowDownLeft className="h-3 w-3" />
-                              ) : (
-                                <ArrowUpRight className="h-3 w-3" />
-                              )}
-                              {typeInfo.label}
-                            </span>
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <p className="font-medium">{getAccountName(cf.account_id)}</p>
-                        </TableCell>
-                        <TableCell className={`text-right font-mono font-semibold ${cf.type === "deposit" ? "text-success" : "text-destructive"}`}>
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {cashFlows.map((cf, index) => {
+                  const typeInfo = CASH_FLOW_TYPE_LABELS[cf.type];
+                  return (
+                    <div
+                      key={cf.id}
+                      className="p-4 rounded-lg bg-background-surface border border-border-subtle"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground">{getAccountName(cf.account_id)}</p>
+                          <p className="text-xs text-foreground-muted">{formatDate(cf.executed_at, "medium")}</p>
+                        </div>
+                        <Badge
+                          variant={typeInfo.color === "success" ? "success" : "destructive"}
+                        >
+                          <span className="flex items-center gap-1">
+                            {cf.type === "deposit" ? (
+                              <ArrowDownLeft className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpRight className="h-3 w-3" />
+                            )}
+                            {typeInfo.label}
+                          </span>
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className={`font-mono text-lg font-semibold ${cf.type === "deposit" ? "text-success" : "text-destructive"}`}>
                           {cf.type === "deposit" ? "+" : "-"}{formatCurrency(cf.amount)}
-                        </TableCell>
-                        <TableCell className="text-foreground-muted text-sm max-w-[200px] truncate">
-                          {cf.notes || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Editar ${cf.type === "deposit" ? "aporte" : "saque"}`}
-                              className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
-                              onClick={() => handleEdit(cf)}
+                        </p>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Editar ${cf.type === "deposit" ? "aporte" : "saque"}`}
+                            className="h-8 w-8"
+                            onClick={() => handleEdit(cf)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Excluir ${cf.type === "deposit" ? "aporte" : "saque"}`}
+                            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setDeletingCashFlow(cf)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {cf.notes && (
+                        <p className="text-xs text-foreground-muted mt-2 pt-2 border-t border-border-subtle truncate">
+                          {cf.notes}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Conta</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead>Notas</TableHead>
+                      <TableHead className="w-[100px] text-right">Acoes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cashFlows.map((cf, index) => {
+                      const typeInfo = CASH_FLOW_TYPE_LABELS[cf.type];
+                      return (
+                        <TableRow
+                          key={cf.id}
+                          style={{ animationDelay: `${index * 30}ms` }}
+                        >
+                          <TableCell className="font-mono text-sm">
+                            {formatDate(cf.executed_at, "medium")}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={typeInfo.color === "success" ? "success" : "destructive"}
                             >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Excluir ${cf.type === "deposit" ? "aporte" : "saque"}`}
-                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => setDeletingCashFlow(cf)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                              <span className="flex items-center gap-1">
+                                {cf.type === "deposit" ? (
+                                  <ArrowDownLeft className="h-3 w-3" />
+                                ) : (
+                                  <ArrowUpRight className="h-3 w-3" />
+                                )}
+                                {typeInfo.label}
+                              </span>
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <p className="font-medium">{getAccountName(cf.account_id)}</p>
+                          </TableCell>
+                          <TableCell className={`text-right font-mono font-semibold ${cf.type === "deposit" ? "text-success" : "text-destructive"}`}>
+                            {cf.type === "deposit" ? "+" : "-"}{formatCurrency(cf.amount)}
+                          </TableCell>
+                          <TableCell className="text-foreground-muted text-sm max-w-[200px] truncate">
+                            {cf.notes || "-"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Editar ${cf.type === "deposit" ? "aporte" : "saque"}`}
+                                className="h-8 w-8 hover:bg-background-surface hover:text-foreground"
+                                onClick={() => handleEdit(cf)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Excluir ${cf.type === "deposit" ? "aporte" : "saque"}`}
+                                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setDeletingCashFlow(cf)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

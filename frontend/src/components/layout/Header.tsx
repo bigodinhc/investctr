@@ -2,10 +2,11 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, Bell, Search, User, Menu } from "lucide-react";
+import { LogOut, Bell, Search, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "@/components/shared/CommandPalette";
+import { MobileNav } from "@/components/layout/MobileNav";
 import { cn } from "@/lib/utils";
 
 const pageNames: Record<string, string> = {
@@ -48,20 +49,15 @@ export function Header() {
   );
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b border-border bg-background-elevated">
-      <div className="flex h-full items-center justify-between px-6">
+    <header className="sticky top-0 z-40 h-14 sm:h-16 border-b border-border bg-background-elevated">
+      <div className="flex h-full items-center justify-between px-3 sm:px-6">
         {/* Left: Mobile menu + Page title */}
-        <div className="flex items-center gap-4">
-          {/* Mobile menu button */}
-          <button
-            aria-label="Abrir menu de navegação"
-            className="lg:hidden p-2 rounded-md hover:bg-background-surface transition-colors"
-          >
-            <Menu className="h-5 w-5 text-foreground-muted" />
-          </button>
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile navigation */}
+          <MobileNav />
 
           {/* Mobile logo */}
-          <span className="lg:hidden font-display text-xl text-foreground tracking-wider">
+          <span className="lg:hidden font-display text-lg sm:text-xl text-foreground tracking-wider">
             INVESTCTR
           </span>
 
@@ -92,7 +88,16 @@ export function Header() {
         <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Mobile search button */}
+          <button
+            onClick={() => setCommandOpen(true)}
+            aria-label="Abrir busca"
+            className="lg:hidden p-2 rounded-md hover:bg-background-surface transition-colors"
+          >
+            <Search className="h-5 w-5 text-foreground-muted" />
+          </button>
+
           {/* Notifications */}
           <button
             aria-label="Ver notificações"
@@ -104,8 +109,8 @@ export function Header() {
           </button>
 
           {/* User menu */}
-          <div className="flex items-center gap-3 pl-3 ml-2 border-l border-border">
-            <div className="hidden sm:block text-right">
+          <div className="hidden sm:flex items-center gap-3 pl-3 ml-2 border-l border-border">
+            <div className="text-right">
               <p className="text-sm font-medium text-foreground">Usuário</p>
               <p className="text-xs text-foreground-muted">Conta Premium</p>
             </div>
@@ -117,13 +122,12 @@ export function Header() {
           {/* Sign out */}
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={handleSignOut}
             aria-label="Sair da conta"
-            className="ml-2 text-foreground-muted hover:text-destructive"
+            className="ml-1 sm:ml-2 text-foreground-muted hover:text-destructive"
           >
             <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline ml-2">Sair</span>
           </Button>
         </div>
       </div>
