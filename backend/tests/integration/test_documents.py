@@ -10,11 +10,10 @@ Tests cover:
 """
 
 from io import BytesIO
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from app.schemas.enums import DocumentType, ParsingStatus

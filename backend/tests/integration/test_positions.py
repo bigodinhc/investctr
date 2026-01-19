@@ -10,15 +10,13 @@ Tests cover:
 """
 
 from decimal import Decimal
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
-from app.schemas.enums import AssetType, PositionType
-from tests.conftest import TEST_USER_ID
+from app.schemas.enums import AssetType
 
 
 pytestmark = pytest.mark.asyncio

@@ -141,7 +141,7 @@ def register_exception_handlers(app: FastAPI, is_origin_allowed: Callable[[str, 
         # Format validation errors for better readability
         formatted_errors = []
         for error in errors:
-            loc = " -> ".join(str(l) for l in error.get("loc", []))
+            loc = " -> ".join(str(part) for part in error.get("loc", []))
             formatted_errors.append({
                 "field": loc,
                 "message": error.get("msg", "Invalid value"),
@@ -171,7 +171,7 @@ def register_exception_handlers(app: FastAPI, is_origin_allowed: Callable[[str, 
         errors = exc.errors()
         formatted_errors = []
         for error in errors:
-            loc = " -> ".join(str(l) for l in error.get("loc", []))
+            loc = " -> ".join(str(part) for part in error.get("loc", []))
             formatted_errors.append({
                 "field": loc,
                 "message": error.get("msg", "Invalid value"),

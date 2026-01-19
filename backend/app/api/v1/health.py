@@ -11,7 +11,6 @@ All endpoints are public (no authentication required).
 
 import time
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel

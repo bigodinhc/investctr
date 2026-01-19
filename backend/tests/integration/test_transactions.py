@@ -10,15 +10,13 @@ Tests cover:
 
 from datetime import datetime, timedelta
 from decimal import Decimal
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from app.schemas.enums import TransactionType
-from tests.conftest import TEST_USER_ID
 
 
 pytestmark = pytest.mark.asyncio
@@ -134,7 +132,6 @@ class TestListTransactions:
         asset = await factory.create_asset()
 
         today = datetime.utcnow()
-        yesterday = today - timedelta(days=1)
         last_week = today - timedelta(days=7)
 
         await factory.create_transaction(
