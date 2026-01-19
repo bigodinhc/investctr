@@ -13,7 +13,8 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 # Claude model to use for document parsing
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+# Using Opus 4.5 for better consistency in complex document extraction
+CLAUDE_MODEL = "claude-opus-4-5-20250514"
 
 
 def _repair_truncated_json(json_str: str) -> str | None:
