@@ -71,7 +71,7 @@ export function useUploadDocument() {
       queryClient.invalidateQueries({ queryKey: documentKeys.lists() });
       toast({
         title: "Upload concluido",
-        description: `Documento "${result.filename}" enviado com sucesso.`,
+        description: `Documento "${result.file_name}" enviado com sucesso.`,
         variant: "success",
       });
     },
