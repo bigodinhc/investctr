@@ -103,7 +103,7 @@ def _log_extraction_summary(data: dict[str, Any], was_truncated: bool) -> None:
 async def parse_pdf_with_claude(
     pdf_content: bytes,
     prompt: str,
-    max_tokens: int = 32768,
+    max_tokens: int = 64000,
 ) -> dict[str, Any]:
     """
     Parse a PDF document using Claude's vision capabilities.
