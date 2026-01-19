@@ -270,19 +270,30 @@ async def parse_document(
     )
 
     if async_mode:
-        # Trigger Celery task
-        from app.workers.tasks import parse_document as parse_task
+        # Try to trigger Celery task, fallback to sync if Redis unavailable
+        try:
+            from app.workers.tasks import parse_document as parse_task
 
-        task = parse_task.delay(str(document_id), str(user.id))
+            task = parse_task.delay(str(document_id), str(user.id))
 
-        return ParseTaskResponse(
-            document_id=document_id,
-            task_id=task.id,
-            status=ParsingStatus.PENDING,
-            message="Parsing task queued successfully",
-        )
-    else:
-        # Synchronous parsing (for testing/debugging)
+            return ParseTaskResponse(
+                document_id=document_id,
+                task_id=task.id,
+                status=ParsingStatus.PENDING,
+                message="Parsing task queued successfully",
+            )
+        except Exception as celery_error:
+            # Redis/Celery not available, fallback to synchronous parsing
+            logger.warning(
+                "celery_unavailable_fallback_sync",
+                document_id=str(document_id),
+                error=str(celery_error),
+            )
+            # Continue to synchronous parsing below
+            async_mode = False
+
+    if not async_mode:
+        # Synchronous parsing (fallback or explicit)
         from app.services.parsing_service import ParsingService
 
         service = ParsingService(db)
@@ -365,17 +376,56 @@ async def reparse_document(
         user_id=str(user.id),
     )
 
-    # Trigger Celery task
-    from app.workers.tasks import parse_document as parse_task
+    # Try to trigger Celery task, fallback to sync if Redis unavailable
+    try:
+        from app.workers.tasks import parse_document as parse_task
 
-    task = parse_task.delay(str(document_id), str(user.id))
+        task = parse_task.delay(str(document_id), str(user.id))
 
-    return ParseTaskResponse(
-        document_id=document_id,
-        task_id=task.id,
-        status=ParsingStatus.PENDING,
-        message="Re-parsing task queued successfully",
-    )
+        return ParseTaskResponse(
+            document_id=document_id,
+            task_id=task.id,
+            status=ParsingStatus.PENDING,
+            message="Re-parsing task queued successfully",
+        )
+    except Exception as celery_error:
+        # Redis/Celery not available, fallback to synchronous parsing
+        logger.warning(
+            "celery_unavailable_fallback_sync_reparse",
+            document_id=str(document_id),
+            error=str(celery_error),
+        )
+
+        from app.services.parsing_service import ParsingService
+
+        service = ParsingService(db)
+        try:
+            parse_result = await service.parse_document(document_id, user.id)
+
+            return ParseTaskResponse(
+                document_id=document_id,
+                task_id="sync",
+                status=ParsingStatus.COMPLETED
+                if parse_result.success
+                else ParsingStatus.FAILED,
+                message=parse_result.error
+                or f"Re-parsed {parse_result.transaction_count} transactions",
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
+            )
+        except Exception as e:
+            logger.error(
+                "reparse_document_sync_error",
+                document_id=str(document_id),
+                error=str(e),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Re-parsing failed: {str(e)}",
+            )
 
 
 @router.post("/{document_id}/commit", response_model=CommitDocumentResponse)
