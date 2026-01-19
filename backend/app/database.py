@@ -106,4 +106,4 @@ def async_session_factory():
 
 # Alias for backward compatibility with Celery tasks
 # Usage: async with async_session_maker() as db:
-async_session_maker = get_session_maker
+async_session_maker = async_session_factory
