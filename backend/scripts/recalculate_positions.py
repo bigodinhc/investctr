@@ -11,17 +11,15 @@ Or from backend directory:
 
 import asyncio
 import sys
-from decimal import Decimal
 from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import AsyncSessionLocal
-from app.models import Account, Asset, Transaction
+from app.models import Account, Asset
 from app.services.position_service import PositionService
 from app.services.pnl_service import PnLService, PnLType
 
@@ -102,7 +100,7 @@ async def recalculate_and_report():
                 if e.pnl_type == PnLType.SHORT_CLOSE
             )
 
-            print(f"\nRealized P&L Summary:")
+            print("\nRealized P&L Summary:")
             print(f"  Total Realized P&L: R$ {pnl_summary.total_realized_pnl:,.2f}")
             print(f"  - From LONG closes ({long_close_count}): R$ {long_close_pnl:,.2f}")
             print(f"  - From SHORT closes ({short_close_count}): R$ {short_close_pnl:,.2f}")
