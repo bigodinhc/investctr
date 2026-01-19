@@ -108,6 +108,8 @@ async def parse_pdf_with_claude(
     """
     Parse a PDF document using Claude's vision capabilities.
 
+    Uses streaming to handle long-running requests (>10 minutes).
+
     Args:
         pdf_content: PDF file content as bytes
         prompt: Prompt template for extraction
@@ -128,10 +130,12 @@ async def parse_pdf_with_claude(
         "claude_parse_start",
         pdf_size=len(pdf_content),
         model=CLAUDE_MODEL,
+        max_tokens=max_tokens,
     )
 
     try:
-        message = client.messages.create(
+        # Use streaming to handle long-running requests
+        with client.messages.stream(
             model=CLAUDE_MODEL,
             max_tokens=max_tokens,
             messages=[
@@ -153,10 +157,11 @@ async def parse_pdf_with_claude(
                     ],
                 }
             ],
-        )
+        ) as stream:
+            # Collect the full response
+            response_text = stream.get_final_text()
+            message = stream.get_final_message()
 
-        # Extract text response
-        response_text = message.content[0].text
         stop_reason = message.stop_reason
 
         # Check if response was truncated
