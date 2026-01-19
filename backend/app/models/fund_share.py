@@ -6,7 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, Numeric, ForeignKey, UniqueConstraint
+from sqlalchemy import Date, DateTime, Numeric, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -22,9 +22,10 @@ class FundShare(Base, UUIDMixin):
         UniqueConstraint("user_id", "date", name="uq_fund_shares_user_date"),
     )
 
+    # Note: FK constraint to auth.users exists in DB but not in SQLAlchemy
+    # because auth.users is in a different schema managed by Supabase
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey("auth.users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

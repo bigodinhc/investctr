@@ -24,9 +24,10 @@ class PortfolioSnapshot(Base, UUIDMixin):
         ),
     )
 
+    # Note: FK constraint to auth.users exists in DB but not in SQLAlchemy
+    # because auth.users is in a different schema managed by Supabase
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey("auth.users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

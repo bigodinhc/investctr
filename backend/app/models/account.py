@@ -4,7 +4,7 @@ Account model.
 
 from uuid import UUID
 
-from sqlalchemy import Boolean, String, ForeignKey, Enum as SAEnum
+from sqlalchemy import Boolean, Enum as SAEnum, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,9 +18,10 @@ class Account(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "accounts"
 
+    # Note: FK constraint to auth.users exists in DB but not in SQLAlchemy
+    # because auth.users is in a different schema managed by Supabase
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey("auth.users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
