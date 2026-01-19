@@ -11,6 +11,7 @@ Provides consistent error response format:
 
 from typing import Any, Callable
 
+import sentry_sdk
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -252,6 +253,9 @@ def register_exception_handlers(
         request: Request, exc: IntegrityError
     ) -> JSONResponse:
         """Handle database integrity constraint violations."""
+        # Capture in Sentry for monitoring
+        sentry_sdk.capture_exception(exc)
+
         logger.error(
             "database_integrity_error",
             error=str(exc),
@@ -281,6 +285,9 @@ def register_exception_handlers(
         request: Request, exc: OperationalError
     ) -> JSONResponse:
         """Handle database connection/operational errors."""
+        # Capture in Sentry for monitoring
+        sentry_sdk.capture_exception(exc)
+
         logger.error(
             "database_operational_error",
             error=str(exc),
@@ -299,6 +306,9 @@ def register_exception_handlers(
     @app.exception_handler(DBAPIError)
     async def dbapi_error_handler(request: Request, exc: DBAPIError) -> JSONResponse:
         """Handle database API errors."""
+        # Capture in Sentry for monitoring
+        sentry_sdk.capture_exception(exc)
+
         logger.error(
             "database_api_error",
             error=str(exc),
@@ -319,6 +329,9 @@ def register_exception_handlers(
         request: Request, exc: SQLAlchemyError
     ) -> JSONResponse:
         """Handle general SQLAlchemy errors."""
+        # Capture in Sentry for monitoring
+        sentry_sdk.capture_exception(exc)
+
         logger.error(
             "sqlalchemy_error",
             error=str(exc),
@@ -340,6 +353,9 @@ def register_exception_handlers(
         request: Request, exc: Exception
     ) -> JSONResponse:
         """Handle all unhandled exceptions (catch-all)."""
+        # Capture in Sentry for monitoring
+        sentry_sdk.capture_exception(exc)
+
         logger.exception(
             "unhandled_exception",
             error=str(exc),

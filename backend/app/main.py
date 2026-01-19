@@ -13,6 +13,8 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.errors import ServerErrorMiddleware
 
+import sentry_sdk
+
 from app.api.router import api_router
 from app.config import settings
 from app.core.error_handlers import register_exception_handlers
@@ -20,6 +22,7 @@ from app.core.logging import get_logger, setup_logging
 from app.core.middleware import RequestLoggingMiddleware
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.redis import close_redis
+from app.core.sentry import init_sentry
 
 logger = get_logger(__name__)
 
@@ -161,6 +164,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup and shutdown events."""
     # Startup
     setup_logging()
+
+    # Initialize Sentry for error monitoring (before other services)
+    sentry_initialized = init_sentry()
+    if sentry_initialized:
+        logger.info("sentry_initialized", environment=settings.environment)
+
     logger.info(
         "application_startup",
         app_name=settings.app_name,
@@ -209,6 +218,9 @@ def create_application() -> FastAPI:
         # Only allow configured origins (with wildcard support)
         if not is_origin_allowed(origin, settings.cors_origins):
             origin = settings.cors_origins[0] if settings.cors_origins else "*"
+
+        # Capture exception in Sentry
+        sentry_sdk.capture_exception(exc)
 
         logger.exception(
             "server_error_middleware",

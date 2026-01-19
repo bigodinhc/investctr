@@ -29,6 +29,9 @@ anthropic>=0.18.0
 # Logging
 structlog>=24.1.0
 
+# Monitoring
+sentry-sdk[fastapi,celery]>=2.0.0
+
 # Utilities
 python-multipart>=0.0.9
 python-dateutil>=2.8.2

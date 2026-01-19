@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     lseg_username: str | None = None
     lseg_password: str | None = None
 
+    # Sentry (Error Monitoring)
+    sentry_dsn: str | None = None
+
     # CORS - accepts comma-separated string or JSON array
     # Supports wildcard patterns for Vercel preview deployments
     cors_origins: list[str] = Field(
