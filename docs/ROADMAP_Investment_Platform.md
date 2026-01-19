@@ -485,7 +485,7 @@ Layout Dashboard:
 
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
-| 6.2.1 | Error boundaries | [P] | 1h | - | ⬜ |
+| 6.2.1 | Error boundaries | [P] | 1h | - | ✅ |
 | 6.2.2 | Loading skeletons | [P] | 2h | - | ✅ |
 | 6.2.3 | Toast de feedback (sucesso/erro) | [P] | 1h | - | ✅ |
 | 6.2.4 | Empty states | [P] | 1h | - | ✅ |
@@ -502,7 +502,7 @@ Layout Dashboard:
 | 6.3.2 | Setup domínio customizado | [P] | 1h | - | ⬜ |
 | 6.3.3 | CI/CD pipeline (GitHub Actions) | [S] | 2h | - | ✅ |
 | 6.3.4 | Backup automático Supabase | [P] | 30min | - | ⬜ |
-| 6.3.5 | Monitoramento (Sentry) | [P] | 1h | - | ⬜ |
+| 6.3.5 | Monitoramento (Sentry) | [P] | 1h | - | ✅ |
 | 6.3.6 | Deploy final produção | [S] | 1h | 6.3.1 | ✅ |
 | 6.3.7 | Smoke tests em produção | [S] | 1h | 6.3.6 | ⬜ |
 
