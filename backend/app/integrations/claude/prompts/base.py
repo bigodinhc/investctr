@@ -40,6 +40,11 @@ class BasePrompt(ABC):
     def get_json_instruction() -> str:
         """Return standard JSON output instruction."""
         return """
-IMPORTANT: Return ONLY valid JSON. Do not include any text before or after the JSON.
-Do not wrap the JSON in markdown code blocks. Just return the raw JSON object.
+IMPORTANT OUTPUT RULES:
+1. Return ONLY valid JSON. Do not include any text before or after the JSON.
+2. Do not wrap the JSON in markdown code blocks. Just return the raw JSON object.
+3. Keep values concise - use null instead of empty strings or "N/A".
+4. For notes/descriptions, be brief (max 50 chars).
+5. CRITICAL: Ensure the JSON is COMPLETE. Do not truncate the output.
+6. If the document has many transactions (50+), prioritize the most important ones.
 """
