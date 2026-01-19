@@ -6,11 +6,12 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy import select
 
 from app.api.deps import AuthenticatedUser, DBSession, Pagination
 from app.core.logging import get_logger
+from app.core.rate_limit import rate_limit
 from app.models import Account, Asset, Document, Transaction
 from app.schemas.document import (
     DocumentParseRequest,
@@ -68,7 +69,9 @@ async def list_documents(
 @router.post(
     "/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED
 )
+@rate_limit(requests=10, window=60, group="upload")
 async def upload_document(
+    request: Request,
     user: AuthenticatedUser,
     db: DBSession,
     file: UploadFile = File(...),
@@ -198,11 +201,13 @@ async def delete_document(
 
 
 @router.post("/{document_id}/parse", response_model=ParseTaskResponse)
+@rate_limit(requests=5, window=60, group="parse")
 async def parse_document(
+    request: Request,
     user: AuthenticatedUser,
     db: DBSession,
     document_id: UUID,
-    request: DocumentParseRequest | None = None,
+    parse_request: DocumentParseRequest | None = None,
 ) -> ParseTaskResponse:
     """
     Trigger parsing of a document.
@@ -211,9 +216,11 @@ async def parse_document(
     The document status will be updated to 'processing' immediately,
     and will change to 'completed' or 'failed' when parsing finishes.
 
+    Rate limited to 5 requests/minute (Claude API).
+
     Args:
         document_id: UUID of the document to parse
-        request: Optional configuration (async_mode defaults to True)
+        parse_request: Optional configuration (async_mode defaults to True)
 
     Returns:
         ParseTaskResponse with task_id for tracking
@@ -221,6 +228,7 @@ async def parse_document(
     Raises:
         404: Document not found
         400: Document already parsed or currently processing
+        429: Rate limit exceeded
     """
     # Get document
     query = (
@@ -252,7 +260,7 @@ async def parse_document(
         )
 
     # Use async mode by default
-    async_mode = True if request is None else request.async_mode
+    async_mode = True if parse_request is None else parse_request.async_mode
 
     logger.info(
         "parse_document_endpoint",
@@ -308,7 +316,9 @@ async def parse_document(
 
 
 @router.post("/{document_id}/reparse", response_model=ParseTaskResponse)
+@rate_limit(requests=5, window=60, group="parse")
 async def reparse_document(
+    request: Request,
     user: AuthenticatedUser,
     db: DBSession,
     document_id: UUID,
@@ -317,6 +327,8 @@ async def reparse_document(
     Re-parse a document that was previously parsed or failed.
 
     This resets the document status and triggers a new parsing task.
+
+    Rate limited to 5 requests/minute (Claude API).
     """
     # Get document
     query = (

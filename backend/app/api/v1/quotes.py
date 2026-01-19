@@ -6,12 +6,13 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.api.deps import AuthenticatedUser, DBSession
 from app.core.logging import get_logger
+from app.core.rate_limit import rate_limit
 from app.models import Asset
 from app.schemas.quote import (
     LatestPriceResponse,
@@ -62,10 +63,12 @@ class SyncQuotesResponse(BaseModel):
 
 
 @router.post("/sync", response_model=SyncQuotesResponse)
+@rate_limit(requests=10, window=60, group="sync")
 async def sync_quotes(
+    request: Request,
     user: AuthenticatedUser,
     db: DBSession,
-    request: SyncQuotesRequest | None = None,
+    sync_request: SyncQuotesRequest | None = None,
 ) -> SyncQuotesResponse:
     """
     Manually trigger quote synchronization.
@@ -74,14 +77,16 @@ async def sync_quotes(
     If no tickers are provided, all active assets (those with positions) will be synced.
 
     This endpoint fetches quotes from Yahoo Finance and saves them to the database.
+
+    Rate limited to 10 requests/minute.
     """
     quote_service = QuoteService(db)
 
     tickers_to_sync: list[str] = []
 
-    if request and request.tickers:
+    if sync_request and sync_request.tickers:
         # Use provided tickers
-        tickers_to_sync = request.tickers
+        tickers_to_sync = sync_request.tickers
         logger.info(
             "sync_quotes_manual_tickers",
             user_id=str(user.id),
@@ -116,8 +121,8 @@ async def sync_quotes(
         )
 
     # Fetch and save quotes
-    start_date = request.start_date if request else None
-    end_date = request.end_date if request else None
+    start_date = sync_request.start_date if sync_request else None
+    end_date = sync_request.end_date if sync_request else None
 
     try:
         saved_quotes = await quote_service.fetch_and_save_quotes(

@@ -10,6 +10,7 @@ from app.api.v1 import (
     cash_flows,
     documents,
     fund,
+    health,
     portfolio,
     positions,
     quotes,
@@ -17,6 +18,9 @@ from app.api.v1 import (
 )
 
 api_router = APIRouter()
+
+# Health check endpoints (no auth required)
+api_router.include_router(health.router)
 
 # Include all v1 routers
 api_router.include_router(accounts.router)
