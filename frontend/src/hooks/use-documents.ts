@@ -11,6 +11,7 @@ import {
   getParseResult,
   deleteDocument,
 } from "@/lib/api/documents";
+import { toast } from "@/components/ui/use-toast";
 import type { DocumentType, PaginationParams } from "@/lib/api/types";
 
 export const documentKeys = {
@@ -66,8 +67,20 @@ export function useUploadDocument() {
       docType: DocumentType;
       accountId?: string;
     }) => uploadDocument(file, docType, accountId),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: documentKeys.lists() });
+      toast({
+        title: "Upload concluido",
+        description: `Documento "${result.file_name}" enviado com sucesso.`,
+        variant: "success",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro no upload",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 }
@@ -90,6 +103,18 @@ export function useParseDocument() {
       queryClient.invalidateQueries({
         queryKey: documentKeys.parseResult(variables.documentId),
       });
+      toast({
+        title: "Processamento iniciado",
+        description: "O documento esta sendo processado.",
+        variant: "info",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao processar",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 }
@@ -101,6 +126,18 @@ export function useDeleteDocument() {
     mutationFn: deleteDocument,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: documentKeys.lists() });
+      toast({
+        title: "Documento excluido",
+        description: "O documento foi removido com sucesso.",
+        variant: "success",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 }

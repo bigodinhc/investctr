@@ -41,7 +41,7 @@ export function useCreateCashFlow() {
       toast({
         title: "Movimentacao criada",
         description: "A movimentacao foi registrada com sucesso.",
-        variant: "default",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -68,7 +68,7 @@ export function useUpdateCashFlow() {
       toast({
         title: "Movimentacao atualizada",
         description: "A movimentacao foi atualizada com sucesso.",
-        variant: "default",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -94,7 +94,7 @@ export function useDeleteCashFlow() {
       toast({
         title: "Movimentacao excluida",
         description: "A movimentacao foi excluida com sucesso.",
-        variant: "default",
+        variant: "success",
       });
     },
     onError: (error: Error) => {

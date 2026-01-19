@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Bebas_Neue, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -19,9 +19,64 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#00d4aa",
+};
+
 export const metadata: Metadata = {
-  title: "InvestCTR - Gestão de Investimentos",
-  description: "Plataforma de gestão de investimentos pessoais",
+  title: {
+    default: "InvestCTR - Gestao de Investimentos",
+    template: "InvestCTR | %s",
+  },
+  description: "Plataforma de gestao de investimentos pessoais",
+  keywords: ["investimentos", "portfolio", "acoes", "fundos", "renda fixa", "gestao financeira"],
+  authors: [{ name: "InvestCTR" }],
+  creator: "InvestCTR",
+  metadataBase: new URL("https://investctr.com"),
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.svg", type: "image/svg+xml" },
+    ],
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "https://investctr.com",
+    siteName: "InvestCTR",
+    title: "InvestCTR - Gestao de Investimentos",
+    description: "Plataforma de gestao de investimentos pessoais. Acompanhe seu portfolio, analise performance e tome decisoes informadas.",
+    images: [
+      {
+        url: "/icon.svg",
+        width: 512,
+        height: 512,
+        alt: "InvestCTR Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "InvestCTR - Gestao de Investimentos",
+    description: "Plataforma de gestao de investimentos pessoais. Acompanhe seu portfolio, analise performance e tome decisoes informadas.",
+    images: ["/icon.svg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "InvestCTR",
+  },
 };
 
 export default function RootLayout({
