@@ -12,6 +12,7 @@ from .cache_service import (
 from .parsing_service import ParsingService
 from .pnl_service import (
     PnLService,
+    PnLType,
     RealizedPnLEntry,
     RealizedPnLSummary,
     calculate_realized_pnl,
@@ -31,6 +32,7 @@ __all__ = [
     "ParsingService",
     # P&L service
     "PnLService",
+    "PnLType",
     "RealizedPnLEntry",
     "RealizedPnLSummary",
     "calculate_realized_pnl",

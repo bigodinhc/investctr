@@ -3,11 +3,13 @@ P&L (Profit and Loss) calculation service.
 
 Calculates realized and unrealized P&L based on transactions.
 Uses weighted average price method consistent with position tracking.
+Implements netting model: LONG/SHORT positions with proper P&L for both.
 """
 
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
+from enum import Enum
 from uuid import UUID
 
 from sqlalchemy import select
@@ -16,26 +18,51 @@ from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
 from app.models import Account, Position, Transaction
-from app.schemas.enums import TransactionType
+from app.schemas.enums import PositionType, TransactionType
 
 logger = get_logger(__name__)
 
 
+class PnLType(str, Enum):
+    """Type of realized P&L event."""
+
+    LONG_CLOSE = "long_close"  # Closing LONG position (SELL)
+    SHORT_CLOSE = "short_close"  # Closing SHORT position (BUY)
+
+
 @dataclass
 class RealizedPnLEntry:
-    """Single realized P&L entry from a sale transaction."""
+    """Single realized P&L entry from closing a position (LONG or SHORT)."""
 
     transaction_id: UUID
     asset_id: UUID
     ticker: str | None
     executed_at: datetime
-    quantity_sold: Decimal
-    sale_price: Decimal
-    avg_cost_price: Decimal
-    sale_proceeds: Decimal  # quantity * sale_price - fees
-    cost_basis: Decimal  # quantity * avg_cost_price
-    realized_pnl: Decimal  # sale_proceeds - cost_basis
+    pnl_type: PnLType  # LONG_CLOSE or SHORT_CLOSE
+    quantity: Decimal  # Quantity closed
+    close_price: Decimal  # Price at which position was closed
+    avg_open_price: Decimal  # Average price at which position was opened
+    gross_proceeds: Decimal  # LONG: qty * close_price, SHORT: qty * avg_open_price
+    cost_basis: Decimal  # LONG: qty * avg_open_price, SHORT: qty * close_price
+    realized_pnl: Decimal  # gross_proceeds - cost_basis - fees
     fees: Decimal
+
+    # Backwards compatibility aliases
+    @property
+    def quantity_sold(self) -> Decimal:
+        return self.quantity
+
+    @property
+    def sale_price(self) -> Decimal:
+        return self.close_price
+
+    @property
+    def avg_cost_price(self) -> Decimal:
+        return self.avg_open_price
+
+    @property
+    def sale_proceeds(self) -> Decimal:
+        return self.gross_proceeds
 
 
 @dataclass
@@ -94,11 +121,18 @@ class PnLService:
         end_date: date | None = None,
     ) -> RealizedPnLSummary:
         """
-        Calculate realized P&L from sale transactions.
+        Calculate realized P&L from closing positions (LONG or SHORT).
 
-        Uses weighted average price method:
-        - Tracks running average cost as buys are made
-        - When sold, P&L = (sale_price - avg_cost) * quantity - fees
+        Implements NETTING model:
+        - Only ONE position per asset (LONG or SHORT, never both)
+        - SELL with LONG position → closes LONG, generates P&L
+        - SELL with no LONG position → opens SHORT (no P&L)
+        - BUY with SHORT position → closes SHORT, generates P&L
+        - BUY with no SHORT position → opens/adds to LONG (no P&L)
+
+        P&L Formulas:
+        - LONG close: P&L = (sale_price - avg_long_cost) × quantity - fees
+        - SHORT close: P&L = (avg_short_price - buy_price) × quantity - fees
 
         Args:
             account_id: Filter by specific account (optional)
@@ -151,7 +185,9 @@ class PnLService:
 
         # Group transactions by asset to calculate P&L per asset
         entries: list[RealizedPnLEntry] = []
-        asset_states: dict[UUID, dict] = {}  # Track running avg cost per asset
+
+        # Track position state per asset: position_type, quantity, total_cost
+        asset_states: dict[UUID, dict] = {}
 
         for txn in transactions:
             aid = txn.asset_id
@@ -159,6 +195,7 @@ class PnLService:
             # Initialize asset state if first transaction
             if aid not in asset_states:
                 asset_states[aid] = {
+                    "position_type": None,  # None, "LONG", or "SHORT"
                     "quantity": Decimal("0"),
                     "total_cost": Decimal("0"),
                 }
@@ -166,80 +203,217 @@ class PnLService:
             state = asset_states[aid]
 
             if txn.type in (TransactionType.BUY, TransactionType.SUBSCRIPTION):
-                # Add to position with cost including fees
-                txn_cost = txn.quantity * txn.price + txn.fees
-                state["total_cost"] += txn_cost
-                state["quantity"] += txn.quantity
-
-            elif txn.type == TransactionType.SELL:
-                # Calculate realized P&L using weighted average cost
-                if state["quantity"] > 0:
-                    avg_cost = state["total_cost"] / state["quantity"]
-                else:
-                    avg_cost = Decimal("0")
-
-                sale_quantity = txn.quantity
-                sale_price = txn.price
+                # BUY: closes SHORT or adds to LONG
+                buy_qty = txn.quantity
+                buy_price = txn.price
                 fees = txn.fees
 
-                # Calculate P&L
-                sale_proceeds = sale_quantity * sale_price - fees
-                cost_basis = sale_quantity * avg_cost
-                realized_pnl = sale_proceeds - cost_basis
+                if state["position_type"] == "SHORT":
+                    # Closing SHORT position (BUY to cover)
+                    short_qty = state["quantity"]
+                    short_avg_price = state["total_cost"] / short_qty if short_qty > 0 else Decimal("0")
 
-                entry = RealizedPnLEntry(
-                    transaction_id=txn.id,
-                    asset_id=aid,
-                    ticker=txn.asset.ticker if txn.asset else None,
-                    executed_at=txn.executed_at,
-                    quantity_sold=sale_quantity,
-                    sale_price=sale_price,
-                    avg_cost_price=avg_cost,
-                    sale_proceeds=sale_proceeds,
-                    cost_basis=cost_basis,
-                    realized_pnl=realized_pnl,
-                    fees=fees,
-                )
-                entries.append(entry)
+                    if buy_qty <= short_qty:
+                        # Partial or full close of SHORT
+                        # P&L = (short_sale_price - buy_price) × quantity - fees
+                        qty_closed = buy_qty
+                        gross_proceeds = qty_closed * short_avg_price  # We sold at this price
+                        cost_basis = qty_closed * buy_price + fees  # We're buying back at this price
+                        realized_pnl = gross_proceeds - cost_basis
 
-                # Update running state (reduce position)
-                cost_reduction = sale_quantity * avg_cost
-                state["total_cost"] -= cost_reduction
-                state["quantity"] -= sale_quantity
+                        entry = RealizedPnLEntry(
+                            transaction_id=txn.id,
+                            asset_id=aid,
+                            ticker=txn.asset.ticker if txn.asset else None,
+                            executed_at=txn.executed_at,
+                            pnl_type=PnLType.SHORT_CLOSE,
+                            quantity=qty_closed,
+                            close_price=buy_price,  # Price at which we closed SHORT
+                            avg_open_price=short_avg_price,  # Price at which we opened SHORT
+                            gross_proceeds=gross_proceeds,
+                            cost_basis=cost_basis,
+                            realized_pnl=realized_pnl,
+                            fees=fees,
+                        )
+                        entries.append(entry)
 
-                # Prevent negative from rounding
-                if state["quantity"] < 0:
-                    state["quantity"] = Decimal("0")
-                if state["total_cost"] < 0:
-                    state["total_cost"] = Decimal("0")
+                        # Update state
+                        state["quantity"] -= qty_closed
+                        state["total_cost"] -= qty_closed * short_avg_price
+
+                        if state["quantity"] <= Decimal("0"):
+                            state["position_type"] = None
+                            state["quantity"] = Decimal("0")
+                            state["total_cost"] = Decimal("0")
+                    else:
+                        # Close SHORT fully and flip to LONG
+                        # First: close all SHORT
+                        qty_to_close_short = short_qty
+                        if qty_to_close_short > 0:
+                            gross_proceeds = qty_to_close_short * short_avg_price
+                            # Proportional fees for closing SHORT
+                            fees_for_short = fees * qty_to_close_short / buy_qty
+                            cost_basis_short = qty_to_close_short * buy_price + fees_for_short
+                            realized_pnl = gross_proceeds - cost_basis_short
+
+                            entry = RealizedPnLEntry(
+                                transaction_id=txn.id,
+                                asset_id=aid,
+                                ticker=txn.asset.ticker if txn.asset else None,
+                                executed_at=txn.executed_at,
+                                pnl_type=PnLType.SHORT_CLOSE,
+                                quantity=qty_to_close_short,
+                                close_price=buy_price,
+                                avg_open_price=short_avg_price,
+                                gross_proceeds=gross_proceeds,
+                                cost_basis=cost_basis_short,
+                                realized_pnl=realized_pnl,
+                                fees=fees_for_short,
+                            )
+                            entries.append(entry)
+
+                        # Then: open LONG with excess
+                        excess = buy_qty - short_qty
+                        fees_for_long = fees * excess / buy_qty
+                        state["position_type"] = "LONG"
+                        state["quantity"] = excess
+                        state["total_cost"] = excess * buy_price + fees_for_long
+                else:
+                    # Adding to LONG or opening new LONG (no P&L event)
+                    txn_cost = buy_qty * buy_price + fees
+                    state["total_cost"] += txn_cost
+                    state["quantity"] += buy_qty
+                    state["position_type"] = "LONG"
+
+            elif txn.type == TransactionType.SELL:
+                # SELL: closes LONG or opens/adds to SHORT
+                sell_qty = txn.quantity
+                sell_price = txn.price
+                fees = txn.fees
+
+                if state["position_type"] == "LONG":
+                    # Closing LONG position (SELL)
+                    long_qty = state["quantity"]
+                    long_avg_cost = state["total_cost"] / long_qty if long_qty > 0 else Decimal("0")
+
+                    if sell_qty <= long_qty:
+                        # Partial or full close of LONG
+                        # P&L = (sale_price - avg_cost) × quantity - fees
+                        qty_closed = sell_qty
+                        gross_proceeds = qty_closed * sell_price - fees
+                        cost_basis = qty_closed * long_avg_cost
+                        realized_pnl = gross_proceeds - cost_basis
+
+                        entry = RealizedPnLEntry(
+                            transaction_id=txn.id,
+                            asset_id=aid,
+                            ticker=txn.asset.ticker if txn.asset else None,
+                            executed_at=txn.executed_at,
+                            pnl_type=PnLType.LONG_CLOSE,
+                            quantity=qty_closed,
+                            close_price=sell_price,  # Price at which we closed LONG
+                            avg_open_price=long_avg_cost,  # Price at which we bought
+                            gross_proceeds=gross_proceeds + fees,  # Gross before fees
+                            cost_basis=cost_basis,
+                            realized_pnl=realized_pnl,
+                            fees=fees,
+                        )
+                        entries.append(entry)
+
+                        # Update state
+                        state["quantity"] -= qty_closed
+                        state["total_cost"] -= qty_closed * long_avg_cost
+
+                        if state["quantity"] <= Decimal("0"):
+                            state["position_type"] = None
+                            state["quantity"] = Decimal("0")
+                            state["total_cost"] = Decimal("0")
+                    else:
+                        # Close LONG fully and flip to SHORT
+                        # First: close all LONG
+                        qty_to_close_long = long_qty
+                        if qty_to_close_long > 0:
+                            # Proportional fees for closing LONG
+                            fees_for_long = fees * qty_to_close_long / sell_qty
+                            gross_proceeds = qty_to_close_long * sell_price - fees_for_long
+                            cost_basis = qty_to_close_long * long_avg_cost
+                            realized_pnl = gross_proceeds - cost_basis
+
+                            entry = RealizedPnLEntry(
+                                transaction_id=txn.id,
+                                asset_id=aid,
+                                ticker=txn.asset.ticker if txn.asset else None,
+                                executed_at=txn.executed_at,
+                                pnl_type=PnLType.LONG_CLOSE,
+                                quantity=qty_to_close_long,
+                                close_price=sell_price,
+                                avg_open_price=long_avg_cost,
+                                gross_proceeds=gross_proceeds + fees_for_long,
+                                cost_basis=cost_basis,
+                                realized_pnl=realized_pnl,
+                                fees=fees_for_long,
+                            )
+                            entries.append(entry)
+
+                        # Then: open SHORT with excess
+                        excess = sell_qty - long_qty
+                        state["position_type"] = "SHORT"
+                        state["quantity"] = excess
+                        state["total_cost"] = excess * sell_price  # SHORT cost = sale price
+                elif state["position_type"] == "SHORT":
+                    # Adding to SHORT position (no P&L event)
+                    state["quantity"] += sell_qty
+                    state["total_cost"] += sell_qty * sell_price
+                else:
+                    # Opening new SHORT position (no P&L event)
+                    state["position_type"] = "SHORT"
+                    state["quantity"] = sell_qty
+                    state["total_cost"] = sell_qty * sell_price
 
             elif txn.type == TransactionType.TRANSFER_IN:
-                # Add to position at given price
+                # Add to LONG position at given price (like BUY, no P&L)
                 txn_cost = txn.quantity * txn.price
-                state["total_cost"] += txn_cost
-                state["quantity"] += txn.quantity
+                if state["position_type"] == "SHORT":
+                    # Transfer in reduces SHORT (treat like BUY without fees)
+                    short_qty = state["quantity"]
+                    if txn.quantity <= short_qty:
+                        state["quantity"] -= txn.quantity
+                        short_avg = state["total_cost"] / short_qty if short_qty > 0 else Decimal("0")
+                        state["total_cost"] -= txn.quantity * short_avg
+                        if state["quantity"] <= Decimal("0"):
+                            state["position_type"] = None
+                            state["quantity"] = Decimal("0")
+                            state["total_cost"] = Decimal("0")
+                    else:
+                        excess = txn.quantity - short_qty
+                        state["position_type"] = "LONG"
+                        state["quantity"] = excess
+                        state["total_cost"] = excess * txn.price
+                else:
+                    state["total_cost"] += txn_cost
+                    state["quantity"] += txn.quantity
+                    state["position_type"] = "LONG"
 
             elif txn.type == TransactionType.TRANSFER_OUT:
-                # Reduce position (similar to sell but no P&L)
-                if state["quantity"] > 0:
+                # Reduce LONG position (similar to SELL but no P&L)
+                if state["position_type"] == "LONG" and state["quantity"] > 0:
                     avg_cost = state["total_cost"] / state["quantity"]
-                    cost_reduction = txn.quantity * avg_cost
-                    state["total_cost"] -= cost_reduction
-                    state["quantity"] -= txn.quantity
-
-                    if state["quantity"] < 0:
-                        state["quantity"] = Decimal("0")
-                    if state["total_cost"] < 0:
-                        state["total_cost"] = Decimal("0")
+                    if txn.quantity <= state["quantity"]:
+                        state["total_cost"] -= txn.quantity * avg_cost
+                        state["quantity"] -= txn.quantity
+                        if state["quantity"] <= Decimal("0"):
+                            state["position_type"] = None
+                            state["quantity"] = Decimal("0")
+                            state["total_cost"] = Decimal("0")
 
             elif txn.type == TransactionType.SPLIT:
                 # Stock split: multiply quantity, keep total cost
-                if txn.quantity > 0:
+                if txn.quantity > 0 and state["quantity"] > 0:
                     state["quantity"] = state["quantity"] * txn.quantity
 
         # Calculate totals
         total_pnl = sum(e.realized_pnl for e in entries)
-        total_proceeds = sum(e.sale_proceeds for e in entries)
+        total_proceeds = sum(e.gross_proceeds for e in entries)
         total_cost = sum(e.cost_basis for e in entries)
         total_fees = sum(e.fees for e in entries)
 
