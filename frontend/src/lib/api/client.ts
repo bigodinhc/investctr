@@ -13,6 +13,34 @@ function getSupabase() {
   return supabaseInstance;
 }
 
+// Token cache para evitar race conditions
+let cachedToken: string | null = null;
+let authListenerInitialized = false;
+
+function initAuthListener() {
+  if (authListenerInitialized || typeof window === "undefined") return;
+  authListenerInitialized = true;
+
+  const supabase = getSupabase();
+
+  // Listener para mudanças de estado de autenticação
+  supabase.auth.onAuthStateChange((event, session) => {
+    cachedToken = session?.access_token || null;
+    console.log("[API] Auth state changed:", event, cachedToken ? "has token" : "no token");
+  });
+
+  // Inicializar com sessão atual
+  supabase.auth.getSession().then(({ data }) => {
+    cachedToken = data.session?.access_token || null;
+    console.log("[API] Initial session:", cachedToken ? "has token" : "no token");
+  });
+}
+
+// Inicializar listener no carregamento
+if (typeof window !== "undefined") {
+  initAuthListener();
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface ApiError {
@@ -34,22 +62,37 @@ export class ApiClient {
 
   private async getAuthHeaders(): Promise<HeadersInit> {
     const supabase = getSupabase();
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error("[API] Error getting session:", error);
-    }
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
     };
 
-    if (session?.access_token) {
-      headers["Authorization"] = `Bearer ${session.access_token}`;
-    } else {
-      console.warn("[API] No access token - request will be unauthenticated");
+    // Primeiro tentar usar token em cache
+    if (cachedToken) {
+      headers["Authorization"] = `Bearer ${cachedToken}`;
+      return headers;
     }
 
+    // Fallback para getSession com retry
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error(`[API] Attempt ${attempt}: Error getting session:`, error);
+      }
+
+      if (session?.access_token) {
+        cachedToken = session.access_token;
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+        return headers;
+      }
+
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
+      }
+    }
+
+    console.warn("[API] No access token after retries - request will be unauthenticated");
     return headers;
   }
 
@@ -124,15 +167,50 @@ export class ApiClient {
     additionalData?: Record<string, string>
   ): Promise<T> {
     const supabase = getSupabase();
-    const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (error) {
-      console.error("[API] Error getting session for upload:", error);
+    // Tentar obter sessão com retry para lidar com race conditions
+    let accessToken: string | null = null;
+
+    // Primeiro, tentar usar o token em cache
+    if (cachedToken) {
+      accessToken = cachedToken;
+      console.log("[API] Using cached token for upload");
     }
 
-    if (!session?.access_token) {
-      throw new Error("Você precisa estar logado para fazer upload");
+    // Se não tiver cache, tentar obter da sessão com retry
+    if (!accessToken) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error(`[API] Attempt ${attempt}: Error getting session:`, error);
+        }
+
+        if (data.session?.access_token) {
+          accessToken = data.session.access_token;
+          cachedToken = accessToken; // Atualizar cache
+          console.log(`[API] Got session on attempt ${attempt}`);
+          break;
+        }
+
+        // Aguardar antes de tentar novamente
+        if (attempt < 3) {
+          console.log(`[API] No session on attempt ${attempt}, retrying...`);
+          await new Promise((resolve) => setTimeout(resolve, 100 * attempt));
+        }
+      }
     }
+
+    if (!accessToken) {
+      console.error("[API] No session after retries - user needs to login");
+      // Redirecionar para login
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth/login";
+      }
+      throw new Error("Sessão expirada. Faça login novamente.");
+    }
+
+    console.log("[API] Uploading with token:", accessToken.substring(0, 20) + "...");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -146,7 +224,7 @@ export class ApiClient {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${session.access_token}`,
+        "Authorization": `Bearer ${accessToken}`,
       },
       credentials: "include",
       body: formData,
