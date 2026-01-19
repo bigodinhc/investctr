@@ -102,3 +102,8 @@ def async_session_factory():
             pass
     """
     return get_session_maker()()
+
+
+# Alias for backward compatibility with Celery tasks
+# Usage: async with async_session_maker() as db:
+async_session_maker = get_session_maker
