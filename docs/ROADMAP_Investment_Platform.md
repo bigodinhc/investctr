@@ -473,7 +473,7 @@ Layout Dashboard:
 | # | Tarefa | Tipo | Tempo | Dep. | Status |
 |---|--------|------|-------|------|--------|
 | 6.1.1 | Error handling global | [P] | 2h | - | ✅ |
-| 6.1.2 | Logging estruturado (structlog) | [P] | 2h | - | ⬜ |
+| 6.1.2 | Logging estruturado (structlog) | [P] | 2h | - | ✅ |
 | 6.1.3 | Rate limiting | [P] | 1h | - | ✅ |
 | 6.1.4 | Documentação OpenAPI completa | [P] | 2h | - | ✅ |
 | 6.1.5 | Testes de integração (críticos) | [P] | 4h | - | ✅ |
