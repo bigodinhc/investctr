@@ -49,7 +49,7 @@ async def recalculate_and_report():
         total_short_positions = 0
 
         for account in accounts:
-            print(f"\n{'='*70}")
+            print(f"\n{'=' * 70}")
             print(f"Account: {account.name} (ID: {account.id})")
             print(f"Type: {account.type.value}")
             print("-" * 70)
@@ -78,32 +78,40 @@ async def recalculate_and_report():
                     )
                     asset = asset_result.scalar_one_or_none()
                     ticker = asset.ticker if asset else "UNKNOWN"
-                    print(f"    - {ticker}: qty={pos.quantity}, avg_price={pos.avg_price:.2f}")
+                    print(
+                        f"    - {ticker}: qty={pos.quantity}, avg_price={pos.avg_price:.2f}"
+                    )
 
             # Calculate P&L for this account
-            pnl_summary = await pnl_service.calculate_realized_pnl(account_id=account.id)
+            pnl_summary = await pnl_service.calculate_realized_pnl(
+                account_id=account.id
+            )
 
             long_close_pnl = sum(
-                e.realized_pnl for e in pnl_summary.entries
+                e.realized_pnl
+                for e in pnl_summary.entries
                 if e.pnl_type == PnLType.LONG_CLOSE
             )
             short_close_pnl = sum(
-                e.realized_pnl for e in pnl_summary.entries
+                e.realized_pnl
+                for e in pnl_summary.entries
                 if e.pnl_type == PnLType.SHORT_CLOSE
             )
             long_close_count = sum(
-                1 for e in pnl_summary.entries
-                if e.pnl_type == PnLType.LONG_CLOSE
+                1 for e in pnl_summary.entries if e.pnl_type == PnLType.LONG_CLOSE
             )
             short_close_count = sum(
-                1 for e in pnl_summary.entries
-                if e.pnl_type == PnLType.SHORT_CLOSE
+                1 for e in pnl_summary.entries if e.pnl_type == PnLType.SHORT_CLOSE
             )
 
             print("\nRealized P&L Summary:")
             print(f"  Total Realized P&L: R$ {pnl_summary.total_realized_pnl:,.2f}")
-            print(f"  - From LONG closes ({long_close_count}): R$ {long_close_pnl:,.2f}")
-            print(f"  - From SHORT closes ({short_close_count}): R$ {short_close_pnl:,.2f}")
+            print(
+                f"  - From LONG closes ({long_close_count}): R$ {long_close_pnl:,.2f}"
+            )
+            print(
+                f"  - From SHORT closes ({short_close_count}): R$ {short_close_pnl:,.2f}"
+            )
             print(f"  Total transactions: {pnl_summary.transaction_count}")
             print(f"  Total fees: R$ {pnl_summary.total_fees:,.2f}")
 
@@ -118,11 +126,13 @@ async def recalculate_and_report():
         overall_pnl = await pnl_service.calculate_realized_pnl()
 
         overall_long_pnl = sum(
-            e.realized_pnl for e in overall_pnl.entries
+            e.realized_pnl
+            for e in overall_pnl.entries
             if e.pnl_type == PnLType.LONG_CLOSE
         )
         overall_short_pnl = sum(
-            e.realized_pnl for e in overall_pnl.entries
+            e.realized_pnl
+            for e in overall_pnl.entries
             if e.pnl_type == PnLType.SHORT_CLOSE
         )
 
@@ -134,9 +144,7 @@ async def recalculate_and_report():
         # Show top 10 P&L events by absolute value
         print("\nTop 10 P&L Events (by absolute value):")
         sorted_entries = sorted(
-            overall_pnl.entries,
-            key=lambda e: abs(e.realized_pnl),
-            reverse=True
+            overall_pnl.entries, key=lambda e: abs(e.realized_pnl), reverse=True
         )[:10]
 
         for i, entry in enumerate(sorted_entries, 1):

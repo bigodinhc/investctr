@@ -211,14 +211,22 @@ class PnLService:
                 if state["position_type"] == "SHORT":
                     # Closing SHORT position (BUY to cover)
                     short_qty = state["quantity"]
-                    short_avg_price = state["total_cost"] / short_qty if short_qty > 0 else Decimal("0")
+                    short_avg_price = (
+                        state["total_cost"] / short_qty
+                        if short_qty > 0
+                        else Decimal("0")
+                    )
 
                     if buy_qty <= short_qty:
                         # Partial or full close of SHORT
                         # P&L = (short_sale_price - buy_price) × quantity - fees
                         qty_closed = buy_qty
-                        gross_proceeds = qty_closed * short_avg_price  # We sold at this price
-                        cost_basis = qty_closed * buy_price + fees  # We're buying back at this price
+                        gross_proceeds = (
+                            qty_closed * short_avg_price
+                        )  # We sold at this price
+                        cost_basis = (
+                            qty_closed * buy_price + fees
+                        )  # We're buying back at this price
                         realized_pnl = gross_proceeds - cost_basis
 
                         entry = RealizedPnLEntry(
@@ -253,7 +261,9 @@ class PnLService:
                             gross_proceeds = qty_to_close_short * short_avg_price
                             # Proportional fees for closing SHORT
                             fees_for_short = fees * qty_to_close_short / buy_qty
-                            cost_basis_short = qty_to_close_short * buy_price + fees_for_short
+                            cost_basis_short = (
+                                qty_to_close_short * buy_price + fees_for_short
+                            )
                             realized_pnl = gross_proceeds - cost_basis_short
 
                             entry = RealizedPnLEntry(
@@ -294,7 +304,9 @@ class PnLService:
                 if state["position_type"] == "LONG":
                     # Closing LONG position (SELL)
                     long_qty = state["quantity"]
-                    long_avg_cost = state["total_cost"] / long_qty if long_qty > 0 else Decimal("0")
+                    long_avg_cost = (
+                        state["total_cost"] / long_qty if long_qty > 0 else Decimal("0")
+                    )
 
                     if sell_qty <= long_qty:
                         # Partial or full close of LONG
@@ -335,7 +347,9 @@ class PnLService:
                         if qty_to_close_long > 0:
                             # Proportional fees for closing LONG
                             fees_for_long = fees * qty_to_close_long / sell_qty
-                            gross_proceeds = qty_to_close_long * sell_price - fees_for_long
+                            gross_proceeds = (
+                                qty_to_close_long * sell_price - fees_for_long
+                            )
                             cost_basis = qty_to_close_long * long_avg_cost
                             realized_pnl = gross_proceeds - cost_basis
 
@@ -359,7 +373,9 @@ class PnLService:
                         excess = sell_qty - long_qty
                         state["position_type"] = "SHORT"
                         state["quantity"] = excess
-                        state["total_cost"] = excess * sell_price  # SHORT cost = sale price
+                        state["total_cost"] = (
+                            excess * sell_price
+                        )  # SHORT cost = sale price
                 elif state["position_type"] == "SHORT":
                     # Adding to SHORT position (no P&L event)
                     state["quantity"] += sell_qty
@@ -378,7 +394,11 @@ class PnLService:
                     short_qty = state["quantity"]
                     if txn.quantity <= short_qty:
                         state["quantity"] -= txn.quantity
-                        short_avg = state["total_cost"] / short_qty if short_qty > 0 else Decimal("0")
+                        short_avg = (
+                            state["total_cost"] / short_qty
+                            if short_qty > 0
+                            else Decimal("0")
+                        )
                         state["total_cost"] -= txn.quantity * short_avg
                         if state["quantity"] <= Decimal("0"):
                             state["position_type"] = None

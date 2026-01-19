@@ -43,7 +43,9 @@ class PositionState:
             first_date=None,
         )
 
-    def add_long(self, quantity: Decimal, price: Decimal, fees: Decimal, executed_at: datetime) -> None:
+    def add_long(
+        self, quantity: Decimal, price: Decimal, fees: Decimal, executed_at: datetime
+    ) -> None:
         """Add to LONG position (BUY)."""
         txn_cost = quantity * price + fees
 
@@ -53,7 +55,11 @@ class PositionState:
                 # Partial or full close of SHORT
                 self.quantity -= quantity
                 # Cost basis reduced proportionally
-                cost_per_unit = self.total_cost / (self.quantity + quantity) if (self.quantity + quantity) > 0 else Decimal("0")
+                cost_per_unit = (
+                    self.total_cost / (self.quantity + quantity)
+                    if (self.quantity + quantity) > 0
+                    else Decimal("0")
+                )
                 self.total_cost -= quantity * cost_per_unit
 
                 if self.quantity == Decimal("0"):
@@ -62,30 +68,48 @@ class PositionState:
                     self.total_cost = Decimal("0")
                     self.avg_price = Decimal("0")
                 else:
-                    self.avg_price = self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+                    self.avg_price = (
+                        self.total_cost / self.quantity
+                        if self.quantity > 0
+                        else Decimal("0")
+                    )
             else:
                 # Close SHORT and flip to LONG
                 excess = quantity - self.quantity
                 self.position_type = PositionType.LONG
                 self.quantity = excess
-                self.total_cost = excess * price + (fees * excess / quantity)  # Proportional fees
-                self.avg_price = self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+                self.total_cost = excess * price + (
+                    fees * excess / quantity
+                )  # Proportional fees
+                self.avg_price = (
+                    self.total_cost / self.quantity
+                    if self.quantity > 0
+                    else Decimal("0")
+                )
                 self.first_date = executed_at
         else:
             # Adding to LONG position or opening new LONG
             self.total_cost += txn_cost
             self.quantity += quantity
             self.position_type = PositionType.LONG
-            self.avg_price = self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+            self.avg_price = (
+                self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+            )
             if self.first_date is None:
                 self.first_date = executed_at
 
-    def reduce_long(self, quantity: Decimal, price: Decimal, fees: Decimal, executed_at: datetime) -> None:
+    def reduce_long(
+        self, quantity: Decimal, price: Decimal, fees: Decimal, executed_at: datetime
+    ) -> None:
         """Reduce LONG position (SELL) or open/increase SHORT."""
         if self.position_type == PositionType.LONG:
             if quantity <= self.quantity:
                 # Partial or full close of LONG
-                avg_cost = self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+                avg_cost = (
+                    self.total_cost / self.quantity
+                    if self.quantity > 0
+                    else Decimal("0")
+                )
                 sold_cost = quantity * avg_cost
                 self.total_cost -= sold_cost
                 self.quantity -= quantity
@@ -96,7 +120,11 @@ class PositionState:
                     self.total_cost = Decimal("0")
                     self.avg_price = Decimal("0")
                 else:
-                    self.avg_price = self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+                    self.avg_price = (
+                        self.total_cost / self.quantity
+                        if self.quantity > 0
+                        else Decimal("0")
+                    )
             else:
                 # Close LONG and flip to SHORT
                 excess = quantity - self.quantity
@@ -112,7 +140,9 @@ class PositionState:
             new_cost = quantity * price
             self.total_cost += new_cost
             self.quantity += quantity
-            self.avg_price = self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+            self.avg_price = (
+                self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+            )
         else:
             # Opening new SHORT position
             self.position_type = PositionType.SHORT
@@ -125,9 +155,13 @@ class PositionState:
         """Apply stock split. Multiply quantity, keep total cost."""
         if factor > 0 and self.quantity > 0:
             self.quantity = self.quantity * factor
-            self.avg_price = self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+            self.avg_price = (
+                self.total_cost / self.quantity if self.quantity > 0 else Decimal("0")
+            )
 
-    def transfer_in(self, quantity: Decimal, price: Decimal, executed_at: datetime) -> None:
+    def transfer_in(
+        self, quantity: Decimal, price: Decimal, executed_at: datetime
+    ) -> None:
         """Handle transfer in. Adds to LONG position."""
         self.add_long(quantity, price, Decimal("0"), executed_at)
 
@@ -412,6 +446,7 @@ class PositionService:
             )
 
         return consolidated
+
 
 async def recalculate_positions_after_transaction(
     db: AsyncSession,
