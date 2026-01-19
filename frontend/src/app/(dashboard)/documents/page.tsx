@@ -101,7 +101,7 @@ export default function DocumentsPage() {
   const { data: selectedDocument } = useDocument(selectedDocumentId || "");
   const { data: parseResult, isLoading: isParseLoading } = useParseResult(
     selectedDocumentId || "",
-    !!selectedDocumentId && selectedDocument?.parsing_status !== "pending"
+    !!selectedDocumentId // Always poll when document is selected
   );
 
   // Set default account when accounts load
@@ -456,7 +456,34 @@ export default function DocumentsPage() {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="h-12 w-12 rounded-full border-4 border-foreground-muted/30 border-t-foreground animate-spin mx-auto mb-4" />
-                <p className="text-foreground-muted">Processando documento...</p>
+                <p className="text-foreground-muted">Carregando...</p>
+              </div>
+            </div>
+          ) : parseResult?.status === "pending" ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center w-full max-w-md">
+                {/* Progress Stages - Waiting */}
+                <div className="flex flex-col gap-3 mb-6">
+                  <ProgressStage
+                    label="Baixando documento..."
+                    isActive={false}
+                    isComplete={false}
+                  />
+                  <ProgressStage
+                    label="Processando com IA..."
+                    isActive={false}
+                    isComplete={false}
+                  />
+                  <ProgressStage
+                    label="Validando dados..."
+                    isActive={false}
+                    isComplete={false}
+                  />
+                </div>
+                <div className="h-6 w-6 rounded-full border-2 border-foreground-muted/30 border-t-foreground animate-spin mx-auto mb-2" />
+                <p className="text-sm text-foreground-dim">
+                  Aguardando início do processamento...
+                </p>
               </div>
             </div>
           ) : parseResult?.status === "processing" ? (
