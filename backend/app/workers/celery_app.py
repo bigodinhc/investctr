@@ -4,8 +4,16 @@ Celery application configuration.
 
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import worker_init
 
 from app.config import settings
+from app.core.logging import setup_logging
+
+
+@worker_init.connect
+def init_worker(**kwargs):
+    """Initialize logging when Celery worker starts."""
+    setup_logging()
 
 
 def get_redis_url(db: int = 0) -> str:
