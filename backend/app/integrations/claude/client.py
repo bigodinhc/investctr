@@ -76,10 +76,34 @@ def get_claude_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
 
+def _log_extraction_summary(data: dict[str, Any], was_truncated: bool) -> None:
+    """Log a summary of extracted data for debugging."""
+    summary = {
+        "document_type": data.get("document_type"),
+        "was_truncated": was_truncated,
+    }
+
+    # Count items in each category
+    if "transactions" in data:
+        summary["transactions_count"] = len(data["transactions"])
+    if "stock_positions" in data:
+        summary["stock_positions_count"] = len(data["stock_positions"])
+    if "fixed_income_positions" in data:
+        summary["fixed_income_count"] = len(data["fixed_income_positions"])
+    if "stock_lending" in data:
+        summary["stock_lending_count"] = len(data["stock_lending"])
+    if "derivatives_positions" in data:
+        summary["derivatives_count"] = len(data["derivatives_positions"])
+    if "cash_movements" in data and "movements" in data["cash_movements"]:
+        summary["cash_movements_count"] = len(data["cash_movements"]["movements"])
+
+    logger.info("extraction_summary", **summary)
+
+
 async def parse_pdf_with_claude(
     pdf_content: bytes,
     prompt: str,
-    max_tokens: int = 8192,
+    max_tokens: int = 16384,
 ) -> dict[str, Any]:
     """
     Parse a PDF document using Claude's vision capabilities.
@@ -133,12 +157,28 @@ async def parse_pdf_with_claude(
 
         # Extract text response
         response_text = message.content[0].text
+        stop_reason = message.stop_reason
+
+        # Check if response was truncated
+        was_truncated = stop_reason == "max_tokens"
 
         logger.info(
-            "claude_parse_success",
+            "claude_parse_response",
             input_tokens=message.usage.input_tokens,
             output_tokens=message.usage.output_tokens,
+            stop_reason=stop_reason,
+            was_truncated=was_truncated,
+            response_length=len(response_text),
         )
+
+        if was_truncated:
+            logger.warning(
+                "claude_response_truncated",
+                message="Response was truncated due to max_tokens limit. "
+                "Some data may be missing. Consider increasing max_tokens.",
+                output_tokens=message.usage.output_tokens,
+                max_tokens=max_tokens,
+            )
 
         # Parse JSON from response
         import json
@@ -162,19 +202,29 @@ async def parse_pdf_with_claude(
             json_str = response_text[json_start:json_end].strip()
 
         try:
-            return json.loads(json_str)
+            parsed_data = json.loads(json_str)
+            _log_extraction_summary(parsed_data, was_truncated)
+            return parsed_data
         except json.JSONDecodeError as e:
             logger.warning(
                 "json_parse_error_attempting_repair",
                 error=str(e),
                 json_length=len(json_str),
+                was_truncated=was_truncated,
             )
 
             # Try to repair truncated JSON
             repaired = _repair_truncated_json(json_str)
             if repaired:
                 try:
-                    return json.loads(repaired)
+                    parsed_data = json.loads(repaired)
+                    logger.info(
+                        "json_repair_success",
+                        original_length=len(json_str),
+                        repaired_length=len(repaired),
+                    )
+                    _log_extraction_summary(parsed_data, was_truncated)
+                    return parsed_data
                 except json.JSONDecodeError:
                     pass
 
