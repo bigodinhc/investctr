@@ -97,6 +97,8 @@ export interface PaginationParams {
 export type DocumentType = "statement" | "trade_note" | "income_report" | "other";
 export type ParsingStatus = "pending" | "processing" | "completed" | "failed";
 
+export type ParsingStage = "downloading" | "processing_ai" | "validating" | null;
+
 export interface Document {
   id: string;
   user_id: string;
@@ -107,6 +109,7 @@ export interface Document {
   file_size: number | null;
   parsing_status: ParsingStatus;
   parsing_error: string | null;
+  parsing_stage: ParsingStage;
   parsed_at: string | null;
   created_at: string;
 }
@@ -147,6 +150,7 @@ export interface ParsedDocumentData {
 export interface DocumentParseResponse {
   document_id: string;
   status: ParsingStatus;
+  stage: ParsingStage;
   transactions_count: number;
   data: ParsedDocumentData | null;
   error: string | null;

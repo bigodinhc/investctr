@@ -42,6 +42,7 @@ class DocumentResponse(DocumentBase, IDMixin):
     file_size: int | None
     parsing_status: ParsingStatus
     parsing_error: str | None = None
+    parsing_stage: str | None = None
     parsed_at: datetime | None = None
     created_at: datetime
 
@@ -103,6 +104,7 @@ class DocumentParseResponse(BaseSchema):
 
     document_id: UUID
     status: ParsingStatus
+    stage: str | None = None
     transactions_count: int = 0
     data: ParsedDocumentData | None = None
     error: str | None = None

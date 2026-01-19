@@ -384,6 +384,7 @@ async def get_parse_result(
     return DocumentParseResponse(
         document_id=document.id,
         status=document.parsing_status,
+        stage=document.parsing_stage,
         transactions_count=transactions_count,
         data=parsed_data,
         error=document.parsing_error,

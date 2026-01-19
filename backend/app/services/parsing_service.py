@@ -73,6 +73,7 @@ class ParsingService:
 
         # Update status to processing
         document.parsing_status = ParsingStatus.PROCESSING
+        document.parsing_stage = "downloading"
         await self.db.commit()
 
         try:
@@ -82,11 +83,19 @@ class ParsingService:
                 path=document.file_path,
             )
 
+            # Update stage: processing with AI
+            document.parsing_stage = "processing_ai"
+            await self.db.commit()
+
             # Select parser based on document type
             parser = self._get_parser(document.doc_type)
 
             # Parse the document
             result = await parser.parse(pdf_content)
+
+            # Update stage: validating data
+            document.parsing_stage = "validating"
+            await self.db.commit()
 
             # Update document with results
             if result.success:
@@ -114,6 +123,7 @@ class ParsingService:
 
                 # Store validated data if validation succeeded, otherwise raw data
                 document.parsing_status = ParsingStatus.COMPLETED
+                document.parsing_stage = None  # Clear stage on completion
                 document.raw_extracted_data = (
                     validated_data if validated_data else result.raw_data
                 )
@@ -138,6 +148,7 @@ class ParsingService:
                 )
             else:
                 document.parsing_status = ParsingStatus.FAILED
+                document.parsing_stage = None  # Clear stage on failure
                 document.parsing_error = result.error
                 document.parsed_at = datetime.utcnow()
 
@@ -153,6 +164,7 @@ class ParsingService:
         except Exception as e:
             # Mark as failed
             document.parsing_status = ParsingStatus.FAILED
+            document.parsing_stage = None  # Clear stage on error
             document.parsing_error = str(e)
             document.parsed_at = datetime.utcnow()
             await self.db.commit()

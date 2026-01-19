@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Upload, Eye, Trash2, Play, AlertCircle, RefreshCw } from "lucide-react";
+import { FileText, Upload, Eye, Trash2, Play, AlertCircle, RefreshCw, Check } from "lucide-react";
 import { useDocuments, useDocument, useParseResult, useParseDocument, useDeleteDocument } from "@/hooks/use-documents";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCommitDocument } from "@/hooks/use-transactions";
@@ -35,6 +35,48 @@ import { UploadZone, ParsePreview, DocumentStatusBadge } from "@/components/docu
 import { toast } from "@/components/ui/use-toast";
 import { formatFileSize, formatDate } from "@/lib/format";
 import type { Document, ParsedTransaction } from "@/lib/api/types";
+
+// Progress stage indicator component
+function ProgressStage({
+  label,
+  isActive,
+  isComplete,
+}: {
+  label: string;
+  isActive: boolean;
+  isComplete: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all ${
+          isComplete
+            ? "border-success bg-success text-success-foreground"
+            : isActive
+              ? "border-foreground bg-transparent animate-pulse"
+              : "border-border bg-background-surface"
+        }`}
+      >
+        {isComplete ? (
+          <Check className="h-4 w-4" />
+        ) : isActive ? (
+          <div className="h-2 w-2 rounded-full bg-foreground animate-pulse" />
+        ) : null}
+      </div>
+      <span
+        className={`text-sm ${
+          isComplete
+            ? "text-success"
+            : isActive
+              ? "text-foreground font-medium"
+              : "text-foreground-dim"
+        }`}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   statement: "Extrato",
@@ -419,13 +461,27 @@ export default function DocumentsPage() {
             </div>
           ) : parseResult?.status === "processing" ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="h-12 w-12 rounded-full border-4 border-foreground-muted/30 border-t-foreground animate-spin mx-auto mb-4" />
-                <p className="text-foreground-muted">
-                  O Claude está analisando o documento...
-                </p>
-                <p className="text-sm text-foreground-dim mt-2">
-                  Isso pode levar alguns segundos.
+              <div className="text-center w-full max-w-md">
+                {/* Progress Stages */}
+                <div className="flex flex-col gap-3 mb-6">
+                  <ProgressStage
+                    label="Baixando documento..."
+                    isActive={parseResult.stage === "downloading"}
+                    isComplete={parseResult.stage === "processing_ai" || parseResult.stage === "validating"}
+                  />
+                  <ProgressStage
+                    label="Processando com IA..."
+                    isActive={parseResult.stage === "processing_ai"}
+                    isComplete={parseResult.stage === "validating"}
+                  />
+                  <ProgressStage
+                    label="Validando dados..."
+                    isActive={parseResult.stage === "validating"}
+                    isComplete={false}
+                  />
+                </div>
+                <p className="text-sm text-foreground-dim">
+                  Isso pode levar alguns minutos para documentos grandes.
                 </p>
               </div>
             </div>
