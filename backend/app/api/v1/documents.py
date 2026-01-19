@@ -326,6 +326,59 @@ async def parse_document(
             )
 
 
+from app.schemas.document import DocumentParseResponse, ParsedDocumentData
+
+
+@router.get("/{document_id}/parse-result", response_model=DocumentParseResponse)
+async def get_parse_result(
+    user: AuthenticatedUser,
+    db: DBSession,
+    document_id: UUID,
+) -> DocumentParseResponse:
+    """
+    Get the parsing result for a document.
+
+    Used for polling the status of async parsing tasks.
+    Returns the current parsing status and extracted data if available.
+    """
+    query = (
+        select(Document)
+        .where(Document.id == document_id)
+        .where(Document.user_id == user.id)
+    )
+    result = await db.execute(query)
+    document = result.scalar_one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Build response
+    parsed_data = None
+    transactions_count = 0
+
+    if document.raw_extracted_data:
+        raw_data = document.raw_extracted_data
+        transactions_count = len(raw_data.get("transactions", []))
+        parsed_data = ParsedDocumentData(
+            document_type=raw_data.get("document_type", "unknown"),
+            period=raw_data.get("period"),
+            account_number=raw_data.get("account_number"),
+            transactions=raw_data.get("transactions", []),
+            summary=raw_data.get("summary"),
+        )
+
+    return DocumentParseResponse(
+        document_id=document.id,
+        status=document.parsing_status,
+        transactions_count=transactions_count,
+        data=parsed_data,
+        error=document.parsing_error,
+    )
+
+
 @router.post("/{document_id}/reparse", response_model=ParseTaskResponse)
 @rate_limit(requests=5, window=60, group="parse")
 async def reparse_document(
