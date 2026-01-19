@@ -18,7 +18,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
 from app.models import Account, Position, Transaction
-from app.schemas.enums import PositionType, TransactionType
+from app.schemas.enums import TransactionType
 
 logger = get_logger(__name__)
 
