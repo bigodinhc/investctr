@@ -25,10 +25,10 @@ logger = get_logger(__name__)
 # Default rate limits by group
 RATE_LIMITS = {
     "default": {"requests": 100, "window": 60},  # 100 requests/minute
-    "upload": {"requests": 10, "window": 60},     # 10 uploads/minute
-    "parse": {"requests": 5, "window": 60},       # 5 parse requests/minute (Claude API)
-    "sync": {"requests": 10, "window": 60},       # 10 sync requests/minute
-    "auth": {"requests": 20, "window": 60},       # 20 auth attempts/minute
+    "upload": {"requests": 10, "window": 60},  # 10 uploads/minute
+    "parse": {"requests": 5, "window": 60},  # 5 parse requests/minute (Claude API)
+    "sync": {"requests": 10, "window": 60},  # 10 sync requests/minute
+    "auth": {"requests": 20, "window": 60},  # 20 auth attempts/minute
 }
 
 
@@ -338,7 +338,12 @@ class RateLimitMiddleware:
         self.app = app
         self.requests = requests
         self.window = window
-        self.exclude_paths = exclude_paths or ["/health", "/docs", "/redoc", "/openapi.json"]
+        self.exclude_paths = exclude_paths or [
+            "/health",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+        ]
 
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         if scope["type"] != "http":
@@ -381,15 +386,15 @@ class RateLimitMiddleware:
                 },
             )
             add_rate_limit_headers(response, rate_info)
-            response.headers["Retry-After"] = str(
-                rate_info["reset"] - int(time.time())
-            )
+            response.headers["Retry-After"] = str(rate_info["reset"] - int(time.time()))
 
             await response(scope, receive, send)
             return
 
         # Store rate info for use by endpoints
-        scope["state"] = getattr(scope.get("state"), "__dict__", {}) if scope.get("state") else {}
+        scope["state"] = (
+            getattr(scope.get("state"), "__dict__", {}) if scope.get("state") else {}
+        )
         scope["rate_limit_info"] = rate_info
 
         # Wrap send to add headers to response
@@ -397,7 +402,9 @@ class RateLimitMiddleware:
             if message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
                 headers.append((b"x-ratelimit-limit", str(rate_info["limit"]).encode()))
-                headers.append((b"x-ratelimit-remaining", str(rate_info["remaining"]).encode()))
+                headers.append(
+                    (b"x-ratelimit-remaining", str(rate_info["remaining"]).encode())
+                )
                 headers.append((b"x-ratelimit-reset", str(rate_info["reset"]).encode()))
                 message["headers"] = headers
             await send(message)

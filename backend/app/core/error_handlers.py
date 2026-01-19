@@ -24,7 +24,9 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
-def get_cors_headers(request: Request, is_origin_allowed: Callable[[str, list[str]], bool]) -> dict[str, str]:
+def get_cors_headers(
+    request: Request, is_origin_allowed: Callable[[str, list[str]], bool]
+) -> dict[str, str]:
     """Get CORS headers for error responses."""
     origin = request.headers.get("origin", "")
     headers = {}
@@ -66,7 +68,9 @@ def create_error_response(
     )
 
 
-def register_exception_handlers(app: FastAPI, is_origin_allowed: Callable[[str, list[str]], bool]) -> None:
+def register_exception_handlers(
+    app: FastAPI, is_origin_allowed: Callable[[str, list[str]], bool]
+) -> None:
     """Register all global exception handlers on the FastAPI app."""
 
     @app.exception_handler(RateLimitError)
@@ -142,11 +146,13 @@ def register_exception_handlers(app: FastAPI, is_origin_allowed: Callable[[str, 
         formatted_errors = []
         for error in errors:
             loc = " -> ".join(str(part) for part in error.get("loc", []))
-            formatted_errors.append({
-                "field": loc,
-                "message": error.get("msg", "Invalid value"),
-                "type": error.get("type", "value_error"),
-            })
+            formatted_errors.append(
+                {
+                    "field": loc,
+                    "message": error.get("msg", "Invalid value"),
+                    "type": error.get("type", "value_error"),
+                }
+            )
 
         logger.warning(
             "request_validation_error",
@@ -172,11 +178,13 @@ def register_exception_handlers(app: FastAPI, is_origin_allowed: Callable[[str, 
         formatted_errors = []
         for error in errors:
             loc = " -> ".join(str(part) for part in error.get("loc", []))
-            formatted_errors.append({
-                "field": loc,
-                "message": error.get("msg", "Invalid value"),
-                "type": error.get("type", "value_error"),
-            })
+            formatted_errors.append(
+                {
+                    "field": loc,
+                    "message": error.get("msg", "Invalid value"),
+                    "type": error.get("type", "value_error"),
+                }
+            )
 
         logger.warning(
             "pydantic_validation_error",
@@ -289,9 +297,7 @@ def register_exception_handlers(app: FastAPI, is_origin_allowed: Callable[[str, 
         )
 
     @app.exception_handler(DBAPIError)
-    async def dbapi_error_handler(
-        request: Request, exc: DBAPIError
-    ) -> JSONResponse:
+    async def dbapi_error_handler(request: Request, exc: DBAPIError) -> JSONResponse:
         """Handle database API errors."""
         logger.error(
             "database_api_error",
@@ -347,5 +353,7 @@ def register_exception_handlers(app: FastAPI, is_origin_allowed: Callable[[str, 
             code="INTERNAL_ERROR",
             request=request,
             is_origin_allowed=is_origin_allowed,
-            details={"error": str(exc), "type": type(exc).__name__} if not settings.is_production else None,
+            details={"error": str(exc), "type": type(exc).__name__}
+            if not settings.is_production
+            else None,
         )

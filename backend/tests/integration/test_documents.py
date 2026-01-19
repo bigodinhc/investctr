@@ -333,7 +333,9 @@ class TestParseDocument:
         self, client: AsyncClient, factory
     ):
         """Should reject parsing document that is currently processing."""
-        document = await factory.create_document(parsing_status=ParsingStatus.PROCESSING)
+        document = await factory.create_document(
+            parsing_status=ParsingStatus.PROCESSING
+        )
 
         response = await client.post(f"/api/v1/documents/{document.id}/parse")
 
@@ -399,7 +401,9 @@ class TestReparseDocument:
         self, client: AsyncClient, factory
     ):
         """Should reject reparsing document that is currently processing."""
-        document = await factory.create_document(parsing_status=ParsingStatus.PROCESSING)
+        document = await factory.create_document(
+            parsing_status=ParsingStatus.PROCESSING
+        )
 
         response = await client.post(f"/api/v1/documents/{document.id}/reparse")
 
@@ -637,7 +641,11 @@ class TestDocumentTypes:
             response = await client.post(
                 "/api/v1/documents/upload",
                 files={
-                    "file": (f"test_{doc_type}.pdf", BytesIO(pdf_content), "application/pdf")
+                    "file": (
+                        f"test_{doc_type}.pdf",
+                        BytesIO(pdf_content),
+                        "application/pdf",
+                    )
                 },
                 data={"doc_type": doc_type},
             )

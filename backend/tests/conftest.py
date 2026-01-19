@@ -150,9 +150,7 @@ def mock_auth_header() -> dict[str, str]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def client(
-    test_engine, mock_current_user
-) -> AsyncGenerator[AsyncClient, None]:
+async def client(test_engine, mock_current_user) -> AsyncGenerator[AsyncClient, None]:
     """Create an async test client with mocked authentication and database."""
 
     # Create session maker for this test
@@ -178,6 +176,7 @@ async def client(
 
     # Import the actual dependency to override
     from app.dependencies import get_current_user
+
     app.dependency_overrides[get_current_user] = override_get_current_user
 
     # Create client
@@ -386,10 +385,14 @@ async def test_asset(factory: TestDataFactory):
 @pytest.fixture
 def mock_supabase_storage():
     """Mock Supabase storage operations."""
-    with patch("app.integrations.supabase.upload_file_to_storage") as mock_upload, \
-         patch("app.integrations.supabase.delete_file_from_storage") as mock_delete:
+    with (
+        patch("app.integrations.supabase.upload_file_to_storage") as mock_upload,
+        patch("app.integrations.supabase.delete_file_from_storage") as mock_delete,
+    ):
 
-        async def fake_upload(bucket: str, path: str, content: bytes, content_type: str):
+        async def fake_upload(
+            bucket: str, path: str, content: bytes, content_type: str
+        ):
             return path
 
         async def fake_delete(bucket: str, path: str):

@@ -54,7 +54,9 @@ class TestListAccounts:
         assert len(data["items"]) == 2
         assert data["total"] == 5
 
-    async def test_list_accounts_unauthenticated(self, unauthenticated_client: AsyncClient):
+    async def test_list_accounts_unauthenticated(
+        self, unauthenticated_client: AsyncClient
+    ):
         """Should return 401 when not authenticated."""
         response = await unauthenticated_client.get("/api/v1/accounts")
 
@@ -153,7 +155,9 @@ class TestCreateAccount:
 
         assert response.status_code == 422
 
-    async def test_create_account_unauthenticated(self, unauthenticated_client: AsyncClient):
+    async def test_create_account_unauthenticated(
+        self, unauthenticated_client: AsyncClient
+    ):
         """Should return 401 when not authenticated."""
         payload = {
             "name": "Test Account",
@@ -196,7 +200,9 @@ class TestGetAccount:
         self, unauthenticated_client: AsyncClient, test_account
     ):
         """Should return 401 when not authenticated."""
-        response = await unauthenticated_client.get(f"/api/v1/accounts/{test_account.id}")
+        response = await unauthenticated_client.get(
+            f"/api/v1/accounts/{test_account.id}"
+        )
 
         assert response.status_code == 401
 
@@ -326,7 +332,9 @@ class TestAccountTypes:
         "account_type",
         ["btg_br", "xp", "btg_cayman", "tesouro_direto"],
     )
-    async def test_create_all_account_types(self, client: AsyncClient, account_type: str):
+    async def test_create_all_account_types(
+        self, client: AsyncClient, account_type: str
+    ):
         """Should successfully create accounts of all valid types."""
         payload = {
             "name": f"Account {account_type}",

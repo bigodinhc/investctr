@@ -34,9 +34,7 @@ class TestListTransactions:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_list_transactions_with_data(
-        self, client: AsyncClient, factory
-    ):
+    async def test_list_transactions_with_data(self, client: AsyncClient, factory):
         """Should return list of user transactions with asset info."""
         # Setup: Create account, asset, and transaction
         account = await factory.create_account()
@@ -99,9 +97,7 @@ class TestListTransactions:
         assert len(data["items"]) == 1
         assert data["items"][0]["asset_id"] == str(asset1.id)
 
-    async def test_list_transactions_filter_by_type(
-        self, client: AsyncClient, factory
-    ):
+    async def test_list_transactions_filter_by_type(self, client: AsyncClient, factory):
         """Should filter transactions by type."""
         account = await factory.create_account()
         asset = await factory.create_asset()
@@ -260,7 +256,9 @@ class TestCreateTransaction:
         assert response.status_code == 201
         assert response.json()["type"] == "dividend"
 
-    async def test_create_transaction_invalid_account(self, client: AsyncClient, factory):
+    async def test_create_transaction_invalid_account(
+        self, client: AsyncClient, factory
+    ):
         """Should return 400 when account doesn't exist or belong to user."""
         asset = await factory.create_asset()
         fake_account_id = uuid4()
@@ -316,7 +314,9 @@ class TestCreateTransaction:
 
         assert response.status_code == 422
 
-    async def test_create_transaction_negative_price(self, client: AsyncClient, factory):
+    async def test_create_transaction_negative_price(
+        self, client: AsyncClient, factory
+    ):
         """Should return 422 for negative price."""
         account = await factory.create_account()
         asset = await factory.create_asset()
@@ -359,7 +359,9 @@ class TestCreateTransaction:
             "executed_at": datetime.utcnow().isoformat(),
         }
 
-        response = await unauthenticated_client.post("/api/v1/transactions", json=payload)
+        response = await unauthenticated_client.post(
+            "/api/v1/transactions", json=payload
+        )
 
         assert response.status_code == 401
 

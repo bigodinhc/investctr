@@ -132,7 +132,9 @@ def clear_log_context() -> None:
     structlog.contextvars.clear_contextvars()
 
 
-def set_request_context(request_id: str | None = None, user_id: str | None = None) -> None:
+def set_request_context(
+    request_id: str | None = None, user_id: str | None = None
+) -> None:
     """Set request-scoped context variables.
 
     These are stored in ContextVars and automatically included in all

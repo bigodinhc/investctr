@@ -124,7 +124,9 @@ class RateLimitError(AppException):
 class DatabaseError(AppException):
     """Database operation error."""
 
-    def __init__(self, message: str = "Database error", details: dict[str, Any] | None = None):
+    def __init__(
+        self, message: str = "Database error", details: dict[str, Any] | None = None
+    ):
         super().__init__(
             message=message,
             code="DATABASE_ERROR",

@@ -36,7 +36,9 @@ def create_mock_pnl_summary(positions, current_prices):
         market_value = pos.quantity * current_price
         unrealized_pnl = market_value - pos.total_cost
         unrealized_pnl_pct = (
-            (unrealized_pnl / pos.total_cost * 100) if pos.total_cost > 0 else Decimal("0")
+            (unrealized_pnl / pos.total_cost * 100)
+            if pos.total_cost > 0
+            else Decimal("0")
         )
 
         entry = UnrealizedPnLEntry(
@@ -73,9 +75,10 @@ class TestListPositions:
     async def test_list_positions_empty(self, client: AsyncClient):
         """Should return empty list when no positions exist."""
         # Mock the services
-        with patch("app.api.v1.positions.QuoteService") as mock_quote, \
-             patch("app.api.v1.positions.PnLService") as mock_pnl:
-
+        with (
+            patch("app.api.v1.positions.QuoteService") as mock_quote,
+            patch("app.api.v1.positions.PnLService") as mock_pnl,
+        ):
             mock_quote_instance = AsyncMock()
             mock_quote_instance.get_latest_prices.return_value = {}
             mock_quote.return_value = mock_quote_instance
@@ -110,9 +113,10 @@ class TestListPositions:
         )
 
         # Mock the services
-        with patch("app.api.v1.positions.QuoteService") as mock_quote, \
-             patch("app.api.v1.positions.PnLService") as mock_pnl:
-
+        with (
+            patch("app.api.v1.positions.QuoteService") as mock_quote,
+            patch("app.api.v1.positions.PnLService") as mock_pnl,
+        ):
             mock_quote_instance = AsyncMock()
             mock_quote_instance.get_latest_prices.return_value = {
                 asset.id: Decimal("40.00")
@@ -150,9 +154,10 @@ class TestListPositions:
         await factory.create_position(account_id=account1.id, asset_id=asset.id)
         await factory.create_position(account_id=account2.id, asset_id=asset.id)
 
-        with patch("app.api.v1.positions.QuoteService") as mock_quote, \
-             patch("app.api.v1.positions.PnLService") as mock_pnl:
-
+        with (
+            patch("app.api.v1.positions.QuoteService") as mock_quote,
+            patch("app.api.v1.positions.PnLService") as mock_pnl,
+        ):
             mock_quote_instance = AsyncMock()
             mock_quote_instance.get_latest_prices.return_value = {}
             mock_quote.return_value = mock_quote_instance
@@ -183,9 +188,10 @@ class TestListPositions:
         await factory.create_position(account_id=account.id, asset_id=stock.id)
         await factory.create_position(account_id=account.id, asset_id=fii.id)
 
-        with patch("app.api.v1.positions.QuoteService") as mock_quote, \
-             patch("app.api.v1.positions.PnLService") as mock_pnl:
-
+        with (
+            patch("app.api.v1.positions.QuoteService") as mock_quote,
+            patch("app.api.v1.positions.PnLService") as mock_pnl,
+        ):
             mock_quote_instance = AsyncMock()
             mock_quote_instance.get_latest_prices.return_value = {}
             mock_quote.return_value = mock_quote_instance
@@ -213,9 +219,10 @@ class TestListPositions:
             asset = await factory.create_asset(ticker=f"TEST{i}")
             await factory.create_position(account_id=account.id, asset_id=asset.id)
 
-        with patch("app.api.v1.positions.QuoteService") as mock_quote, \
-             patch("app.api.v1.positions.PnLService") as mock_pnl:
-
+        with (
+            patch("app.api.v1.positions.QuoteService") as mock_quote,
+            patch("app.api.v1.positions.PnLService") as mock_pnl,
+        ):
             mock_quote_instance = AsyncMock()
             mock_quote_instance.get_latest_prices.return_value = {}
             mock_quote.return_value = mock_quote_instance
@@ -326,7 +333,9 @@ class TestConsolidatedPositions:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_consolidated_positions_aggregates(self, client: AsyncClient, factory):
+    async def test_consolidated_positions_aggregates(
+        self, client: AsyncClient, factory
+    ):
         """Should aggregate positions across accounts."""
         # Create two accounts with same asset
         account1 = await factory.create_account(name="BTG")
@@ -439,9 +448,7 @@ class TestPortfolioSummary:
         assert Decimal(data["total_cost"]) == Decimal("0")
         assert data["by_asset_type"] == []
 
-    async def test_portfolio_summary_with_positions(
-        self, client: AsyncClient, factory
-    ):
+    async def test_portfolio_summary_with_positions(self, client: AsyncClient, factory):
         """Should return summary with breakdown by asset type."""
         account = await factory.create_account()
         stock = await factory.create_asset(ticker="PETR4", asset_type=AssetType.STOCK)
@@ -494,7 +501,9 @@ class TestPortfolioSummary:
             total_cost=Decimal("5000.00"),
         )
 
-        response = await client.get(f"/api/v1/positions/summary?account_id={account1.id}")
+        response = await client.get(
+            f"/api/v1/positions/summary?account_id={account1.id}"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -524,18 +533,14 @@ class TestRecalculatePositions:
             mock_instance.recalculate_account_positions.return_value = [MagicMock()]
             mock_service.return_value = mock_instance
 
-            response = await client.post(
-                f"/api/v1/positions/{account.id}/recalculate"
-            )
+            response = await client.post(f"/api/v1/positions/{account.id}/recalculate")
 
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
         assert data["positions_updated"] == 1
 
-    async def test_recalculate_positions_account_not_found(
-        self, client: AsyncClient
-    ):
+    async def test_recalculate_positions_account_not_found(self, client: AsyncClient):
         """Should return 404 for non-existent account."""
         fake_id = uuid4()
         response = await client.post(f"/api/v1/positions/{fake_id}/recalculate")
