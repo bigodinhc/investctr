@@ -257,7 +257,7 @@ export default function PositionsPage() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card variant="elevated" className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background-surface">
@@ -342,7 +342,7 @@ export default function PositionsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
               {summaryData.by_asset_type.map((item) => {
                 const typeInfo = ASSET_TYPE_LABELS[item.asset_type] || ASSET_TYPE_LABELS.other;
                 const Icon = typeInfo.icon;

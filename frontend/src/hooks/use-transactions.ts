@@ -53,8 +53,9 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: positionKeys.all });
       toast({
-        title: "Transação criada",
-        description: "A transação foi criada com sucesso.",
+        title: "Transacao criada",
+        description: "A transacao foi criada com sucesso.",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -80,8 +81,9 @@ export function useUpdateTransaction() {
       });
       queryClient.invalidateQueries({ queryKey: positionKeys.all });
       toast({
-        title: "Transação atualizada",
-        description: "A transação foi atualizada com sucesso.",
+        title: "Transacao atualizada",
+        description: "A transacao foi atualizada com sucesso.",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -103,8 +105,9 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: positionKeys.all });
       toast({
-        title: "Transação excluída",
-        description: "A transação foi removida com sucesso.",
+        title: "Transacao excluida",
+        description: "A transacao foi removida com sucesso.",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -135,8 +138,9 @@ export function useCommitDocument() {
         queryKey: documentKeys.detail(variables.documentId),
       });
       toast({
-        title: "Importação concluída",
-        description: `${result.transactions_created} transações importadas, ${result.assets_created} ativos criados, ${result.positions_updated} posições atualizadas.`,
+        title: "Importacao concluida",
+        description: `${result.transactions_created} transacoes importadas, ${result.assets_created} ativos criados, ${result.positions_updated} posicoes atualizadas.`,
+        variant: "success",
       });
     },
     onError: (error: Error) => {

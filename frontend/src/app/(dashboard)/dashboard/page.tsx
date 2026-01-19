@@ -93,10 +93,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Hero Section - Main NAV */}
-      <div className="rounded-xl bg-background-elevated border border-border p-8">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
+      <div className="rounded-xl bg-background-elevated border border-border p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {portfolioSummary?.last_price_update ? (
                 <Badge variant="muted" size="lg">
                   <Calendar className="h-3 w-3 mr-1" />
@@ -122,7 +122,7 @@ export default function DashboardPage() {
               {isLoading ? (
                 <div className="h-14 w-64 skeleton rounded" />
               ) : (
-                <h1 className="font-display text-5xl lg:text-6xl tracking-tight text-foreground">
+                <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight text-foreground">
                   {formatCurrency(totalValue)}
                 </h1>
               )}
@@ -166,15 +166,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button variant="outline" size="lg" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Atualizar
+          <div className="flex gap-2 sm:gap-3">
+            <Button variant="outline" size="default" className="flex-1 sm:flex-none" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
-            <Button size="lg" asChild>
+            <Button size="default" className="flex-1 sm:flex-none" asChild>
               <a href="/documents">
-                <FileUp className="h-4 w-4 mr-2" />
-                Importar Extrato
+                <FileUp className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Importar Extrato</span>
               </a>
             </Button>
           </div>
@@ -182,7 +182,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <DataCard
           title="Valor da Cota"
           value={shareValue !== null ? formatCurrency(shareValue) : "R$ --"}

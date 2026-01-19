@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <rect width="180" height="180" rx="22" fill="#0a0a0a"/>
+  <path d="M30 124 L50 78 L70 100 L100 44 L130 66 L150 50" stroke="#00d4aa" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="30" cy="124" r="10" fill="#00d4aa"/>
+  <circle cx="50" cy="78" r="10" fill="#00d4aa"/>
+  <circle cx="70" cy="100" r="10" fill="#00d4aa"/>
+  <circle cx="100" cy="44" r="10" fill="#00d4aa"/>
+  <circle cx="130" cy="66" r="10" fill="#00d4aa"/>
+  <circle cx="150" cy="50" r="10" fill="#00d4aa"/>
+  <text x="90" y="165" font-family="monospace" font-size="28" font-weight="bold" fill="#00d4aa" text-anchor="middle">CTR</text>
+</svg>

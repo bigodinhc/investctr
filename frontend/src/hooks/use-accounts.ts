@@ -41,7 +41,7 @@ export function useCreateAccount() {
       toast({
         title: "Conta criada",
         description: "A conta foi criada com sucesso.",
-        variant: "default",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -68,7 +68,7 @@ export function useUpdateAccount() {
       toast({
         title: "Conta atualizada",
         description: "A conta foi atualizada com sucesso.",
-        variant: "default",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -92,9 +92,9 @@ export function useDeleteAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ACCOUNTS_KEY });
       toast({
-        title: "Conta excluída",
-        description: "A conta foi excluída com sucesso.",
-        variant: "default",
+        title: "Conta excluida",
+        description: "A conta foi excluida com sucesso.",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
