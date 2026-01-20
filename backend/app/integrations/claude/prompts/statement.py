@@ -17,8 +17,10 @@ from .base import BasePrompt
 class BTGStatementPrompt(BasePrompt):
     """Prompt for parsing BTG Pactual monthly account statements (Extrato Mensal)."""
 
-    # Version for tracking deployment (v2 = investment funds extraction enabled)
-    PROMPT_VERSION = "v2.1-investment-funds"
+    # Version for tracking deployment
+    # v2.1 = investment funds extraction enabled
+    # v2.2 = MANDATORY investment_funds key in response
+    PROMPT_VERSION = "v2.2-mandatory-funds"
 
     @property
     def document_type(self) -> str:
@@ -110,6 +112,8 @@ ALL cash movements including:
 - TAXA DE CUSTODIA (custody fee)
 
 ## RETURN FORMAT:
+
+**IMPORTANT: ALL fields shown below are REQUIRED in your response. If a section has no data, use an empty array [] or null as appropriate. The investment_funds field is MANDATORY - never omit it.**
 
 ```json
 {
@@ -281,5 +285,11 @@ ALL cash movements including:
    - Look for tables with columns like: Fundo | CNPJ | Qtd Cotas | Valor Cota | Bruto | IR | Líquido
 
 7. **Do NOT skip any data** - extract everything visible in the document, especially investment funds which are often high-value positions.
+
+8. **MANDATORY: investment_funds key MUST ALWAYS be included in your JSON response**:
+   - If the document has investment funds, include them as an array of objects
+   - If NO investment funds are found, include an EMPTY array: `"investment_funds": []`
+   - NEVER omit the investment_funds key from your response
+   - This is a REQUIRED field in the output schema
 
 """ + self.get_json_instruction()
