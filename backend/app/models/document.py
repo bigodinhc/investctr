@@ -74,3 +74,6 @@ class Document(Base, UUIDMixin):
     transactions: Mapped[list["Transaction"]] = relationship(
         "Transaction", back_populates="document"
     )
+    fixed_income_positions: Mapped[list["FixedIncomePosition"]] = relationship(
+        "FixedIncomePosition", back_populates="document"
+    )

@@ -64,6 +64,41 @@ class CashFlowType(str, Enum):
 
     DEPOSIT = "deposit"
     WITHDRAWAL = "withdrawal"
+    DIVIDEND = "dividend"
+    JCP = "jcp"
+    INTEREST = "interest"
+    FEE = "fee"
+    TAX = "tax"
+    SETTLEMENT = "settlement"
+    RENTAL_INCOME = "rental_income"
+    OTHER = "other"
+
+
+class FixedIncomeType(str, Enum):
+    """Types of fixed income investments."""
+
+    CDB = "cdb"
+    LCA = "lca"
+    LCI = "lci"
+    LFT = "lft"
+    NTNB = "ntnb"
+    NTNF = "ntnf"
+    LF = "lf"
+    DEBENTURE = "debenture"
+    CRI = "cri"
+    CRA = "cra"
+    OTHER = "other"
+
+
+class IndexerType(str, Enum):
+    """Types of indexers for fixed income."""
+
+    CDI = "cdi"
+    SELIC = "selic"
+    IPCA = "ipca"
+    IGPM = "igpm"
+    PREFIXADO = "prefixado"
+    OTHER = "other"
 
 
 class DocumentType(str, Enum):

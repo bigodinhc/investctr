@@ -188,7 +188,6 @@ async def parse_pdf_with_claude(
 
         # Parse JSON from response
         import json
-        import re
 
         # Try to find JSON in the response
         json_str = response_text

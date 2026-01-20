@@ -139,12 +139,53 @@ export interface ParsedTransaction {
   notes: string | null;
 }
 
+export interface ParsedFixedIncome {
+  asset_name: string;
+  asset_type: string;
+  issuer: string | null;
+  quantity: number;
+  unit_price: number | null;
+  total_value: number;
+  indexer: string | null;
+  rate_percent: number | null;
+  acquisition_date: string | null;
+  maturity_date: string | null;
+  reference_date: string;
+}
+
+export interface ParsedStockLending {
+  date: string;
+  type: string; // lending_out, lending_return
+  ticker: string;
+  quantity: number;
+  rate_percent: number | null;
+  total: number;
+  notes: string | null;
+}
+
+export interface ParsedCashMovement {
+  date: string;
+  type: string;
+  description: string | null;
+  ticker: string | null;
+  value: number;
+}
+
 export interface ParsedDocumentData {
   document_type: string;
   period: { start: string; end: string } | null;
   account_number: string | null;
   transactions: ParsedTransaction[];
+  fixed_income_positions?: ParsedFixedIncome[];
+  stock_lending?: ParsedStockLending[];
+  cash_movements?: ParsedCashMovement[];
   summary: Record<string, number> | null;
+  consolidated_position?: {
+    total_stocks: number | null;
+    total_fixed_income: number | null;
+    total_cash: number | null;
+    grand_total: number | null;
+  };
 }
 
 export interface DocumentParseResponse {
@@ -257,9 +298,44 @@ export interface CommitTransactionItem {
   notes?: string | null;
 }
 
+export interface CommitFixedIncomeItem {
+  asset_name: string;
+  asset_type: string;
+  issuer?: string | null;
+  quantity: number;
+  unit_price?: number | null;
+  total_value: number;
+  indexer?: string | null;
+  rate_percent?: number | null;
+  acquisition_date?: string | null;
+  maturity_date?: string | null;
+  reference_date: string;
+}
+
+export interface CommitStockLendingItem {
+  date: string;
+  type: string;
+  ticker: string;
+  quantity: number;
+  rate_percent?: number | null;
+  total: number;
+  notes?: string | null;
+}
+
+export interface CommitCashMovementItem {
+  date: string;
+  type: string;
+  description?: string | null;
+  ticker?: string | null;
+  value: number;
+}
+
 export interface CommitDocumentRequest {
   account_id: string;
   transactions: CommitTransactionItem[];
+  fixed_income?: CommitFixedIncomeItem[];
+  stock_lending?: CommitStockLendingItem[];
+  cash_movements?: CommitCashMovementItem[];
 }
 
 export interface CommitDocumentResponse {
@@ -267,6 +343,8 @@ export interface CommitDocumentResponse {
   transactions_created: number;
   assets_created: number;
   positions_updated: number;
+  fixed_income_created: number;
+  cash_flows_created: number;
   errors: string[];
 }
 
@@ -370,7 +448,39 @@ export interface QuoteSyncResponse {
 }
 
 // Cash Flow Types
-export type CashFlowType = "deposit" | "withdrawal";
+export type CashFlowType =
+  | "deposit"
+  | "withdrawal"
+  | "dividend"
+  | "jcp"
+  | "interest"
+  | "fee"
+  | "tax"
+  | "settlement"
+  | "rental_income"
+  | "other";
+
+// Fixed Income Types
+export type FixedIncomeType =
+  | "cdb"
+  | "lca"
+  | "lci"
+  | "lft"
+  | "ntnb"
+  | "ntnf"
+  | "lf"
+  | "debenture"
+  | "cri"
+  | "cra"
+  | "other";
+
+export type IndexerType =
+  | "cdi"
+  | "selic"
+  | "ipca"
+  | "igpm"
+  | "prefixado"
+  | "other";
 
 export interface CashFlow {
   id: string;

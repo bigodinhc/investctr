@@ -33,9 +33,16 @@ from app.schemas.enums import (
     CashFlowType,
     Currency,
     DocumentType,
+    FixedIncomeType,
+    IndexerType,
     ParsingStatus,
     PositionType,
     TransactionType,
+)
+from app.schemas.fixed_income import (
+    FixedIncomePositionCreate,
+    FixedIncomePositionResponse,
+    FixedIncomePositionsListResponse,
 )
 from app.schemas.position import (
     ConsolidatedPosition,
@@ -50,8 +57,11 @@ from app.schemas.position import (
     PositionWithMarketData,
 )
 from app.schemas.transaction import (
+    CommitCashMovementItem,
     CommitDocumentRequest,
     CommitDocumentResponse,
+    CommitFixedIncomeItem,
+    CommitStockLendingItem,
     CommitTransactionItem,
     TransactionCreate,
     TransactionCreateFromParsing,
@@ -76,6 +86,8 @@ __all__ = [
     "CashFlowType",
     "DocumentType",
     "Currency",
+    "FixedIncomeType",
+    "IndexerType",
     # Account
     "AccountCreate",
     "AccountUpdate",
@@ -107,8 +119,15 @@ __all__ = [
     "TransactionsListResponse",
     "TransactionsWithAssetListResponse",
     "CommitTransactionItem",
+    "CommitFixedIncomeItem",
+    "CommitStockLendingItem",
+    "CommitCashMovementItem",
     "CommitDocumentRequest",
     "CommitDocumentResponse",
+    # Fixed Income
+    "FixedIncomePositionCreate",
+    "FixedIncomePositionResponse",
+    "FixedIncomePositionsListResponse",
     # Position
     "PositionResponse",
     "PositionWithAsset",

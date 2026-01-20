@@ -12,7 +12,14 @@ from sqlalchemy import select
 from app.api.deps import AuthenticatedUser, DBSession, Pagination
 from app.core.logging import get_logger
 from app.core.rate_limit import rate_limit
-from app.models import Account, Asset, Document, Transaction
+from app.models import (
+    Account,
+    Asset,
+    CashFlow,
+    Document,
+    FixedIncomePosition,
+    Transaction,
+)
 from app.schemas.document import (
     DocumentParseRequest,
     DocumentResponse,
@@ -20,7 +27,15 @@ from app.schemas.document import (
     DocumentWithData,
     ParseTaskResponse,
 )
-from app.schemas.enums import AssetType, DocumentType, ParsingStatus, TransactionType
+from app.schemas.enums import (
+    AssetType,
+    CashFlowType,
+    DocumentType,
+    FixedIncomeType,
+    IndexerType,
+    ParsingStatus,
+    TransactionType,
+)
 from app.schemas.transaction import CommitDocumentRequest, CommitDocumentResponse
 from app.services.position_service import PositionService
 
@@ -271,6 +286,7 @@ async def parse_document(
 
     # Check if Celery/Redis is configured before attempting async mode
     from app.config import get_settings
+
     celery_configured = bool(get_settings().celery_broker_url)
 
     if async_mode and celery_configured:
@@ -443,6 +459,7 @@ async def reparse_document(
 
     # Check if Celery/Redis is configured
     from app.config import get_settings
+
     celery_configured = bool(get_settings().celery_broker_url)
 
     if celery_configured:
@@ -507,17 +524,20 @@ async def commit_document_transactions(
     request: CommitDocumentRequest,
 ) -> CommitDocumentResponse:
     """
-    Commit parsed document transactions to the database.
+    Commit parsed document data to the database.
 
-    This endpoint takes the parsed transaction data (reviewed/edited by user)
-    and creates actual Transaction records. It also:
-    - Creates Assets if they don't exist (auto-discovery)
-    - Updates Position records for affected assets
-    - Links transactions to the source document
+    This endpoint takes the parsed data (reviewed/edited by user)
+    and creates database records. It handles:
+    - Transactions (buy/sell) → transactions table
+    - Stock lending → transactions table (type=rental)
+    - Fixed income positions → fixed_income_positions table
+    - Cash movements → cash_flows table
+    - Asset auto-creation if they don't exist
+    - Position recalculation for affected assets
 
     Args:
         document_id: UUID of the parsed document
-        request: CommitDocumentRequest with account_id and transactions list
+        request: CommitDocumentRequest with account_id and data lists
 
     Returns:
         CommitDocumentResponse with counts of created records
@@ -569,14 +589,21 @@ async def commit_document_transactions(
         user_id=str(user.id),
         account_id=str(request.account_id),
         transaction_count=len(request.transactions),
+        fixed_income_count=len(request.fixed_income),
+        stock_lending_count=len(request.stock_lending),
+        cash_movements_count=len(request.cash_movements),
     )
 
     errors: list[str] = []
     transactions_created = 0
     assets_created = 0
+    fixed_income_created = 0
+    cash_flows_created = 0
     asset_ids_to_recalculate: set[UUID] = set()
 
-    # Process each transaction
+    # =====================================================================
+    # Process transactions (buy/sell)
+    # =====================================================================
     for idx, txn_data in enumerate(request.transactions):
         try:
             # Get or create asset
@@ -638,7 +665,186 @@ async def commit_document_transactions(
                 error=str(e),
             )
 
-    # Commit transactions
+    # =====================================================================
+    # Process stock lending
+    # =====================================================================
+    for idx, lending_data in enumerate(request.stock_lending):
+        try:
+            # Get or create asset
+            asset, was_created = await _get_or_create_asset(
+                db=db,
+                ticker=lending_data.ticker,
+                asset_name=None,
+                asset_type_str=None,
+            )
+            if was_created:
+                assets_created += 1
+
+            # Parse date
+            try:
+                executed_at = datetime.strptime(lending_data.date, "%Y-%m-%d")
+            except ValueError:
+                errors.append(
+                    f"Stock lending {idx + 1}: Invalid date format '{lending_data.date}'"
+                )
+                continue
+
+            # Calculate price from total/quantity for rental income
+            quantity = lending_data.quantity
+            total = lending_data.total
+            price = total / quantity if quantity > 0 else Decimal("0")
+
+            # Build notes with rate info
+            notes = lending_data.notes or ""
+            if lending_data.rate_percent:
+                notes = f"Taxa: {lending_data.rate_percent}%. {notes}".strip()
+            if lending_data.type:
+                notes = f"Tipo: {lending_data.type}. {notes}".strip()
+
+            # Create transaction as rental
+            transaction = Transaction(
+                account_id=request.account_id,
+                asset_id=asset.id,
+                document_id=document_id,
+                type=TransactionType.RENTAL,
+                quantity=quantity,
+                price=price,
+                fees=Decimal("0"),
+                executed_at=executed_at,
+                notes=notes,
+            )
+
+            db.add(transaction)
+            transactions_created += 1
+
+        except Exception as e:
+            errors.append(f"Stock lending {idx + 1} ({lending_data.ticker}): {str(e)}")
+            logger.warning(
+                "commit_stock_lending_error",
+                document_id=str(document_id),
+                idx=idx,
+                ticker=lending_data.ticker,
+                error=str(e),
+            )
+
+    # =====================================================================
+    # Process fixed income positions
+    # =====================================================================
+    for idx, fi_data in enumerate(request.fixed_income):
+        try:
+            # Parse dates
+            reference_date = None
+            acquisition_date = None
+            maturity_date = None
+
+            try:
+                reference_date = datetime.strptime(
+                    fi_data.reference_date, "%Y-%m-%d"
+                ).date()
+            except ValueError:
+                errors.append(
+                    f"Fixed income {idx + 1}: Invalid reference_date format '{fi_data.reference_date}'"
+                )
+                continue
+
+            if fi_data.acquisition_date:
+                try:
+                    acquisition_date = datetime.strptime(
+                        fi_data.acquisition_date, "%Y-%m-%d"
+                    ).date()
+                except ValueError:
+                    pass  # Optional field, ignore invalid
+
+            if fi_data.maturity_date:
+                try:
+                    maturity_date = datetime.strptime(
+                        fi_data.maturity_date, "%Y-%m-%d"
+                    ).date()
+                except ValueError:
+                    pass  # Optional field, ignore invalid
+
+            # Map asset type
+            asset_type = _map_fixed_income_type(fi_data.asset_type)
+
+            # Map indexer
+            indexer = _map_indexer_type(fi_data.indexer) if fi_data.indexer else None
+
+            # Create fixed income position
+            fi_position = FixedIncomePosition(
+                account_id=request.account_id,
+                document_id=document_id,
+                asset_name=fi_data.asset_name,
+                asset_type=asset_type,
+                issuer=fi_data.issuer,
+                quantity=fi_data.quantity,
+                unit_price=fi_data.unit_price,
+                total_value=fi_data.total_value,
+                indexer=indexer,
+                rate_percent=fi_data.rate_percent,
+                acquisition_date=acquisition_date,
+                maturity_date=maturity_date,
+                reference_date=reference_date,
+            )
+
+            db.add(fi_position)
+            fixed_income_created += 1
+
+        except Exception as e:
+            errors.append(f"Fixed income {idx + 1} ({fi_data.asset_name}): {str(e)}")
+            logger.warning(
+                "commit_fixed_income_error",
+                document_id=str(document_id),
+                idx=idx,
+                asset_name=fi_data.asset_name,
+                error=str(e),
+            )
+
+    # =====================================================================
+    # Process cash movements
+    # =====================================================================
+    for idx, cash_data in enumerate(request.cash_movements):
+        try:
+            # Parse date
+            try:
+                executed_at = datetime.strptime(cash_data.date, "%Y-%m-%d")
+            except ValueError:
+                errors.append(
+                    f"Cash movement {idx + 1}: Invalid date format '{cash_data.date}'"
+                )
+                continue
+
+            # Map cash flow type
+            cf_type = _map_cash_flow_type(cash_data.type)
+
+            # Build notes
+            notes = cash_data.description or ""
+            if cash_data.ticker:
+                notes = f"Ticker: {cash_data.ticker}. {notes}".strip()
+
+            # Create cash flow
+            cash_flow = CashFlow(
+                account_id=request.account_id,
+                type=cf_type,
+                amount=cash_data.value,
+                currency="BRL",
+                exchange_rate=Decimal("1"),
+                executed_at=executed_at,
+                notes=notes,
+            )
+
+            db.add(cash_flow)
+            cash_flows_created += 1
+
+        except Exception as e:
+            errors.append(f"Cash movement {idx + 1}: {str(e)}")
+            logger.warning(
+                "commit_cash_movement_error",
+                document_id=str(document_id),
+                idx=idx,
+                error=str(e),
+            )
+
+    # Commit all records
     await db.commit()
 
     # Recalculate positions for affected assets
@@ -668,6 +874,8 @@ async def commit_document_transactions(
         document_id=str(document_id),
         transactions_created=transactions_created,
         assets_created=assets_created,
+        fixed_income_created=fixed_income_created,
+        cash_flows_created=cash_flows_created,
         positions_updated=positions_updated,
         errors_count=len(errors),
     )
@@ -677,6 +885,8 @@ async def commit_document_transactions(
         transactions_created=transactions_created,
         assets_created=assets_created,
         positions_updated=positions_updated,
+        fixed_income_created=fixed_income_created,
+        cash_flows_created=cash_flows_created,
         errors=errors,
     )
 
@@ -804,3 +1014,81 @@ def _map_transaction_type(type_str: str) -> TransactionType:
 
     normalized = type_str.lower().strip().replace(" ", "_")
     return type_map.get(normalized, TransactionType.OTHER)
+
+
+def _map_fixed_income_type(type_str: str) -> FixedIncomeType:
+    """Map string fixed income type to enum."""
+    type_map = {
+        "cdb": FixedIncomeType.CDB,
+        "lca": FixedIncomeType.LCA,
+        "lci": FixedIncomeType.LCI,
+        "lft": FixedIncomeType.LFT,
+        "ltn": FixedIncomeType.LFT,  # Treat LTN as similar to LFT
+        "ntnb": FixedIncomeType.NTNB,
+        "ntn-b": FixedIncomeType.NTNB,
+        "ntnf": FixedIncomeType.NTNF,
+        "ntn-f": FixedIncomeType.NTNF,
+        "lf": FixedIncomeType.LF,
+        "letra_financeira": FixedIncomeType.LF,
+        "debenture": FixedIncomeType.DEBENTURE,
+        "debentures": FixedIncomeType.DEBENTURE,
+        "cri": FixedIncomeType.CRI,
+        "cra": FixedIncomeType.CRA,
+        "tesouro_selic": FixedIncomeType.LFT,
+        "tesouro_ipca": FixedIncomeType.NTNB,
+        "tesouro_prefixado": FixedIncomeType.NTNF,
+    }
+
+    normalized = type_str.lower().strip().replace(" ", "_").replace("-", "")
+    return type_map.get(normalized, FixedIncomeType.OTHER)
+
+
+def _map_indexer_type(indexer_str: str) -> IndexerType:
+    """Map string indexer type to enum."""
+    type_map = {
+        "cdi": IndexerType.CDI,
+        "di": IndexerType.CDI,
+        "selic": IndexerType.SELIC,
+        "ipca": IndexerType.IPCA,
+        "igpm": IndexerType.IGPM,
+        "igp-m": IndexerType.IGPM,
+        "prefixado": IndexerType.PREFIXADO,
+        "pre": IndexerType.PREFIXADO,
+    }
+
+    normalized = indexer_str.lower().strip().replace(" ", "_").replace("-", "")
+    return type_map.get(normalized, IndexerType.OTHER)
+
+
+def _map_cash_flow_type(type_str: str) -> CashFlowType:
+    """Map string cash flow type to enum."""
+    type_map = {
+        "deposit": CashFlowType.DEPOSIT,
+        "deposito": CashFlowType.DEPOSIT,
+        "aporte": CashFlowType.DEPOSIT,
+        "withdrawal": CashFlowType.WITHDRAWAL,
+        "saque": CashFlowType.WITHDRAWAL,
+        "resgate": CashFlowType.WITHDRAWAL,
+        "dividend": CashFlowType.DIVIDEND,
+        "dividendo": CashFlowType.DIVIDEND,
+        "jcp": CashFlowType.JCP,
+        "jscp": CashFlowType.JCP,
+        "interest": CashFlowType.INTEREST,
+        "juros": CashFlowType.INTEREST,
+        "rendimento": CashFlowType.INTEREST,
+        "fee": CashFlowType.FEE,
+        "taxa": CashFlowType.FEE,
+        "tarifa": CashFlowType.FEE,
+        "tax": CashFlowType.TAX,
+        "imposto": CashFlowType.TAX,
+        "ir": CashFlowType.TAX,
+        "iof": CashFlowType.TAX,
+        "settlement": CashFlowType.SETTLEMENT,
+        "liquidacao": CashFlowType.SETTLEMENT,
+        "rental_income": CashFlowType.RENTAL_INCOME,
+        "aluguel": CashFlowType.RENTAL_INCOME,
+        "renda_aluguel": CashFlowType.RENTAL_INCOME,
+    }
+
+    normalized = type_str.lower().strip().replace(" ", "_")
+    return type_map.get(normalized, CashFlowType.OTHER)

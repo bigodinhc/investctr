@@ -11,6 +11,8 @@ import type {
   DocumentParseResponse,
   ParseTaskResponse,
   PaginationParams,
+  CommitDocumentRequest,
+  CommitDocumentResponse,
 } from "./types";
 
 export async function getDocuments(
@@ -57,4 +59,14 @@ export async function getParseResult(
 
 export async function deleteDocument(id: string): Promise<void> {
   return api.delete(`/api/v1/documents/${id}`);
+}
+
+export async function commitDocument(
+  documentId: string,
+  data: CommitDocumentRequest
+): Promise<CommitDocumentResponse> {
+  return api.post<CommitDocumentResponse>(
+    `/api/v1/documents/${documentId}/commit`,
+    data
+  );
 }

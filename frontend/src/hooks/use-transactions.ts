@@ -9,17 +9,14 @@ import {
   createTransaction,
   updateTransaction,
   deleteTransaction,
-  commitDocumentTransactions,
 } from "@/lib/api/transactions";
 import type {
   TransactionFilters,
   TransactionCreate,
   TransactionUpdate,
-  CommitDocumentRequest,
 } from "@/lib/api/types";
 import { toast } from "@/components/ui/use-toast";
 import { positionKeys } from "./use-positions";
-import { documentKeys } from "./use-documents";
 
 export const transactionKeys = {
   all: ["transactions"] as const,
@@ -113,39 +110,6 @@ export function useDeleteTransaction() {
     onError: (error: Error) => {
       toast({
         title: "Erro ao excluir transação",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-export function useCommitDocument() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      documentId,
-      data,
-    }: {
-      documentId: string;
-      data: CommitDocumentRequest;
-    }) => commitDocumentTransactions(documentId, data),
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: positionKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: documentKeys.detail(variables.documentId),
-      });
-      toast({
-        title: "Importacao concluida",
-        description: `${result.transactions_created} transacoes importadas, ${result.assets_created} ativos criados, ${result.positions_updated} posicoes atualizadas.`,
-        variant: "success",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro na importação",
         description: error.message,
         variant: "destructive",
       });

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Pencil, Trash2, Save, X, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -21,7 +22,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ParsedTransaction, ParsedDocumentData } from "@/lib/api/types";
+import type {
+  ParsedTransaction,
+  ParsedDocumentData,
+  ParsedFixedIncome,
+  ParsedStockLending,
+  ParsedCashMovement,
+  CommitDocumentRequest,
+} from "@/lib/api/types";
+import { FixedIncomeTable } from "./FixedIncomeTable";
+import { StockLendingTable } from "./StockLendingTable";
+import { CashMovementsTable } from "./CashMovementsTable";
+import { DocumentSummary } from "./DocumentSummary";
 
 const TRANSACTION_TYPES = [
   { value: "buy", label: "Compra", color: "success" },
@@ -43,7 +55,7 @@ interface EditableTransaction extends ParsedTransaction {
 
 interface ParsePreviewProps {
   data: ParsedDocumentData;
-  onConfirm?: (transactions: ParsedTransaction[]) => void;
+  onConfirm?: (data: Omit<CommitDocumentRequest, "account_id">) => void;
   onCancel?: () => void;
   isLoading?: boolean;
 }
@@ -56,6 +68,16 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
       isEditing: false,
       isSelected: true,
     }))
+  );
+
+  const [selectedFixedIncome, setSelectedFixedIncome] = useState<ParsedFixedIncome[]>(
+    data.fixed_income_positions || []
+  );
+  const [selectedStockLending, setSelectedStockLending] = useState<ParsedStockLending[]>(
+    data.stock_lending || []
+  );
+  const [selectedCashMovements, setSelectedCashMovements] = useState<ParsedCashMovement[]>(
+    data.cash_movements || []
   );
 
   const [editingRow, setEditingRow] = useState<string | null>(null);
@@ -110,14 +132,77 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
     const selectedTransactions = transactions
       .filter((t) => t.isSelected)
       .map(({ id, isEditing, isSelected, ...rest }) => rest);
-    onConfirm?.(selectedTransactions);
+
+    onConfirm?.({
+      transactions: selectedTransactions.map((t) => ({
+        date: t.date,
+        type: t.type,
+        ticker: t.ticker,
+        quantity: t.quantity,
+        price: t.price,
+        total: t.total,
+        fees: t.fees,
+        notes: t.notes,
+      })),
+      fixed_income: selectedFixedIncome.map((fi) => ({
+        asset_name: fi.asset_name,
+        asset_type: fi.asset_type,
+        issuer: fi.issuer,
+        quantity: fi.quantity,
+        unit_price: fi.unit_price,
+        total_value: fi.total_value,
+        indexer: fi.indexer,
+        rate_percent: fi.rate_percent,
+        acquisition_date: fi.acquisition_date,
+        maturity_date: fi.maturity_date,
+        reference_date: fi.reference_date,
+      })),
+      stock_lending: selectedStockLending.map((sl) => ({
+        date: sl.date,
+        type: sl.type,
+        ticker: sl.ticker,
+        quantity: sl.quantity,
+        rate_percent: sl.rate_percent,
+        total: sl.total,
+        notes: sl.notes,
+      })),
+      cash_movements: selectedCashMovements.map((cm) => ({
+        date: cm.date,
+        type: cm.type,
+        description: cm.description,
+        ticker: cm.ticker,
+        value: cm.value,
+      })),
+    });
   };
+
+  const handleFixedIncomeChange = useCallback((items: ParsedFixedIncome[]) => {
+    setSelectedFixedIncome(items);
+  }, []);
+
+  const handleStockLendingChange = useCallback((items: ParsedStockLending[]) => {
+    setSelectedStockLending(items);
+  }, []);
+
+  const handleCashMovementsChange = useCallback((items: ParsedCashMovement[]) => {
+    setSelectedCashMovements(items);
+  }, []);
 
   const getTransactionType = (type: string) => {
     return TRANSACTION_TYPES.find((t) => t.value === type) || TRANSACTION_TYPES[8];
   };
 
-  const selectedCount = transactions.filter((t) => t.isSelected).length;
+  const selectedTxnCount = transactions.filter((t) => t.isSelected).length;
+  const hasTransactions = data.transactions.length > 0;
+  const hasFixedIncome = (data.fixed_income_positions?.length || 0) > 0;
+  const hasStockLending = (data.stock_lending?.length || 0) > 0;
+  const hasCashMovements = (data.cash_movements?.length || 0) > 0;
+
+  const totalSelectedItems =
+    selectedTxnCount +
+    selectedFixedIncome.length +
+    selectedStockLending.length +
+    selectedCashMovements.length;
 
   const formatCurrency = (value: number | null) => {
     if (value === null) return "-";
@@ -135,280 +220,334 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
     }).format(value);
   };
 
+  // Determine which tabs to show
+  const tabs = [];
+  tabs.push({ id: "summary", label: "Resumo", count: null });
+  if (hasTransactions) {
+    tabs.push({ id: "transactions", label: "Transações", count: transactions.length });
+  }
+  if (hasFixedIncome) {
+    tabs.push({ id: "fixed-income", label: "Renda Fixa", count: data.fixed_income_positions?.length });
+  }
+  if (hasStockLending) {
+    tabs.push({ id: "stock-lending", label: "Aluguel", count: data.stock_lending?.length });
+  }
+  if (hasCashMovements) {
+    tabs.push({ id: "cash-movements", label: "Movimentações", count: data.cash_movements?.length });
+  }
+
   return (
-    <Card variant="elevated">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-display text-xl flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-positive/10">
-              <CheckCircle2 className="h-4 w-4 text-positive" />
-            </div>
-            TRANSAÇÕES EXTRAÍDAS
-          </CardTitle>
-          <Badge variant="secondary">
-            {selectedCount} de {transactions.length} selecionadas
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Summary Info */}
-        {data.period && (
-          <div className="flex flex-wrap gap-4 text-sm text-foreground-muted">
-            <div>
-              <span className="font-medium">Período:</span>{" "}
-              {data.period.start} a {data.period.end}
-            </div>
-            {data.account_number && (
-              <div>
-                <span className="font-medium">Conta:</span> {data.account_number}
-              </div>
-            )}
-            <div>
-              <span className="font-medium">Tipo:</span> {data.document_type}
-            </div>
-          </div>
+    <div className="space-y-4">
+      <Tabs defaultValue={hasTransactions ? "transactions" : "summary"} className="w-full">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id} className="min-w-fit">
+              {tab.label}
+              {tab.count !== null && (
+                <Badge variant="secondary" className="ml-2">
+                  {tab.count}
+                </Badge>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="summary" className="mt-4">
+          <DocumentSummary data={data} />
+        </TabsContent>
+
+        {hasTransactions && (
+          <TabsContent value="transactions" className="mt-4">
+            <Card variant="elevated">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="font-display text-xl flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-positive/10">
+                      <CheckCircle2 className="h-4 w-4 text-positive" />
+                    </div>
+                    TRANSAÇÕES EXTRAÍDAS
+                  </CardTitle>
+                  <Badge variant="secondary">
+                    {selectedTxnCount} de {transactions.length} selecionadas
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {transactions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-warning/10 mx-auto mb-4">
+                      <AlertCircle className="h-8 w-8 text-warning" />
+                    </div>
+                    <h3 className="font-display text-xl mb-2">Nenhuma transação encontrada</h3>
+                    <p className="text-foreground-muted">
+                      O documento não contém transações para importar.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[50px]">
+                            <input
+                              type="checkbox"
+                              checked={selectedTxnCount === transactions.length}
+                              onChange={(e) =>
+                                setTransactions((prev) =>
+                                  prev.map((t) => ({ ...t, isSelected: e.target.checked }))
+                                )
+                              }
+                              className="rounded border-border-subtle"
+                            />
+                          </TableHead>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Ativo</TableHead>
+                          <TableHead className="text-right">Quantidade</TableHead>
+                          <TableHead className="text-right">Preço</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead className="text-right">Taxas</TableHead>
+                          <TableHead className="w-[100px]">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions.map((txn) => {
+                          const txnType = getTransactionType(txn.type);
+                          const isEditing = editingRow === txn.id;
+
+                          return (
+                            <TableRow
+                              key={txn.id}
+                              className={!txn.isSelected ? "opacity-50" : ""}
+                            >
+                              <TableCell>
+                                <input
+                                  type="checkbox"
+                                  checked={txn.isSelected}
+                                  onChange={() => toggleSelect(txn.id)}
+                                  className="rounded border-border-subtle"
+                                />
+                              </TableCell>
+
+                              {isEditing && editForm ? (
+                                <>
+                                  <TableCell>
+                                    <Input
+                                      type="date"
+                                      value={editForm.date}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, date: e.target.value })
+                                      }
+                                      className="h-8 w-32"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Select
+                                      value={editForm.type}
+                                      onValueChange={(value) =>
+                                        setEditForm({ ...editForm, type: value })
+                                      }
+                                    >
+                                      <SelectTrigger className="h-8 w-32">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {TRANSACTION_TYPES.map((type) => (
+                                          <SelectItem key={type.value} value={type.value}>
+                                            {type.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={editForm.ticker}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, ticker: e.target.value })
+                                      }
+                                      className="h-8 w-24"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      value={editForm.quantity ?? ""}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          quantity: e.target.value ? parseFloat(e.target.value) : null,
+                                        })
+                                      }
+                                      className="h-8 w-24 text-right"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={editForm.price ?? ""}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          price: e.target.value ? parseFloat(e.target.value) : null,
+                                        })
+                                      }
+                                      className="h-8 w-24 text-right"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={editForm.total ?? ""}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          total: e.target.value ? parseFloat(e.target.value) : null,
+                                        })
+                                      }
+                                      className="h-8 w-28 text-right"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={editForm.fees ?? ""}
+                                      onChange={(e) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          fees: e.target.value ? parseFloat(e.target.value) : null,
+                                        })
+                                      }
+                                      className="h-8 w-24 text-right"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 hover:bg-success/10 hover:text-success"
+                                        onClick={saveEdit}
+                                      >
+                                        <Save className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={cancelEdit}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell className="font-mono text-sm">
+                                    {txn.date}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        txnType.color === "success" ? "success" :
+                                        txnType.color === "destructive" ? "destructive" :
+                                        txnType.color === "info" ? "info" :
+                                        txnType.color === "warning" ? "warning" :
+                                        txnType.color === "muted" ? "muted" :
+                                        "secondary"
+                                      }
+                                    >
+                                      {txnType.label}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="font-mono font-semibold">
+                                    {txn.ticker}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono">
+                                    {formatNumber(txn.quantity)}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono">
+                                    {formatCurrency(txn.price)}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono font-semibold">
+                                    {formatCurrency(txn.total)}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono text-foreground-muted">
+                                    {formatCurrency(txn.fees)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 hover:bg-foreground/10 hover:text-foreground"
+                                        onClick={() => startEdit(txn)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={() => removeTransaction(txn.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              )}
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         )}
 
-        {/* Transactions Table */}
-        {transactions.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-warning/10 mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-warning" />
-            </div>
-            <h3 className="font-display text-xl mb-2">Nenhuma transação encontrada</h3>
-            <p className="text-foreground-muted">
-              O documento não contém transações para importar.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">
-                    <input
-                      type="checkbox"
-                      checked={selectedCount === transactions.length}
-                      onChange={(e) =>
-                        setTransactions((prev) =>
-                          prev.map((t) => ({ ...t, isSelected: e.target.checked }))
-                        )
-                      }
-                      className="rounded border-border-subtle"
-                    />
-                  </TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Ativo</TableHead>
-                  <TableHead className="text-right">Quantidade</TableHead>
-                  <TableHead className="text-right">Preço</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Taxas</TableHead>
-                  <TableHead className="w-[100px]">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((txn) => {
-                  const txnType = getTransactionType(txn.type);
-                  const isEditing = editingRow === txn.id;
-
-                  return (
-                    <TableRow
-                      key={txn.id}
-                      className={!txn.isSelected ? "opacity-50" : ""}
-                    >
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={txn.isSelected}
-                          onChange={() => toggleSelect(txn.id)}
-                          className="rounded border-border-subtle"
-                        />
-                      </TableCell>
-
-                      {isEditing && editForm ? (
-                        <>
-                          <TableCell>
-                            <Input
-                              type="date"
-                              value={editForm.date}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, date: e.target.value })
-                              }
-                              className="h-8 w-32"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={editForm.type}
-                              onValueChange={(value) =>
-                                setEditForm({ ...editForm, type: value })
-                              }
-                            >
-                              <SelectTrigger className="h-8 w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TRANSACTION_TYPES.map((type) => (
-                                  <SelectItem key={type.value} value={type.value}>
-                                    {type.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={editForm.ticker}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, ticker: e.target.value })
-                              }
-                              className="h-8 w-24"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              value={editForm.quantity ?? ""}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  quantity: e.target.value ? parseFloat(e.target.value) : null,
-                                })
-                              }
-                              className="h-8 w-24 text-right"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={editForm.price ?? ""}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  price: e.target.value ? parseFloat(e.target.value) : null,
-                                })
-                              }
-                              className="h-8 w-24 text-right"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={editForm.total ?? ""}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  total: e.target.value ? parseFloat(e.target.value) : null,
-                                })
-                              }
-                              className="h-8 w-28 text-right"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={editForm.fees ?? ""}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  fees: e.target.value ? parseFloat(e.target.value) : null,
-                                })
-                              }
-                              className="h-8 w-24 text-right"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 hover:bg-success/10 hover:text-success"
-                                onClick={saveEdit}
-                              >
-                                <Save className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
-                                onClick={cancelEdit}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </>
-                      ) : (
-                        <>
-                          <TableCell className="font-mono text-sm">
-                            {txn.date}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                txnType.color === "success" ? "success" :
-                                txnType.color === "destructive" ? "destructive" :
-                                txnType.color === "info" ? "info" :
-                                txnType.color === "warning" ? "warning" :
-                                txnType.color === "muted" ? "muted" :
-                                "secondary"
-                              }
-                            >
-                              {txnType.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono font-semibold">
-                            {txn.ticker}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {formatNumber(txn.quantity)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {formatCurrency(txn.price)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono font-semibold">
-                            {formatCurrency(txn.total)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-foreground-muted">
-                            {formatCurrency(txn.fees)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 hover:bg-foreground/10 hover:text-foreground"
-                                onClick={() => startEdit(txn)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
-                                onClick={() => removeTransaction(txn.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+        {hasFixedIncome && (
+          <TabsContent value="fixed-income" className="mt-4">
+            <FixedIncomeTable
+              items={data.fixed_income_positions!}
+              onSelectionChange={handleFixedIncomeChange}
+            />
+          </TabsContent>
         )}
 
-        {/* Actions */}
-        {transactions.length > 0 && (
-          <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+        {hasStockLending && (
+          <TabsContent value="stock-lending" className="mt-4">
+            <StockLendingTable
+              items={data.stock_lending!}
+              onSelectionChange={handleStockLendingChange}
+            />
+          </TabsContent>
+        )}
+
+        {hasCashMovements && (
+          <TabsContent value="cash-movements" className="mt-4">
+            <CashMovementsTable
+              items={data.cash_movements!}
+              onSelectionChange={handleCashMovementsChange}
+            />
+          </TabsContent>
+        )}
+      </Tabs>
+
+      {/* Actions */}
+      {totalSelectedItems > 0 && (
+        <div className="flex justify-between items-center pt-4 border-t border-border-subtle">
+          <div className="text-sm text-foreground-muted">
+            {totalSelectedItems} itens selecionados para importação
+          </div>
+          <div className="flex gap-3">
             {onCancel && (
               <Button variant="outline" onClick={onCancel} disabled={isLoading}>
                 Cancelar
@@ -417,14 +556,14 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
             {onConfirm && (
               <Button
                 onClick={handleConfirm}
-                disabled={selectedCount === 0 || isLoading}
+                disabled={totalSelectedItems === 0 || isLoading}
               >
-                {isLoading ? "Importando..." : `Importar ${selectedCount} transações`}
+                {isLoading ? "Importando..." : `Importar ${totalSelectedItems} itens`}
               </Button>
             )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }
