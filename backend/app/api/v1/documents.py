@@ -384,9 +384,31 @@ async def get_parse_result(
     parsed_data = None
     transactions_count = 0
 
+    # Debug: log the keys in raw_extracted_data
+    if document.raw_extracted_data:
+        logger.info(
+            "parse_result_raw_data_keys",
+            document_id=str(document_id),
+            keys=list(document.raw_extracted_data.keys()),
+            has_investment_funds="investment_funds" in document.raw_extracted_data,
+            investment_funds_count=len(document.raw_extracted_data.get("investment_funds", [])) if document.raw_extracted_data.get("investment_funds") else 0,
+        )
+
     if document.raw_extracted_data:
         raw_data = document.raw_extracted_data
         transactions_count = len(raw_data.get("transactions", []))
+
+        # Normalize cash_movements - Claude returns object with nested movements array
+        # Frontend expects flat array
+        cash_movements_raw = raw_data.get("cash_movements")
+        if isinstance(cash_movements_raw, dict):
+            # Extract the movements array from the object
+            cash_movements = cash_movements_raw.get("movements", [])
+        elif isinstance(cash_movements_raw, list):
+            cash_movements = cash_movements_raw
+        else:
+            cash_movements = []
+
         parsed_data = {
             "document_type": raw_data.get("document_type", "unknown"),
             "period": raw_data.get("period"),
@@ -395,10 +417,13 @@ async def get_parse_result(
             "summary": raw_data.get("summary"),
             "fixed_income_positions": raw_data.get("fixed_income_positions"),
             "stock_lending": raw_data.get("stock_lending"),
-            "cash_movements": raw_data.get("cash_movements"),
+            "cash_movements": cash_movements,
             "investment_funds": raw_data.get("investment_funds"),
             "consolidated_position": raw_data.get("consolidated_position"),
         }
+
+    # Include raw keys for debugging
+    raw_keys = list(document.raw_extracted_data.keys()) if document.raw_extracted_data else []
 
     return {
         "document_id": str(document.id),
@@ -407,6 +432,7 @@ async def get_parse_result(
         "transactions_count": transactions_count,
         "data": parsed_data,
         "error": document.parsing_error,
+        "_debug_raw_keys": raw_keys,
     }
 
 
