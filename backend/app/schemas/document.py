@@ -95,11 +95,11 @@ class ParsedFixedIncome(BaseSchema):
     asset_name: str
     asset_type: str
     issuer: str | None = None
-    quantity: float
-    unit_price: float | None = None
-    total_value: float
+    quantity: float | str
+    unit_price: float | str | None = None
+    total_value: float | str
     indexer: str | None = None
-    rate_percent: float | None = None
+    rate_percent: float | str | None = None
     acquisition_date: str | None = None
     maturity_date: str | None = None
 
@@ -110,9 +110,9 @@ class ParsedStockLending(BaseSchema):
     date: str
     type: str  # lending_out, lending_return, rental_income
     ticker: str
-    quantity: float
-    rate_percent: float | None = None
-    total: float
+    quantity: float | str
+    rate_percent: float | str | None = None
+    total: float | str
 
 
 class ParsedCashMovement(BaseSchema):
@@ -122,7 +122,7 @@ class ParsedCashMovement(BaseSchema):
     type: str  # dividend, jcp, interest, fee, tax, etc
     description: str | None = None
     ticker: str | None = None
-    value: float
+    value: float | str
 
 
 class ParsedDocumentData(BaseSchema):
