@@ -20,7 +20,86 @@ class BTGStatementPrompt(BasePrompt):
     # Version for tracking deployment
     # v2.1 = investment funds extraction enabled
     # v2.2 = MANDATORY investment_funds key in response
-    PROMPT_VERSION = "v2.2-mandatory-funds"
+    # v2.3 = Retry loop for missing sections
+    PROMPT_VERSION = "v2.3-retry-loop"
+
+    # Focused prompts for retry when sections are missing
+    FOCUSED_PROMPTS = {
+        "investment_funds": """RETRY: A extração inicial falhou em encontrar FUNDOS DE INVESTIMENTO.
+
+Procure MUITO CUIDADOSAMENTE por seções contendo:
+- "FUNDO DE INVESTIMENTO" ou "FUNDOS DE INVESTIMENTO"
+- Nomes de fundos com "FI", "FIC", "RF", "MULTIMERCADO", "ACOES"
+- CNPJs no formato XX.XXX.XXX/XXXX-XX
+- Tabelas com colunas: Cotas, Cotação, Saldo Bruto, Provisão IR, Saldo Líquido
+
+EXEMPLOS de nomes de fundos BTG:
+- "BTG PACTUAL CRED CORP I FIC FI RF CP LP"
+- "BTG PACTUAL YIELD DI FI RF REF CRED PRIV"
+- "BTG PACTUAL DIGITAL TESOURO SELIC SIMPLES FI RF"
+
+Retorne APENAS este JSON (sem texto adicional, sem markdown):
+{
+    "investment_funds": [
+        {
+            "fund_name": "NOME COMPLETO DO FUNDO",
+            "cnpj": "XX.XXX.XXX/XXXX-XX",
+            "quota_quantity": 99.123456,
+            "quota_price": 10500.00,
+            "gross_balance": 1000000.00,
+            "ir_provision": 10000.00,
+            "net_balance": 990000.00,
+            "performance_pct": 1.05
+        }
+    ]
+}
+
+Se NÃO encontrar fundos, retorne: {"investment_funds": []}
+""",
+        "fixed_income_positions": """RETRY: A extração inicial falhou em encontrar RENDA FIXA.
+
+Procure MUITO CUIDADOSAMENTE por seções contendo:
+- "POSIÇÃO EM RENDA FIXA" ou "RENDA FIXA"
+- CDB, LCA, LCI, LFT, Debêntures, Tesouro Direto
+- Tabelas com: Ativo, Indexador (CDI, SELIC, IPCA), Taxa, Valor, Vencimento
+
+Retorne APENAS este JSON (sem texto adicional, sem markdown):
+{
+    "fixed_income_positions": [
+        {
+            "asset_type": "CDB",
+            "asset_name": "CDB BTG Pactual S.A.",
+            "issuer": "BTG Pactual",
+            "indexer": "CDI",
+            "rate_percent": 104.00,
+            "quantity": 1,
+            "unit_price": 10000.00,
+            "total_value": 10000.00,
+            "maturity_date": "2025-12-31",
+            "acquisition_date": "2022-01-15"
+        }
+    ]
+}
+
+Se NÃO encontrar renda fixa, retorne: {"fixed_income_positions": []}
+""",
+    }
+
+    def get_focused_prompt(self, sections: list[str]) -> str | None:
+        """
+        Return a focused prompt for extracting specific sections.
+
+        Args:
+            sections: List of section names to extract
+
+        Returns:
+            Focused prompt string or None if not available
+        """
+        # Prioritize investment_funds (highest value section)
+        for section in sections:
+            if section in self.FOCUSED_PROMPTS:
+                return self.FOCUSED_PROMPTS[section]
+        return None
 
     @property
     def document_type(self) -> str:

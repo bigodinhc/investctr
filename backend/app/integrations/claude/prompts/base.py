@@ -36,6 +36,20 @@ class BasePrompt(ABC):
             template = template.format(**kwargs)
         return template
 
+    def get_focused_prompt(self, sections: list[str]) -> str | None:
+        """
+        Return a focused prompt for extracting specific sections.
+
+        Override in subclasses to provide section-specific retry prompts.
+
+        Args:
+            sections: List of section names to extract
+
+        Returns:
+            Focused prompt string or None if not available
+        """
+        return None
+
     @staticmethod
     def get_json_instruction() -> str:
         """Return standard JSON output instruction."""

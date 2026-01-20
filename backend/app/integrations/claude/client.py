@@ -108,6 +108,8 @@ async def parse_pdf_with_claude(
     pdf_content: bytes,
     prompt: str,
     max_tokens: int = 64000,
+    is_retry: bool = False,
+    retry_section: str | None = None,
 ) -> dict[str, Any]:
     """
     Parse a PDF document using Claude's vision capabilities.
@@ -118,6 +120,8 @@ async def parse_pdf_with_claude(
         pdf_content: PDF file content as bytes
         prompt: Prompt template for extraction
         max_tokens: Maximum tokens in response
+        is_retry: Whether this is a retry call for missing sections
+        retry_section: Name of the section being retried (for logging)
 
     Returns:
         Parsed JSON data from Claude's response
@@ -135,6 +139,8 @@ async def parse_pdf_with_claude(
         pdf_size=len(pdf_content),
         model=CLAUDE_MODEL,
         max_tokens=max_tokens,
+        is_retry=is_retry,
+        retry_section=retry_section,
     )
 
     try:

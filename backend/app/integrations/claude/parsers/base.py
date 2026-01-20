@@ -15,6 +15,21 @@ from app.integrations.claude.prompts.base import BasePrompt
 logger = get_logger(__name__)
 
 
+# Sections that should always exist in BTG statements
+# Used to detect and retry missing sections
+REQUIRED_SECTIONS = {
+    "investment_funds": "Fundos de Investimento",
+    "fixed_income_positions": "Renda Fixa",
+    "transactions": "Transações de Ações",
+    "stock_lending": "Aluguel de Ações",
+    "cash_movements": "Movimentações",
+}
+
+# Sections that have focused retry prompts implemented
+# Only these sections will trigger automatic retry
+RECOVERABLE_SECTIONS = {"investment_funds", "fixed_income_positions"}
+
+
 @dataclass
 class ParsedTransaction:
     """Represents a parsed transaction from a document."""
@@ -73,9 +88,126 @@ class BaseParser(ABC):
         """
         pass
 
+    def detect_missing_sections(self, raw_data: dict[str, Any]) -> list[str]:
+        """
+        Detect required sections that are missing or empty.
+
+        Args:
+            raw_data: Parsed data from Claude
+
+        Returns:
+            List of section names that are missing or empty
+        """
+        missing = []
+
+        for section, name in REQUIRED_SECTIONS.items():
+            value = raw_data.get(section)
+            # Consider missing if: doesn't exist, is None, or is empty list/dict
+            if not value or (isinstance(value, (list, dict)) and len(value) == 0):
+                # Special case for cash_movements which is a dict with movements
+                if section == "cash_movements" and isinstance(value, dict):
+                    movements = value.get("movements", [])
+                    if movements:
+                        continue  # Has movements, not missing
+                missing.append(section)
+
+        return missing
+
+    async def retry_for_missing_section(
+        self,
+        pdf_content: bytes,
+        section: str,
+    ) -> dict[str, Any]:
+        """
+        Make a focused Claude call to extract a specific missing section.
+
+        Args:
+            pdf_content: PDF file content as bytes
+            section: Name of the section to extract
+
+        Returns:
+            Dict containing the extracted section data
+        """
+        focused_prompt = self.prompt.get_focused_prompt([section])
+        if not focused_prompt:
+            logger.warning(
+                "no_focused_prompt_available",
+                section=section,
+            )
+            return {}
+
+        logger.info(
+            "retry_for_section_start",
+            section=section,
+            prompt_length=len(focused_prompt),
+        )
+
+        try:
+            focused_data = await parse_pdf_with_claude(
+                pdf_content=pdf_content,
+                prompt=focused_prompt,
+                max_tokens=8000,  # Smaller - focused extraction
+                is_retry=True,
+                retry_section=section,
+            )
+            return focused_data
+        except Exception as e:
+            logger.error(
+                "retry_for_section_failed",
+                section=section,
+                error=str(e),
+            )
+            return {}
+
+    def merge_results(
+        self,
+        original: dict[str, Any],
+        focused: dict[str, Any],
+        section: str,
+    ) -> dict[str, Any]:
+        """
+        Merge focused extraction results into original data.
+
+        Args:
+            original: Original parsed data
+            focused: Data from focused retry call
+            section: Section name that was retried
+
+        Returns:
+            Merged data dictionary
+        """
+        merged = original.copy()
+
+        # Only merge if the section was empty and now has data
+        original_value = original.get(section)
+        focused_value = focused.get(section)
+
+        original_empty = not original_value or (
+            isinstance(original_value, (list, dict)) and len(original_value) == 0
+        )
+        focused_has_data = focused_value and (
+            not isinstance(focused_value, (list, dict)) or len(focused_value) > 0
+        )
+
+        if original_empty and focused_has_data:
+            merged[section] = focused_value
+            logger.info(
+                "section_recovered",
+                section=section,
+                items_count=len(focused_value) if isinstance(focused_value, list) else 1,
+            )
+        elif original_empty:
+            logger.warning(
+                "section_recovery_failed",
+                section=section,
+                reason="focused extraction returned empty",
+            )
+
+        return merged
+
     async def parse(self, pdf_content: bytes) -> ParseResult:
         """
-        Parse a PDF document.
+        Parse a PDF document with intelligent retry for missing sections.
 
         Args:
             pdf_content: PDF file content as bytes
@@ -90,13 +222,50 @@ class BaseParser(ABC):
         )
 
         try:
-            # Call Claude API
+            # 1. Initial parse - full document extraction
             raw_data = await parse_pdf_with_claude(
                 pdf_content=pdf_content,
                 prompt=self.prompt.get_prompt(),
             )
 
-            # Validate structure
+            # 2. Detect missing sections
+            missing = self.detect_missing_sections(raw_data)
+
+            # 3. Log all missing sections (for analysis)
+            if missing:
+                logger.warning(
+                    "parsing_sections_missing",
+                    document_type=self.prompt.document_type,
+                    missing_sections=missing,
+                    all_keys=list(raw_data.keys()),
+                )
+
+            # 4. Retry for recoverable sections that have focused prompts
+            recoverable = [s for s in missing if s in RECOVERABLE_SECTIONS]
+            if recoverable:
+                logger.info(
+                    "parsing_retry_needed",
+                    sections_to_recover=recoverable,
+                )
+
+                recovered_sections = []
+                for section in recoverable:
+                    focused_data = await self.retry_for_missing_section(
+                        pdf_content, section
+                    )
+                    if focused_data:
+                        raw_data = self.merge_results(raw_data, focused_data, section)
+                        # Check if section was actually recovered
+                        if raw_data.get(section):
+                            recovered_sections.append(section)
+
+                logger.info(
+                    "parsing_retry_completed",
+                    recovered=recovered_sections,
+                    still_missing=[s for s in recoverable if s not in recovered_sections],
+                )
+
+            # 5. Validate structure
             is_valid, error = self.validate_data(raw_data)
             if not is_valid:
                 logger.warning(
@@ -111,13 +280,14 @@ class BaseParser(ABC):
                     error=f"Validation failed: {error}",
                 )
 
-            # Extract transactions
+            # 6. Extract transactions
             transactions = self.extract_transactions(raw_data)
 
             logger.info(
                 "parser_success",
                 document_type=self.prompt.document_type,
                 transaction_count=len(transactions),
+                sections_present=list(raw_data.keys()),
             )
 
             return ParseResult(
