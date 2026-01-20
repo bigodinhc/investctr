@@ -11,7 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import AuthenticatedUser, DBSession, Pagination
 from app.core.logging import get_logger
-from app.models import Account, Asset, Position
+from app.models import Account, Asset, Position, FixedIncomePosition, InvestmentFundPosition
 from app.schemas.enums import AssetType
 from app.schemas.position import (
     ConsolidatedPosition,
@@ -224,13 +224,14 @@ async def get_portfolio_summary(
     Get portfolio summary with breakdown by asset type.
 
     Returns high-level metrics and allocation percentages.
+    Includes stocks, fixed income, and investment fund positions.
     """
-    # Base query
+    # Base filters for stock positions
     base_filters = [Account.user_id == user.id, Position.quantity > 0]
     if account_id:
         base_filters.append(Position.account_id == account_id)
 
-    # Get total counts and values
+    # Get stock positions totals
     totals_query = (
         select(
             func.count(Position.id).label("positions_count"),
@@ -242,10 +243,55 @@ async def get_portfolio_summary(
     totals_result = await db.execute(totals_query)
     totals = totals_result.one()
 
-    total_positions = totals.positions_count or 0
-    total_cost = totals.total_cost or Decimal("0")
+    stock_positions_count = totals.positions_count or 0
+    stock_total_cost = totals.total_cost or Decimal("0")
 
-    # Get breakdown by asset type
+    # Query fixed income positions
+    fi_filters = [Account.user_id == user.id]
+    if account_id:
+        fi_filters.append(FixedIncomePosition.account_id == account_id)
+
+    fi_query = (
+        select(
+            func.count(FixedIncomePosition.id).label("positions_count"),
+            func.sum(FixedIncomePosition.total_value).label("total_value"),
+        )
+        .join(FixedIncomePosition.account)
+        .where(*fi_filters)
+    )
+    fi_result = await db.execute(fi_query)
+    fi_totals = fi_result.one()
+
+    fi_positions_count = fi_totals.positions_count or 0
+    fi_total_value = fi_totals.total_value or Decimal("0")
+
+    # Query investment fund positions
+    fund_filters = [Account.user_id == user.id]
+    if account_id:
+        fund_filters.append(InvestmentFundPosition.account_id == account_id)
+
+    fund_query = (
+        select(
+            func.count(InvestmentFundPosition.id).label("positions_count"),
+            func.coalesce(
+                func.sum(InvestmentFundPosition.net_balance),
+                func.sum(InvestmentFundPosition.gross_balance)
+            ).label("total_value"),
+        )
+        .join(InvestmentFundPosition.account)
+        .where(*fund_filters)
+    )
+    fund_result = await db.execute(fund_query)
+    fund_totals = fund_result.one()
+
+    fund_positions_count = fund_totals.positions_count or 0
+    fund_total_value = fund_totals.total_value or Decimal("0")
+
+    # Calculate grand totals
+    total_positions = stock_positions_count + fi_positions_count + fund_positions_count
+    total_cost = stock_total_cost + fi_total_value + fund_total_value
+
+    # Get breakdown by asset type for stocks
     by_type_query = (
         select(
             Asset.asset_type,
@@ -275,15 +321,43 @@ async def get_portfolio_summary(
         )
         by_asset_type.append(summary)
 
+    # Add fixed income as BOND type
+    if fi_positions_count > 0:
+        allocation_pct = (fi_total_value / total_cost * 100) if total_cost > 0 else None
+        by_asset_type.append(
+            PositionSummary(
+                asset_type=AssetType.BOND,
+                positions_count=fi_positions_count,
+                total_cost=fi_total_value,
+                market_value=fi_total_value,
+                unrealized_pnl=Decimal("0"),
+                allocation_pct=allocation_pct,
+            )
+        )
+
+    # Add investment funds as FUND type
+    if fund_positions_count > 0:
+        allocation_pct = (fund_total_value / total_cost * 100) if total_cost > 0 else None
+        by_asset_type.append(
+            PositionSummary(
+                asset_type=AssetType.FUND,
+                positions_count=fund_positions_count,
+                total_cost=fund_total_value,
+                market_value=fund_total_value,
+                unrealized_pnl=Decimal("0"),
+                allocation_pct=allocation_pct,
+            )
+        )
+
     # Sort by allocation descending
     by_asset_type.sort(key=lambda x: x.total_cost, reverse=True)
 
     return PortfolioSummary(
         total_positions=total_positions,
         total_cost=total_cost,
-        total_market_value=None,  # TODO: Calculate from quotes
-        total_unrealized_pnl=None,
-        total_unrealized_pnl_pct=None,
+        total_market_value=total_cost,  # Use cost as market value when no quotes
+        total_unrealized_pnl=Decimal("0"),
+        total_unrealized_pnl_pct=Decimal("0"),
         by_asset_type=by_asset_type,
         last_updated=None,  # TODO: Get latest quote timestamp
     )

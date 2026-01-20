@@ -229,7 +229,11 @@ async def get_portfolio_summary(
 
     # Calculate totals from stock positions
     total_cost = unrealized_summary.total_cost
-    total_market_value = unrealized_summary.total_market_value
+    # Use cost as fallback when no market quotes available for stocks
+    stock_market_value = unrealized_summary.total_market_value
+    if stock_market_value == 0 and unrealized_summary.total_cost > 0:
+        stock_market_value = unrealized_summary.total_cost
+    total_market_value = stock_market_value
     total_unrealized_pnl = unrealized_summary.total_unrealized_pnl
     total_unrealized_pnl_pct = unrealized_summary.total_unrealized_pnl_pct
 
