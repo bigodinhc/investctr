@@ -16,7 +16,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import AuthenticatedUser, DBSession
 from app.core.logging import get_logger
-from app.models import Account, Position, PortfolioSnapshot
+from app.models import Account, Position, PortfolioSnapshot, FixedIncomePosition, InvestmentFundPosition
 from app.schemas.enums import AccountType, AssetType
 
 # Mapping from AccountType to broker display name
@@ -146,7 +146,7 @@ async def get_portfolio_summary(
     If account_id is provided, returns summary for that account only.
     Otherwise, returns consolidated summary across all user accounts.
     """
-    # Build base query for positions
+    # Build base query for stock positions
     base_query = (
         select(Position)
         .join(Position.account)
@@ -162,7 +162,36 @@ async def get_portfolio_summary(
     result = await db.execute(base_query)
     positions = list(result.scalars().all())
 
-    if not positions:
+    # Query fixed income positions
+    fi_query = (
+        select(FixedIncomePosition)
+        .join(FixedIncomePosition.account)
+        .options(selectinload(FixedIncomePosition.account))
+        .where(Account.user_id == user.id)
+    )
+    if account_id:
+        fi_query = fi_query.where(FixedIncomePosition.account_id == account_id)
+
+    fi_result = await db.execute(fi_query)
+    fixed_income_positions = list(fi_result.scalars().all())
+
+    # Query investment fund positions
+    fund_query = (
+        select(InvestmentFundPosition)
+        .join(InvestmentFundPosition.account)
+        .options(selectinload(InvestmentFundPosition.account))
+        .where(Account.user_id == user.id)
+    )
+    if account_id:
+        fund_query = fund_query.where(InvestmentFundPosition.account_id == account_id)
+
+    fund_result = await db.execute(fund_query)
+    investment_fund_positions = list(fund_result.scalars().all())
+
+    # Check if we have any positions at all
+    total_positions_count = len(positions) + len(fixed_income_positions) + len(investment_fund_positions)
+
+    if total_positions_count == 0:
         return PortfolioSummaryResponse(
             total_positions=0,
             total_value=Decimal("0"),
@@ -198,17 +227,32 @@ async def get_portfolio_summary(
         entry.position_id: entry for entry in unrealized_summary.entries
     }
 
-    # Calculate totals
+    # Calculate totals from stock positions
     total_cost = unrealized_summary.total_cost
     total_market_value = unrealized_summary.total_market_value
     total_unrealized_pnl = unrealized_summary.total_unrealized_pnl
     total_unrealized_pnl_pct = unrealized_summary.total_unrealized_pnl_pct
+
+    # Add fixed income totals
+    fi_total_value = sum(fi.total_value for fi in fixed_income_positions)
+    total_cost += fi_total_value
+    total_market_value += fi_total_value  # Fixed income uses total_value as market value
+
+    # Add investment fund totals (use net_balance if available, otherwise gross_balance)
+    fund_total_value = sum(
+        fi.net_balance if fi.net_balance is not None else fi.gross_balance
+        for fi in investment_fund_positions
+    )
+    total_cost += fund_total_value
+    total_market_value += fund_total_value
 
     # Use market value if available, otherwise use cost
     total_value = total_market_value if total_market_value > 0 else total_cost
 
     # Group by asset type
     by_asset_type_data: dict[AssetType, dict] = {}
+
+    # Add stock positions
     for pos in positions:
         asset_type = pos.asset.asset_type
         pnl_entry = unrealized_by_position.get(pos.id)
@@ -226,6 +270,30 @@ async def get_portfolio_summary(
 
         if pnl_entry and pnl_entry.market_value is not None:
             data["market_value"] += pnl_entry.market_value
+
+    # Add fixed income positions (use BOND as asset type)
+    if fixed_income_positions:
+        if AssetType.BOND not in by_asset_type_data:
+            by_asset_type_data[AssetType.BOND] = {
+                "positions_count": 0,
+                "total_cost": Decimal("0"),
+                "market_value": Decimal("0"),
+            }
+        by_asset_type_data[AssetType.BOND]["positions_count"] += len(fixed_income_positions)
+        by_asset_type_data[AssetType.BOND]["total_cost"] += fi_total_value
+        by_asset_type_data[AssetType.BOND]["market_value"] += fi_total_value
+
+    # Add investment fund positions (use FUND as asset type)
+    if investment_fund_positions:
+        if AssetType.FUND not in by_asset_type_data:
+            by_asset_type_data[AssetType.FUND] = {
+                "positions_count": 0,
+                "total_cost": Decimal("0"),
+                "market_value": Decimal("0"),
+            }
+        by_asset_type_data[AssetType.FUND]["positions_count"] += len(investment_fund_positions)
+        by_asset_type_data[AssetType.FUND]["total_cost"] += fund_total_value
+        by_asset_type_data[AssetType.FUND]["market_value"] += fund_total_value
 
     # Build by_asset_type response
     by_asset_type = []
@@ -316,11 +384,13 @@ async def get_portfolio_summary(
         # Sort by allocation descending
         by_account.sort(key=lambda x: x.total_cost, reverse=True)
 
-    # Count unique accounts
+    # Count unique accounts (include all position types)
     unique_accounts = set(pos.account_id for pos in positions)
+    unique_accounts.update(fi.account_id for fi in fixed_income_positions)
+    unique_accounts.update(fund.account_id for fund in investment_fund_positions)
 
     return PortfolioSummaryResponse(
-        total_positions=len(positions),
+        total_positions=total_positions_count,
         total_value=total_value,
         total_cost=total_cost,
         total_unrealized_pnl=total_unrealized_pnl,
@@ -372,7 +442,7 @@ async def get_portfolio_allocation(
 
     Uses market value when available, otherwise falls back to cost basis.
     """
-    # Build base query for positions
+    # Build base query for stock positions
     base_query = (
         select(Position)
         .join(Position.account)
@@ -388,7 +458,33 @@ async def get_portfolio_allocation(
     result = await db.execute(base_query)
     positions = list(result.scalars().all())
 
-    if not positions:
+    # Query fixed income positions
+    fi_query = (
+        select(FixedIncomePosition)
+        .join(FixedIncomePosition.account)
+        .where(Account.user_id == user.id)
+    )
+    if account_id:
+        fi_query = fi_query.where(FixedIncomePosition.account_id == account_id)
+
+    fi_result = await db.execute(fi_query)
+    fixed_income_positions = list(fi_result.scalars().all())
+
+    # Query investment fund positions
+    fund_query = (
+        select(InvestmentFundPosition)
+        .join(InvestmentFundPosition.account)
+        .where(Account.user_id == user.id)
+    )
+    if account_id:
+        fund_query = fund_query.where(InvestmentFundPosition.account_id == account_id)
+
+    fund_result = await db.execute(fund_query)
+    investment_fund_positions = list(fund_result.scalars().all())
+
+    total_positions_count = len(positions) + len(fixed_income_positions) + len(investment_fund_positions)
+
+    if total_positions_count == 0:
         return AllocationResponse(
             by_asset_type=[],
             by_asset=[],
@@ -396,12 +492,12 @@ async def get_portfolio_allocation(
             positions_count=0,
         )
 
-    # Get current prices for all assets
+    # Get current prices for stock assets
     asset_ids = list(set(pos.asset_id for pos in positions))
     quote_service = QuoteService(db)
-    current_prices = await quote_service.get_latest_prices(asset_ids)
+    current_prices = await quote_service.get_latest_prices(asset_ids) if asset_ids else {}
 
-    # Calculate values for each position
+    # Calculate values for each stock position
     position_values: list[tuple[Position, Decimal]] = []
     for pos in positions:
         # Use market value if price available, otherwise use cost
@@ -412,22 +508,43 @@ async def get_portfolio_allocation(
             value = pos.total_cost
         position_values.append((pos, value))
 
-    # Calculate total value
+    # Calculate total value (including fixed income and funds)
     total_value = sum(v for _, v in position_values)
+
+    # Add fixed income values
+    fi_total_value = sum(fi.total_value for fi in fixed_income_positions)
+    total_value += fi_total_value
+
+    # Add investment fund values
+    fund_total_value = sum(
+        fi.net_balance if fi.net_balance is not None else fi.gross_balance
+        for fi in investment_fund_positions
+    )
+    total_value += fund_total_value
 
     if total_value <= 0:
         return AllocationResponse(
             by_asset_type=[],
             by_asset=[],
             total_value=Decimal("0"),
-            positions_count=len(positions),
+            positions_count=total_positions_count,
         )
 
     # Group by asset type
     by_type_data: dict[AssetType, Decimal] = {}
+
+    # Add stock positions by type
     for pos, value in position_values:
         asset_type = pos.asset.asset_type
         by_type_data[asset_type] = by_type_data.get(asset_type, Decimal("0")) + value
+
+    # Add fixed income as BOND type
+    if fi_total_value > 0:
+        by_type_data[AssetType.BOND] = by_type_data.get(AssetType.BOND, Decimal("0")) + fi_total_value
+
+    # Add investment funds as FUND type
+    if fund_total_value > 0:
+        by_type_data[AssetType.FUND] = by_type_data.get(AssetType.FUND, Decimal("0")) + fund_total_value
 
     by_asset_type = [
         AllocationItem(
@@ -445,6 +562,8 @@ async def get_portfolio_allocation(
 
     # Group by individual asset (top N)
     by_asset_data: dict[str, tuple[str, Decimal]] = {}
+
+    # Add stock positions
     for pos, value in position_values:
         ticker = pos.asset.ticker
         name = pos.asset.name or ticker
@@ -453,6 +572,28 @@ async def get_portfolio_allocation(
             by_asset_data[ticker] = (existing_name, existing_value + value)
         else:
             by_asset_data[ticker] = (name, value)
+
+    # Add fixed income positions
+    for fi in fixed_income_positions:
+        key = f"FI:{fi.asset_name[:20]}"  # Truncate long names
+        name = fi.asset_name
+        value = fi.total_value
+        if key in by_asset_data:
+            existing_name, existing_value = by_asset_data[key]
+            by_asset_data[key] = (existing_name, existing_value + value)
+        else:
+            by_asset_data[key] = (name, value)
+
+    # Add investment fund positions
+    for fund in investment_fund_positions:
+        key = f"FD:{fund.fund_name[:20]}"  # Truncate long names
+        name = fund.fund_name
+        value = fund.net_balance if fund.net_balance is not None else fund.gross_balance
+        if key in by_asset_data:
+            existing_name, existing_value = by_asset_data[key]
+            by_asset_data[key] = (existing_name, existing_value + value)
+        else:
+            by_asset_data[key] = (name, value)
 
     # Sort by value and take top N
     sorted_assets = sorted(
@@ -463,7 +604,7 @@ async def get_portfolio_allocation(
 
     by_asset = [
         AllocationItem(
-            name=f"{ticker} - {name}",
+            name=f"{ticker} - {name}" if not ticker.startswith(("FI:", "FD:")) else name,
             value=value,
             percentage=round(value / total_value * 100, 2),
             color=None,  # Let frontend assign colors
@@ -475,7 +616,7 @@ async def get_portfolio_allocation(
         by_asset_type=by_asset_type,
         by_asset=by_asset,
         total_value=total_value,
-        positions_count=len(positions),
+        positions_count=total_positions_count,
     )
 
 
