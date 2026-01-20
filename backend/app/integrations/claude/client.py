@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 
 # Claude model to use for document parsing
 # Using Opus 4.5 for better consistency in complex document extraction
+# Investment funds extraction enabled with improved prompts
 CLAUDE_MODEL = "claude-opus-4-5-20251101"
 
 
