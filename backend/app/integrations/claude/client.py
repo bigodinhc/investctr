@@ -97,6 +97,8 @@ def _log_extraction_summary(data: dict[str, Any], was_truncated: bool) -> None:
         summary["derivatives_count"] = len(data["derivatives_positions"])
     if "cash_movements" in data and "movements" in data["cash_movements"]:
         summary["cash_movements_count"] = len(data["cash_movements"]["movements"])
+    if "investment_funds" in data:
+        summary["investment_funds_count"] = len(data["investment_funds"]) if data["investment_funds"] else 0
 
     logger.info("extraction_summary", **summary)
 

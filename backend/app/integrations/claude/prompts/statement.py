@@ -32,16 +32,27 @@ Analyze this BTG Pactual statement PDF and extract ALL data from the following s
 ### 1. POSIÇÃO CONSOLIDADA (Summary)
 Total values per market: Renda Fixa, Renda Variável, Derivativos, Conta Corrente
 
-### 2. POSIÇÃO EM FUNDOS DE INVESTIMENTO (Investment Fund Positions)
-For mutual funds:
-- Fund name (e.g., "BTG PACTUAL YIELD DI FI RF")
-- CNPJ of the fund
-- Quota quantity (quantidade de cotas)
+### 2. FUNDO DE INVESTIMENTO / FUNDOS DE INVESTIMENTO (Investment Fund Positions)
+**CRITICAL: This section MUST be extracted. Look for any section containing fund names like:**
+- "BTG PACTUAL CRED CORP", "BTG PACTUAL YIELD", "BTG PACTUAL DIGITAL"
+- Fund names containing: "FI", "FIC", "RF", "MULTIMERCADO", "ACOES"
+- Any fund with CNPJ format XX.XXX.XXX/XXXX-XX
+
+The section may be titled:
+- "FUNDO DE INVESTIMENTO"
+- "FUNDOS DE INVESTIMENTO"
+- "POSIÇÃO EM FUNDOS"
+- Or appear in a table with fund names and CNPJs
+
+For each mutual fund, extract:
+- Fund name (e.g., "BTG PACTUAL YIELD DI FI RF REF CRED PRIV")
+- CNPJ of the fund (e.g., "00.840.011/0001-80")
+- Quota quantity (quantidade de cotas) - may have many decimal places
 - Quota price (valor da cota)
 - Gross balance (saldo bruto)
-- IR provision (provisão de IR)
-- Net balance (saldo líquido)
-- Performance percentage if available
+- IR provision (provisão de IR) - tax provision
+- Net balance (saldo líquido) - this is gross minus IR
+- Performance percentage if available (rentabilidade)
 
 ### 3. POSIÇÃO EM RENDA FIXA (Fixed Income Positions)
 For CDB, LFT, LCA, LCI, etc:
@@ -243,13 +254,17 @@ ALL cash movements including:
    - Extract indexer type (CDI, SELIC, IPCA, PREFIXADO)
    - Extract rate as percentage (e.g., "104% CDI" → rate_percent: 104.00)
 
-6. **Investment Funds (Fundos de Investimento)**:
-   - Extract the full fund name
-   - Extract CNPJ if available
-   - Extract quota quantity, quota price, gross and net balances
-   - IR provision is typically shown as "Provisão IR"
-   - Performance % is typically shown as monthly return
+6. **Investment Funds (Fundos de Investimento) - CRITICAL**:
+   - ALWAYS extract investment funds if present - they often represent significant portfolio value
+   - Extract the FULL fund name (e.g., "BTG PACTUAL CRED CORP I FIC FI RF CP LP")
+   - Extract CNPJ if available (format: XX.XXX.XXX/XXXX-XX)
+   - Extract quota quantity (may have 6-8 decimal places like 99.123456)
+   - Extract quota price (valor da cota)
+   - Extract gross_balance (saldo bruto) and net_balance (saldo líquido)
+   - IR provision is typically shown as "Provisão IR" or the difference between gross and net
+   - Performance % is typically shown as monthly return (rentabilidade)
+   - Look for tables with columns like: Fundo | CNPJ | Qtd Cotas | Valor Cota | Bruto | IR | Líquido
 
-7. **Do NOT skip any data** - extract everything visible in the document.
+7. **Do NOT skip any data** - extract everything visible in the document, especially investment funds which are often high-value positions.
 
 """ + self.get_json_instruction()
