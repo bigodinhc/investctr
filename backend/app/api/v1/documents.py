@@ -353,15 +353,12 @@ async def parse_document(
             )
 
 
-from app.schemas.document import DocumentParseResponse, ParsedDocumentData
-
-
-@router.get("/{document_id}/parse-result", response_model=DocumentParseResponse)
+@router.get("/{document_id}/parse-result")
 async def get_parse_result(
     user: AuthenticatedUser,
     db: DBSession,
     document_id: UUID,
-) -> DocumentParseResponse:
+) -> dict:
     """
     Get the parsing result for a document.
 
@@ -382,33 +379,33 @@ async def get_parse_result(
             detail="Document not found",
         )
 
-    # Build response
+    # Build response - return raw data directly to avoid validation issues
     parsed_data = None
     transactions_count = 0
 
     if document.raw_extracted_data:
         raw_data = document.raw_extracted_data
         transactions_count = len(raw_data.get("transactions", []))
-        parsed_data = ParsedDocumentData(
-            document_type=raw_data.get("document_type", "unknown"),
-            period=raw_data.get("period"),
-            account_number=raw_data.get("account_number"),
-            transactions=raw_data.get("transactions", []),
-            summary=raw_data.get("summary"),
-            fixed_income_positions=raw_data.get("fixed_income_positions"),
-            stock_lending=raw_data.get("stock_lending"),
-            cash_movements=raw_data.get("cash_movements"),
-            consolidated_position=raw_data.get("consolidated_position"),
-        )
+        parsed_data = {
+            "document_type": raw_data.get("document_type", "unknown"),
+            "period": raw_data.get("period"),
+            "account_number": raw_data.get("account_number"),
+            "transactions": raw_data.get("transactions", []),
+            "summary": raw_data.get("summary"),
+            "fixed_income_positions": raw_data.get("fixed_income_positions"),
+            "stock_lending": raw_data.get("stock_lending"),
+            "cash_movements": raw_data.get("cash_movements"),
+            "consolidated_position": raw_data.get("consolidated_position"),
+        }
 
-    return DocumentParseResponse(
-        document_id=document.id,
-        status=document.parsing_status,
-        stage=document.parsing_stage,
-        transactions_count=transactions_count,
-        data=parsed_data,
-        error=document.parsing_error,
-    )
+    return {
+        "document_id": str(document.id),
+        "status": document.parsing_status.value if document.parsing_status else None,
+        "stage": document.parsing_stage,
+        "transactions_count": transactions_count,
+        "data": parsed_data,
+        "error": document.parsing_error,
+    }
 
 
 @router.post("/{document_id}/reparse", response_model=ParseTaskResponse)
