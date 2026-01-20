@@ -82,10 +82,10 @@ class ParsedTransaction(BaseSchema):
     date: str = Field(..., description="Transaction date (YYYY-MM-DD)")
     type: str = Field(..., description="Transaction type (buy, sell, dividend, etc)")
     ticker: str = Field(..., description="Asset ticker symbol")
-    quantity: float | None = Field(None, description="Quantity traded")
-    price: float | None = Field(None, description="Unit price")
-    total: float | None = Field(None, description="Total value")
-    fees: float | None = Field(None, description="Fees/costs")
+    quantity: float | str | None = Field(None, description="Quantity traded")
+    price: float | str | None = Field(None, description="Unit price")
+    total: float | str | None = Field(None, description="Total value")
+    fees: float | str | None = Field(None, description="Fees/costs")
     notes: str | None = Field(None, description="Additional notes")
 
 
