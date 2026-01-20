@@ -116,19 +116,23 @@ export default function DocumentsPage() {
   };
 
   const handleParse = async (documentId: string) => {
+    // Open dialog immediately so user sees loading state
+    setSelectedDocumentId(documentId);
+
     try {
       await parseDocument.mutateAsync({ documentId, asyncMode: true });
       toast({
         title: "Processamento iniciado",
         description: "O documento está sendo analisado pelo Claude.",
       });
-      setSelectedDocumentId(documentId);
     } catch (error) {
       toast({
         title: "Erro ao processar",
         description: (error as Error).message,
         variant: "destructive",
       });
+      // Close dialog on error
+      setSelectedDocumentId(null);
     }
   };
 
