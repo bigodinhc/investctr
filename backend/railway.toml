@@ -1,6 +1,8 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
+# Disable build cache to ensure latest code is always used
+buildCache = false
 
 [deploy]
 healthcheckPath = "/health"

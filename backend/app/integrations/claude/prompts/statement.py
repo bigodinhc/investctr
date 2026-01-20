@@ -17,6 +17,9 @@ from .base import BasePrompt
 class BTGStatementPrompt(BasePrompt):
     """Prompt for parsing BTG Pactual monthly account statements (Extrato Mensal)."""
 
+    # Version for tracking deployment (v2 = investment funds extraction enabled)
+    PROMPT_VERSION = "v2.1-investment-funds"
+
     @property
     def document_type(self) -> str:
         return "statement"

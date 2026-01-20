@@ -425,6 +425,10 @@ async def get_parse_result(
     # Include raw keys for debugging
     raw_keys = list(document.raw_extracted_data.keys()) if document.raw_extracted_data else []
 
+    # Get prompt version for debugging deployment issues
+    from app.integrations.claude.prompts.statement import BTGStatementPrompt
+    prompt_version = getattr(BTGStatementPrompt, 'PROMPT_VERSION', 'unknown')
+
     return {
         "document_id": str(document.id),
         "status": document.parsing_status.value if document.parsing_status else None,
@@ -433,6 +437,7 @@ async def get_parse_result(
         "data": parsed_data,
         "error": document.parsing_error,
         "_debug_raw_keys": raw_keys,
+        "_debug_prompt_version": prompt_version,
     }
 
 
