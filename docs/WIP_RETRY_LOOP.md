@@ -1,8 +1,8 @@
 # WIP: Retry Loop para Extração Completa de PDFs
 
 **Data:** 2025-01-20
-**Status:** Implementado mas não funcionando em produção
-**Próximos passos:** Investigar logs no Railway
+**Status:** ✅ RESOLVIDO (2026-01-20)
+**Causa raiz:** Modelo Pydantic de validação não incluía `investment_funds`
 
 ---
 
@@ -187,3 +187,36 @@ asyncio.run(test())
 - Contém 2 fundos de investimento totalizando ~R$ 2.2M
 - O problema é não-determinístico (~50% de falha)
 - Prompt version atual: `v2.3-retry-loop`
+
+---
+
+## ✅ RESOLUÇÃO (2026-01-20)
+
+### Diagnóstico
+
+Através dos logs do Railway, identificamos que:
+
+1. Claude **extraía corretamente** `investment_funds` (2 fundos)
+2. Logs mostravam `investment_funds_count=2` no `extraction_summary`
+3. **MAS** ao recuperar do banco, `has_investment_funds=false`
+
+### Causa Raiz
+
+O modelo Pydantic `ParsedStatementData` em `backend/app/services/validation.py` **não incluía** o campo `investment_funds`.
+
+Quando o `ValidationService.validate_statement_data()` era chamado:
+1. `model_validate(raw_data)` ignorava campos não definidos no modelo
+2. `model_dump()` retornava apenas os campos do modelo
+3. `investment_funds` era perdido antes de salvar no banco
+
+### Correção
+
+Commit `ba101b14`:
+1. Adicionado modelo `InvestmentFundPosition` com validação de decimais
+2. Adicionado `investment_funds: list[InvestmentFundPosition]` ao `ParsedStatementData`
+
+### Resultado
+
+- `has_investment_funds=true`
+- `investment_funds_count=2`
+- Fundos de investimento agora são preservados corretamente
