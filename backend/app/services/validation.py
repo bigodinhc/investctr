@@ -248,6 +248,34 @@ class CashMovements(BaseModel):
         return normalize_decimal(v)
 
 
+class InvestmentFundPosition(BaseModel):
+    """Investment fund position validation."""
+
+    fund_name: str
+    cnpj: str | None = None
+    quota_quantity: Decimal | None = None
+    quota_price: Decimal | None = None
+    gross_balance: Decimal | None = None
+    ir_provision: Decimal | None = None
+    net_balance: Decimal | None = None
+    performance_pct: Decimal | None = None
+
+    @field_validator(
+        "quota_quantity",
+        "quota_price",
+        "gross_balance",
+        "ir_provision",
+        "net_balance",
+        "performance_pct",
+        mode="before",
+    )
+    @classmethod
+    def validate_decimal(cls, v: Any) -> Decimal | None:
+        if v is None:
+            return None
+        return normalize_decimal(v)
+
+
 class DerivativePosition(BaseModel):
     """Derivative position validation."""
 
@@ -302,6 +330,7 @@ class ParsedStatementData(BaseModel):
     transactions: list[TransactionData] = Field(default_factory=list)
     stock_lending: list[StockLending] = Field(default_factory=list)
     derivatives_positions: list[DerivativePosition] = Field(default_factory=list)
+    investment_funds: list[InvestmentFundPosition] = Field(default_factory=list)
     cash_movements: CashMovements | None = None
     summary: SummaryData | None = None
 
