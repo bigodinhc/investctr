@@ -395,6 +395,10 @@ async def get_parse_result(
             account_number=raw_data.get("account_number"),
             transactions=raw_data.get("transactions", []),
             summary=raw_data.get("summary"),
+            fixed_income_positions=raw_data.get("fixed_income_positions"),
+            stock_lending=raw_data.get("stock_lending"),
+            cash_movements=raw_data.get("cash_movements"),
+            consolidated_position=raw_data.get("consolidated_position"),
         )
 
     return DocumentParseResponse(

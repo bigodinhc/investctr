@@ -89,6 +89,42 @@ class ParsedTransaction(BaseSchema):
     notes: str | None = Field(None, description="Additional notes")
 
 
+class ParsedFixedIncome(BaseSchema):
+    """Schema for fixed income position extracted from a document."""
+
+    asset_name: str
+    asset_type: str
+    issuer: str | None = None
+    quantity: float
+    unit_price: float | None = None
+    total_value: float
+    indexer: str | None = None
+    rate_percent: float | None = None
+    acquisition_date: str | None = None
+    maturity_date: str | None = None
+
+
+class ParsedStockLending(BaseSchema):
+    """Schema for stock lending extracted from a document."""
+
+    date: str
+    type: str  # lending_out, lending_return, rental_income
+    ticker: str
+    quantity: float
+    rate_percent: float | None = None
+    total: float
+
+
+class ParsedCashMovement(BaseSchema):
+    """Schema for cash movement extracted from a document."""
+
+    date: str
+    type: str  # dividend, jcp, interest, fee, tax, etc
+    description: str | None = None
+    ticker: str | None = None
+    value: float
+
+
 class ParsedDocumentData(BaseSchema):
     """Schema for parsed document data from Claude."""
 
@@ -96,7 +132,11 @@ class ParsedDocumentData(BaseSchema):
     period: dict[str, str] | None = None
     account_number: str | None = None
     transactions: list[ParsedTransaction] = []
-    summary: dict[str, float] | None = None
+    summary: dict[str, Any] | None = None
+    fixed_income_positions: list[ParsedFixedIncome] | None = None
+    stock_lending: list[ParsedStockLending] | None = None
+    cash_movements: list[ParsedCashMovement] | None = None
+    consolidated_position: dict[str, Any] | None = None
 
 
 class DocumentParseResponse(BaseSchema):
