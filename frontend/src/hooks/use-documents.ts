@@ -10,9 +10,10 @@ import {
   parseDocument,
   getParseResult,
   deleteDocument,
+  commitDocument,
 } from "@/lib/api/documents";
 import { toast } from "@/components/ui/use-toast";
-import type { DocumentType, PaginationParams } from "@/lib/api/types";
+import type { DocumentType, PaginationParams, CommitDocumentRequest } from "@/lib/api/types";
 
 export const documentKeys = {
   all: ["documents"] as const,
@@ -135,6 +136,51 @@ export function useDeleteDocument() {
     onError: (error: Error) => {
       toast({
         title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useCommitDocument() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      documentId,
+      data,
+    }: {
+      documentId: string;
+      data: CommitDocumentRequest;
+    }) => commitDocument(documentId, data),
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: documentKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: documentKeys.detail(variables.documentId),
+      });
+      // Invalidate positions and transactions queries
+      queryClient.invalidateQueries({ queryKey: ["positions"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+
+      const totalCreated =
+        result.transactions_created +
+        result.fixed_income_created +
+        result.cash_flows_created;
+
+      toast({
+        title: "Dados importados",
+        description: `${totalCreated} registros criados com sucesso.${
+          result.errors.length > 0
+            ? ` ${result.errors.length} erros encontrados.`
+            : ""
+        }`,
+        variant: result.errors.length > 0 ? "warning" : "success",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao importar",
         description: error.message,
         variant: "destructive",
       });

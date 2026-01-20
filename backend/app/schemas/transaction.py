@@ -143,20 +143,72 @@ class CommitTransactionItem(BaseSchema):
     notes: str | None = None
 
 
-class CommitDocumentRequest(BaseSchema):
-    """Request to commit parsed document transactions."""
+class CommitStockLendingItem(BaseSchema):
+    """Single stock lending item in commit request."""
 
-    account_id: UUID = Field(..., description="Account to associate transactions with")
+    date: str = Field(..., description="Date (YYYY-MM-DD)")
+    type: str = Field(..., description="lending_out or lending_return")
+    ticker: str = Field(..., min_length=1, description="Asset ticker")
+    quantity: Decimal = Field(..., description="Quantity of shares")
+    rate_percent: Decimal | None = Field(None, description="Rental rate percentage")
+    total: Decimal = Field(..., description="Total rental value")
+    notes: str | None = None
+
+
+class CommitCashMovementItem(BaseSchema):
+    """Single cash movement item in commit request."""
+
+    date: str = Field(..., description="Date (YYYY-MM-DD)")
+    type: str = Field(
+        ...,
+        description="Type: deposit, withdrawal, dividend, jcp, interest, fee, tax, settlement, rental_income, other",
+    )
+    description: str | None = Field(None, description="Movement description")
+    ticker: str | None = Field(None, description="Related asset ticker (for dividends, etc)")
+    value: Decimal = Field(..., description="Movement value (positive for inflows)")
+
+
+class CommitFixedIncomeItem(BaseSchema):
+    """Single fixed income item in commit request."""
+
+    asset_name: str = Field(..., max_length=255, description="Asset name/identifier")
+    asset_type: str = Field(..., description="Type: cdb, lca, lci, lft, ntnb, ntnf, etc")
+    issuer: str | None = Field(None, description="Issuing institution")
+    quantity: Decimal = Field(..., description="Quantity/units")
+    unit_price: Decimal | None = Field(None, description="Unit price")
+    total_value: Decimal = Field(..., description="Total value")
+    indexer: str | None = Field(None, description="Indexer: cdi, selic, ipca, etc")
+    rate_percent: Decimal | None = Field(None, description="Rate percentage")
+    acquisition_date: str | None = Field(None, description="YYYY-MM-DD")
+    maturity_date: str | None = Field(None, description="YYYY-MM-DD")
+    reference_date: str = Field(..., description="YYYY-MM-DD")
+
+
+class CommitDocumentRequest(BaseSchema):
+    """Request to commit parsed document data."""
+
+    account_id: UUID = Field(..., description="Account to associate data with")
     transactions: list[CommitTransactionItem] = Field(
-        ..., min_length=1, description="Transactions to commit"
+        default_factory=list, description="Buy/sell transactions to commit"
+    )
+    fixed_income: list[CommitFixedIncomeItem] = Field(
+        default_factory=list, description="Fixed income positions to commit"
+    )
+    stock_lending: list[CommitStockLendingItem] = Field(
+        default_factory=list, description="Stock lending records to commit"
+    )
+    cash_movements: list[CommitCashMovementItem] = Field(
+        default_factory=list, description="Cash movements to commit"
     )
 
 
 class CommitDocumentResponse(BaseSchema):
-    """Response after committing document transactions."""
+    """Response after committing document data."""
 
     document_id: UUID
     transactions_created: int
     assets_created: int
     positions_updated: int
+    fixed_income_created: int = 0
+    cash_flows_created: int = 0
     errors: list[str] = Field(default_factory=list)

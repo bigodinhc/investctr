@@ -51,3 +51,6 @@ class Account(Base, UUIDMixin, TimestampMixin):
     documents: Mapped[list["Document"]] = relationship(
         "Document", back_populates="account"
     )
+    fixed_income_positions: Mapped[list["FixedIncomePosition"]] = relationship(
+        "FixedIncomePosition", back_populates="account", cascade="all, delete-orphan"
+    )

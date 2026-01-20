@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { FileText, Upload, Eye, Trash2, Play, AlertCircle, RefreshCw, Check } from "lucide-react";
-import { useDocuments, useDocument, useParseResult, useParseDocument, useDeleteDocument } from "@/hooks/use-documents";
+import { useDocuments, useDocument, useParseResult, useParseDocument, useDeleteDocument, useCommitDocument } from "@/hooks/use-documents";
 import { useAccounts } from "@/hooks/use-accounts";
-import { useCommitDocument } from "@/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +33,7 @@ import {
 import { UploadZone, ParsePreview, DocumentStatusBadge } from "@/components/documents";
 import { toast } from "@/components/ui/use-toast";
 import { formatFileSize, formatDate } from "@/lib/format";
-import type { Document, ParsedTransaction } from "@/lib/api/types";
+import type { Document, CommitDocumentRequest } from "@/lib/api/types";
 
 // Progress stage indicator component
 function ProgressStage({
@@ -154,13 +153,15 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleConfirmTransactions = async (transactions: ParsedTransaction[]) => {
+  const handleConfirmTransactions = async (
+    commitData: Omit<CommitDocumentRequest, "account_id">
+  ) => {
     if (!selectedDocumentId) return;
 
     if (!selectedAccountId) {
       toast({
         title: "Selecione uma conta",
-        description: "É necessário selecionar uma conta para importar as transações.",
+        description: "É necessário selecionar uma conta para importar os dados.",
         variant: "destructive",
       });
       return;
@@ -171,16 +172,10 @@ export default function DocumentsPage() {
         documentId: selectedDocumentId,
         data: {
           account_id: selectedAccountId,
-          transactions: transactions.map((t) => ({
-            date: t.date,
-            type: t.type,
-            ticker: t.ticker,
-            quantity: t.quantity,
-            price: t.price,
-            total: t.total,
-            fees: t.fees,
-            notes: t.notes,
-          })),
+          transactions: commitData.transactions,
+          fixed_income: commitData.fixed_income,
+          stock_lending: commitData.stock_lending,
+          cash_movements: commitData.cash_movements,
         },
       });
       setSelectedDocumentId(null);

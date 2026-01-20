@@ -56,6 +56,14 @@ import type { CashFlow, CashFlowCreate, CashFlowType, CashFlowUpdate } from "@/l
 const CASH_FLOW_TYPE_LABELS: Record<CashFlowType, { label: string; color: string }> = {
   deposit: { label: "Aporte", color: "success" },
   withdrawal: { label: "Saque", color: "destructive" },
+  dividend: { label: "Dividendo", color: "info" },
+  jcp: { label: "JCP", color: "info" },
+  interest: { label: "Juros", color: "info" },
+  fee: { label: "Taxa", color: "warning" },
+  tax: { label: "Imposto", color: "warning" },
+  settlement: { label: "Liquidação", color: "secondary" },
+  rental_income: { label: "Aluguel", color: "info" },
+  other: { label: "Outro", color: "muted" },
 };
 
 export default function CashFlowsPage() {
