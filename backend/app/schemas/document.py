@@ -129,13 +129,13 @@ class ParsedDocumentData(BaseSchema):
     """Schema for parsed document data from Claude."""
 
     document_type: str
-    period: dict[str, str] | None = None
+    period: dict[str, Any] | None = None
     account_number: str | None = None
-    transactions: list[ParsedTransaction] = []
+    transactions: list[dict[str, Any]] = []
     summary: dict[str, Any] | None = None
-    fixed_income_positions: list[ParsedFixedIncome] | None = None
-    stock_lending: list[ParsedStockLending] | None = None
-    cash_movements: list[ParsedCashMovement] | None = None
+    fixed_income_positions: list[dict[str, Any]] | None = None
+    stock_lending: list[dict[str, Any]] | None = None
+    cash_movements: list[dict[str, Any]] | None = None
     consolidated_position: dict[str, Any] | None = None
 
 
