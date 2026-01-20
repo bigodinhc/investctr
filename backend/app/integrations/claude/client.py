@@ -191,6 +191,13 @@ async def parse_pdf_with_claude(
         # Parse JSON from response
         import json
 
+        # Log raw response for debugging (first 5000 chars to avoid huge logs)
+        logger.info(
+            "claude_raw_response_preview",
+            response_preview=response_text[:5000] if len(response_text) > 5000 else response_text,
+            total_length=len(response_text),
+        )
+
         # Try to find JSON in the response
         json_str = response_text
 
@@ -210,6 +217,13 @@ async def parse_pdf_with_claude(
 
         try:
             parsed_data = json.loads(json_str)
+            # Debug: log investment_funds specifically
+            logger.info(
+                "claude_investment_funds_debug",
+                has_investment_funds_key="investment_funds" in parsed_data,
+                investment_funds_value=parsed_data.get("investment_funds"),
+                all_keys=list(parsed_data.keys()),
+            )
             _log_extraction_summary(parsed_data, was_truncated)
             return parsed_data
         except json.JSONDecodeError as e:
