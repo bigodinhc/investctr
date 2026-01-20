@@ -2,11 +2,11 @@
 FixedIncomePosition model for CDB, LCA, LCI, Treasury bonds, etc.
 """
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, Numeric, String, ForeignKey, Enum as SAEnum, func
+from sqlalchemy import Date, Numeric, String, ForeignKey, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

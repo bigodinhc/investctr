@@ -2,7 +2,7 @@
 Fixed income position schemas.
 """
 
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
