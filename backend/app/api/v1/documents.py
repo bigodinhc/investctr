@@ -637,6 +637,17 @@ async def commit_document_transactions(
     investment_funds_created = 0
     asset_ids_to_recalculate: set[UUID] = set()
 
+    # Extract default reference date from document period (fallback for positions)
+    default_reference_date = None
+    if document.raw_extracted_data:
+        period = document.raw_extracted_data.get("period", {})
+        end_date_str = period.get("end_date") if period else None
+        if end_date_str:
+            try:
+                default_reference_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                pass  # Will be handled per-item if needed
+
     # =====================================================================
     # Process transactions (buy/sell)
     # =====================================================================
@@ -773,13 +784,21 @@ async def commit_document_transactions(
             acquisition_date = None
             maturity_date = None
 
-            try:
-                reference_date = datetime.strptime(
-                    fi_data.reference_date, "%Y-%m-%d"
-                ).date()
-            except ValueError:
+            if fi_data.reference_date:
+                try:
+                    reference_date = datetime.strptime(
+                        fi_data.reference_date, "%Y-%m-%d"
+                    ).date()
+                except ValueError:
+                    errors.append(
+                        f"Fixed income {idx + 1}: Invalid reference_date format '{fi_data.reference_date}'"
+                    )
+                    continue
+            elif default_reference_date:
+                reference_date = default_reference_date
+            else:
                 errors.append(
-                    f"Fixed income {idx + 1}: Invalid reference_date format '{fi_data.reference_date}'"
+                    f"Fixed income {idx + 1}: Missing reference_date and no document period available"
                 )
                 continue
 
@@ -885,14 +904,23 @@ async def commit_document_transactions(
     # =====================================================================
     for idx, fund_data in enumerate(request.investment_funds):
         try:
-            # Parse reference date
-            try:
-                reference_date = datetime.strptime(
-                    fund_data.reference_date, "%Y-%m-%d"
-                ).date()
-            except ValueError:
+            # Parse reference date (use document period end date as fallback)
+            reference_date = None
+            if fund_data.reference_date:
+                try:
+                    reference_date = datetime.strptime(
+                        fund_data.reference_date, "%Y-%m-%d"
+                    ).date()
+                except ValueError:
+                    errors.append(
+                        f"Investment fund {idx + 1}: Invalid reference_date format '{fund_data.reference_date}'"
+                    )
+                    continue
+            elif default_reference_date:
+                reference_date = default_reference_date
+            else:
                 errors.append(
-                    f"Investment fund {idx + 1}: Invalid reference_date format '{fund_data.reference_date}'"
+                    f"Investment fund {idx + 1}: Missing reference_date and no document period available"
                 )
                 continue
 

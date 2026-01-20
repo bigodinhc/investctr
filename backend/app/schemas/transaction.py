@@ -185,7 +185,9 @@ class CommitFixedIncomeItem(BaseSchema):
     rate_percent: Decimal | None = Field(None, description="Rate percentage")
     acquisition_date: str | None = Field(None, description="YYYY-MM-DD")
     maturity_date: str | None = Field(None, description="YYYY-MM-DD")
-    reference_date: str = Field(..., description="YYYY-MM-DD")
+    reference_date: str | None = Field(
+        None, description="YYYY-MM-DD - defaults to statement period end date"
+    )
 
 
 class CommitInvestmentFundItem(BaseSchema):
@@ -199,7 +201,9 @@ class CommitInvestmentFundItem(BaseSchema):
     ir_provision: Decimal | None = Field(None, description="IR tax provision")
     net_balance: Decimal | None = Field(None, description="Net balance")
     performance_pct: Decimal | None = Field(None, description="Monthly performance %")
-    reference_date: str = Field(..., description="YYYY-MM-DD")
+    reference_date: str | None = Field(
+        None, description="YYYY-MM-DD - defaults to statement period end date"
+    )
 
 
 class CommitDocumentRequest(BaseSchema):
