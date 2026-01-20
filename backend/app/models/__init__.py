@@ -9,6 +9,7 @@ from app.models.document import Document
 from app.models.exchange_rate import ExchangeRate
 from app.models.fixed_income import FixedIncomePosition
 from app.models.fund_share import FundShare
+from app.models.investment_fund import InvestmentFundPosition
 from app.models.portfolio_snapshot import PortfolioSnapshot
 from app.models.position import Position
 from app.models.quote import Quote
@@ -22,6 +23,7 @@ __all__ = [
     "ExchangeRate",
     "FixedIncomePosition",
     "FundShare",
+    "InvestmentFundPosition",
     "PortfolioSnapshot",
     "Position",
     "Quote",

@@ -18,6 +18,7 @@ from app.models import (
     CashFlow,
     Document,
     FixedIncomePosition,
+    InvestmentFundPosition,
     Transaction,
 )
 from app.schemas.document import (
@@ -395,6 +396,7 @@ async def get_parse_result(
             "fixed_income_positions": raw_data.get("fixed_income_positions"),
             "stock_lending": raw_data.get("stock_lending"),
             "cash_movements": raw_data.get("cash_movements"),
+            "investment_funds": raw_data.get("investment_funds"),
             "consolidated_position": raw_data.get("consolidated_position"),
         }
 
@@ -593,6 +595,7 @@ async def commit_document_transactions(
         fixed_income_count=len(request.fixed_income),
         stock_lending_count=len(request.stock_lending),
         cash_movements_count=len(request.cash_movements),
+        investment_funds_count=len(request.investment_funds),
     )
 
     errors: list[str] = []
@@ -600,6 +603,7 @@ async def commit_document_transactions(
     assets_created = 0
     fixed_income_created = 0
     cash_flows_created = 0
+    investment_funds_created = 0
     asset_ids_to_recalculate: set[UUID] = set()
 
     # =====================================================================
@@ -845,6 +849,50 @@ async def commit_document_transactions(
                 error=str(e),
             )
 
+    # =====================================================================
+    # Process investment funds
+    # =====================================================================
+    for idx, fund_data in enumerate(request.investment_funds):
+        try:
+            # Parse reference date
+            try:
+                reference_date = datetime.strptime(
+                    fund_data.reference_date, "%Y-%m-%d"
+                ).date()
+            except ValueError:
+                errors.append(
+                    f"Investment fund {idx + 1}: Invalid reference_date format '{fund_data.reference_date}'"
+                )
+                continue
+
+            # Create investment fund position
+            fund_position = InvestmentFundPosition(
+                account_id=request.account_id,
+                document_id=document_id,
+                fund_name=fund_data.fund_name,
+                cnpj=fund_data.cnpj,
+                quota_quantity=fund_data.quota_quantity,
+                quota_price=fund_data.quota_price,
+                gross_balance=fund_data.gross_balance,
+                ir_provision=fund_data.ir_provision,
+                net_balance=fund_data.net_balance,
+                performance_pct=fund_data.performance_pct,
+                reference_date=reference_date,
+            )
+
+            db.add(fund_position)
+            investment_funds_created += 1
+
+        except Exception as e:
+            errors.append(f"Investment fund {idx + 1} ({fund_data.fund_name}): {str(e)}")
+            logger.warning(
+                "commit_investment_fund_error",
+                document_id=str(document_id),
+                idx=idx,
+                fund_name=fund_data.fund_name,
+                error=str(e),
+            )
+
     # Commit all records
     await db.commit()
 
@@ -877,6 +925,7 @@ async def commit_document_transactions(
         assets_created=assets_created,
         fixed_income_created=fixed_income_created,
         cash_flows_created=cash_flows_created,
+        investment_funds_created=investment_funds_created,
         positions_updated=positions_updated,
         errors_count=len(errors),
     )
@@ -888,6 +937,7 @@ async def commit_document_transactions(
         positions_updated=positions_updated,
         fixed_income_created=fixed_income_created,
         cash_flows_created=cash_flows_created,
+        investment_funds_created=investment_funds_created,
         errors=errors,
     )
 

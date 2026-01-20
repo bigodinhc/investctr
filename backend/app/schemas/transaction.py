@@ -188,6 +188,20 @@ class CommitFixedIncomeItem(BaseSchema):
     reference_date: str = Field(..., description="YYYY-MM-DD")
 
 
+class CommitInvestmentFundItem(BaseSchema):
+    """Single investment fund item in commit request."""
+
+    fund_name: str = Field(..., max_length=500, description="Fund name")
+    cnpj: str | None = Field(None, max_length=20, description="Fund CNPJ")
+    quota_quantity: Decimal = Field(..., description="Number of quotas")
+    quota_price: Decimal | None = Field(None, description="Price per quota")
+    gross_balance: Decimal = Field(..., description="Gross balance")
+    ir_provision: Decimal | None = Field(None, description="IR tax provision")
+    net_balance: Decimal | None = Field(None, description="Net balance")
+    performance_pct: Decimal | None = Field(None, description="Monthly performance %")
+    reference_date: str = Field(..., description="YYYY-MM-DD")
+
+
 class CommitDocumentRequest(BaseSchema):
     """Request to commit parsed document data."""
 
@@ -204,6 +218,9 @@ class CommitDocumentRequest(BaseSchema):
     cash_movements: list[CommitCashMovementItem] = Field(
         default_factory=list, description="Cash movements to commit"
     )
+    investment_funds: list[CommitInvestmentFundItem] = Field(
+        default_factory=list, description="Investment fund positions to commit"
+    )
 
 
 class CommitDocumentResponse(BaseSchema):
@@ -215,4 +232,5 @@ class CommitDocumentResponse(BaseSchema):
     positions_updated: int
     fixed_income_created: int = 0
     cash_flows_created: int = 0
+    investment_funds_created: int = 0
     errors: list[str] = Field(default_factory=list)

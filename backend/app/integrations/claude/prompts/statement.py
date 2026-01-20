@@ -32,7 +32,18 @@ Analyze this BTG Pactual statement PDF and extract ALL data from the following s
 ### 1. POSIÇÃO CONSOLIDADA (Summary)
 Total values per market: Renda Fixa, Renda Variável, Derivativos, Conta Corrente
 
-### 2. POSIÇÃO EM RENDA FIXA (Fixed Income Positions)
+### 2. POSIÇÃO EM FUNDOS DE INVESTIMENTO (Investment Fund Positions)
+For mutual funds:
+- Fund name (e.g., "BTG PACTUAL YIELD DI FI RF")
+- CNPJ of the fund
+- Quota quantity (quantidade de cotas)
+- Quota price (valor da cota)
+- Gross balance (saldo bruto)
+- IR provision (provisão de IR)
+- Net balance (saldo líquido)
+- Performance percentage if available
+
+### 3. POSIÇÃO EM RENDA FIXA (Fixed Income Positions)
 For CDB, LFT, LCA, LCI, etc:
 - Asset name (e.g., "CDB BTG Pactual S.A.")
 - Indexer and rate (e.g., "104% CDI", "100% SELIC")
@@ -41,7 +52,7 @@ For CDB, LFT, LCA, LCI, etc:
 - Total position value
 - Maturity date if available
 
-### 3. POSIÇÃO - AÇÕES (Stock Positions)
+### 4. POSIÇÃO - AÇÕES (Stock Positions)
 End-of-period stock positions:
 - Ticker (e.g., "USIM5", "VALE3")
 - Quantity
@@ -49,7 +60,7 @@ End-of-period stock positions:
 - Current price
 - Total position value
 
-### 4. TRANSAÇÕES - AÇÕES (Stock Transactions)
+### 5. TRANSAÇÕES - AÇÕES (Stock Transactions)
 All stock operations during the period. Look for:
 - COMPRA (buy)
 - VENDA (sell)
@@ -57,12 +68,12 @@ All stock operations during the period. Look for:
 - SALDO FINAL (closing balance - extract as position)
 Fields: date, ticker, quantity, price, brokerage fee (corretagem), total
 
-### 5. TRANSAÇÕES - ALUGUEL (Stock Lending)
+### 6. TRANSAÇÕES - ALUGUEL (Stock Lending)
 - EMPRESTIMO (lending out shares)
 - LIQUIDACAO EMPRESTIMO (loan return/settlement)
 Fields: date, ticker, quantity, rate, total
 
-### 6. POSIÇÃO - DERIVATIVOS (Derivatives)
+### 7. POSIÇÃO - DERIVATIVOS (Derivatives)
 NDF, options, futures positions:
 - Instrument type
 - Underlying asset
@@ -70,7 +81,7 @@ NDF, options, futures positions:
 - Maturity
 - Current value
 
-### 7. MOVIMENTAÇÃO - CONTA CORRENTE (Cash Account Movements)
+### 8. MOVIMENTAÇÃO - CONTA CORRENTE (Cash Account Movements)
 ALL cash movements including:
 - DIVIDENDOS (dividends)
 - JUROS S/CAPITAL or JCP (interest on equity)
@@ -98,11 +109,24 @@ ALL cash movements including:
     },
     "consolidated_position": {
         "renda_fixa": 0.00,
+        "fundos_investimento": 0.00,
         "renda_variavel": 0.00,
         "derivativos": 0.00,
         "conta_corrente": 0.00,
         "total": 0.00
     },
+    "investment_funds": [
+        {
+            "fund_name": "BTG PACTUAL YIELD DI FI RF",
+            "cnpj": "00.000.000/0000-00",
+            "quota_quantity": 1000.00000000,
+            "quota_price": 10.50000000,
+            "gross_balance": 10500.00,
+            "ir_provision": 50.00,
+            "net_balance": 10450.00,
+            "performance_pct": 0.85
+        }
+    ],
     "fixed_income_positions": [
         {
             "asset_type": "CDB|LFT|LCA|LCI|DEBENTURE|OTHER",
@@ -219,6 +243,13 @@ ALL cash movements including:
    - Extract indexer type (CDI, SELIC, IPCA, PREFIXADO)
    - Extract rate as percentage (e.g., "104% CDI" → rate_percent: 104.00)
 
-6. **Do NOT skip any data** - extract everything visible in the document.
+6. **Investment Funds (Fundos de Investimento)**:
+   - Extract the full fund name
+   - Extract CNPJ if available
+   - Extract quota quantity, quota price, gross and net balances
+   - IR provision is typically shown as "Provisão IR"
+   - Performance % is typically shown as monthly return
+
+7. **Do NOT skip any data** - extract everything visible in the document.
 
 """ + self.get_json_instruction()

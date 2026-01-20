@@ -44,6 +44,11 @@ from app.schemas.fixed_income import (
     FixedIncomePositionResponse,
     FixedIncomePositionsListResponse,
 )
+from app.schemas.investment_fund import (
+    InvestmentFundPositionCreate,
+    InvestmentFundPositionResponse,
+    InvestmentFundPositionsListResponse,
+)
 from app.schemas.position import (
     ConsolidatedPosition,
     ConsolidatedPositionsResponse,
@@ -61,6 +66,7 @@ from app.schemas.transaction import (
     CommitDocumentRequest,
     CommitDocumentResponse,
     CommitFixedIncomeItem,
+    CommitInvestmentFundItem,
     CommitStockLendingItem,
     CommitTransactionItem,
     TransactionCreate,
@@ -120,6 +126,7 @@ __all__ = [
     "TransactionsWithAssetListResponse",
     "CommitTransactionItem",
     "CommitFixedIncomeItem",
+    "CommitInvestmentFundItem",
     "CommitStockLendingItem",
     "CommitCashMovementItem",
     "CommitDocumentRequest",
@@ -128,6 +135,10 @@ __all__ = [
     "FixedIncomePositionCreate",
     "FixedIncomePositionResponse",
     "FixedIncomePositionsListResponse",
+    # Investment Fund
+    "InvestmentFundPositionCreate",
+    "InvestmentFundPositionResponse",
+    "InvestmentFundPositionsListResponse",
     # Position
     "PositionResponse",
     "PositionWithAsset",

@@ -171,6 +171,18 @@ export interface ParsedCashMovement {
   value: number | string;
 }
 
+export interface ParsedInvestmentFund {
+  fund_name: string;
+  cnpj: string | null;
+  quota_quantity: number | string;
+  quota_price: number | string | null;
+  gross_balance: number | string;
+  ir_provision: number | string | null;
+  net_balance: number | string | null;
+  performance_pct: number | string | null;
+  reference_date?: string;
+}
+
 export interface ParsedDocumentData {
   document_type: string;
   period: { start: string; end: string } | null;
@@ -179,10 +191,12 @@ export interface ParsedDocumentData {
   fixed_income_positions?: ParsedFixedIncome[];
   stock_lending?: ParsedStockLending[];
   cash_movements?: ParsedCashMovement[];
+  investment_funds?: ParsedInvestmentFund[];
   summary: Record<string, number | string> | null;
   consolidated_position?: {
     total_stocks: number | string | null;
     total_fixed_income: number | string | null;
+    total_investment_funds: number | string | null;
     total_cash: number | string | null;
     grand_total: number | string | null;
   };
@@ -330,12 +344,25 @@ export interface CommitCashMovementItem {
   value: number;
 }
 
+export interface CommitInvestmentFundItem {
+  fund_name: string;
+  cnpj?: string | null;
+  quota_quantity: number;
+  quota_price?: number | null;
+  gross_balance: number;
+  ir_provision?: number | null;
+  net_balance?: number | null;
+  performance_pct?: number | null;
+  reference_date: string;
+}
+
 export interface CommitDocumentRequest {
   account_id: string;
   transactions: CommitTransactionItem[];
   fixed_income?: CommitFixedIncomeItem[];
   stock_lending?: CommitStockLendingItem[];
   cash_movements?: CommitCashMovementItem[];
+  investment_funds?: CommitInvestmentFundItem[];
 }
 
 export interface CommitDocumentResponse {
@@ -345,6 +372,7 @@ export interface CommitDocumentResponse {
   positions_updated: number;
   fixed_income_created: number;
   cash_flows_created: number;
+  investment_funds_created: number;
   errors: string[];
 }
 

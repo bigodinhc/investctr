@@ -36,6 +36,7 @@ class StatementParser(BaseParser):
                 raw_data.get("cash_movements", {}).get("movements"),
                 raw_data.get("stock_positions"),
                 raw_data.get("fixed_income_positions"),
+                raw_data.get("investment_funds"),
             ]
         )
 

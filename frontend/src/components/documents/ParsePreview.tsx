@@ -28,11 +28,13 @@ import type {
   ParsedFixedIncome,
   ParsedStockLending,
   ParsedCashMovement,
+  ParsedInvestmentFund,
   CommitDocumentRequest,
 } from "@/lib/api/types";
 import { FixedIncomeTable } from "./FixedIncomeTable";
 import { StockLendingTable } from "./StockLendingTable";
 import { CashMovementsTable } from "./CashMovementsTable";
+import { InvestmentFundsTable } from "./InvestmentFundsTable";
 import { DocumentSummary } from "./DocumentSummary";
 
 const TRANSACTION_TYPES = [
@@ -78,6 +80,9 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
   );
   const [selectedCashMovements, setSelectedCashMovements] = useState<ParsedCashMovement[]>(
     data.cash_movements || []
+  );
+  const [selectedInvestmentFunds, setSelectedInvestmentFunds] = useState<ParsedInvestmentFund[]>(
+    data.investment_funds || []
   );
 
   const [editingRow, setEditingRow] = useState<string | null>(null);
@@ -185,6 +190,17 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
         ticker: cm.ticker,
         value: toNumberRequired(cm.value),
       })),
+      investment_funds: selectedInvestmentFunds.map((fund) => ({
+        fund_name: fund.fund_name,
+        cnpj: fund.cnpj,
+        quota_quantity: toNumberRequired(fund.quota_quantity),
+        quota_price: toNumber(fund.quota_price),
+        gross_balance: toNumberRequired(fund.gross_balance),
+        ir_provision: toNumber(fund.ir_provision),
+        net_balance: toNumber(fund.net_balance),
+        performance_pct: toNumber(fund.performance_pct),
+        reference_date: fund.reference_date || data.period?.end || new Date().toISOString().split("T")[0],
+      })),
     });
   };
 
@@ -200,6 +216,10 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
     setSelectedCashMovements(items);
   }, []);
 
+  const handleInvestmentFundsChange = useCallback((items: ParsedInvestmentFund[]) => {
+    setSelectedInvestmentFunds(items);
+  }, []);
+
   const getTransactionType = (type: string) => {
     return TRANSACTION_TYPES.find((t) => t.value === type) || TRANSACTION_TYPES[8];
   };
@@ -209,12 +229,14 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
   const hasFixedIncome = (data.fixed_income_positions?.length || 0) > 0;
   const hasStockLending = (data.stock_lending?.length || 0) > 0;
   const hasCashMovements = (data.cash_movements?.length || 0) > 0;
+  const hasInvestmentFunds = (data.investment_funds?.length || 0) > 0;
 
   const totalSelectedItems =
     selectedTxnCount +
     selectedFixedIncome.length +
     selectedStockLending.length +
-    selectedCashMovements.length;
+    selectedCashMovements.length +
+    selectedInvestmentFunds.length;
 
   const formatCurrency = (value: number | string | null | undefined) => {
     if (value === null || value === undefined) return "-";
@@ -241,6 +263,9 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
   tabs.push({ id: "summary", label: "Resumo", count: null });
   if (hasTransactions) {
     tabs.push({ id: "transactions", label: "Transações", count: transactions.length });
+  }
+  if (hasInvestmentFunds) {
+    tabs.push({ id: "investment-funds", label: "Fundos", count: data.investment_funds?.length });
   }
   if (hasFixedIncome) {
     tabs.push({ id: "fixed-income", label: "Renda Fixa", count: data.fixed_income_positions?.length });
@@ -526,6 +551,15 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {hasInvestmentFunds && (
+          <TabsContent value="investment-funds" className="mt-4">
+            <InvestmentFundsTable
+              items={data.investment_funds!}
+              onSelectionChange={handleInvestmentFundsChange}
+            />
           </TabsContent>
         )}
 
