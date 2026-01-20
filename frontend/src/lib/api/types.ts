@@ -132,10 +132,10 @@ export interface ParsedTransaction {
   date: string;
   type: string;
   ticker: string;
-  quantity: number | null;
-  price: number | null;
-  total: number | null;
-  fees: number | null;
+  quantity: number | string | null;
+  price: number | string | null;
+  total: number | string | null;
+  fees: number | string | null;
   notes: string | null;
 }
 
@@ -143,23 +143,23 @@ export interface ParsedFixedIncome {
   asset_name: string;
   asset_type: string;
   issuer: string | null;
-  quantity: number;
-  unit_price: number | null;
-  total_value: number;
+  quantity: number | string;
+  unit_price: number | string | null;
+  total_value: number | string;
   indexer: string | null;
-  rate_percent: number | null;
+  rate_percent: number | string | null;
   acquisition_date: string | null;
   maturity_date: string | null;
-  reference_date: string;
+  reference_date?: string;
 }
 
 export interface ParsedStockLending {
   date: string;
   type: string; // lending_out, lending_return
   ticker: string;
-  quantity: number;
-  rate_percent: number | null;
-  total: number;
+  quantity: number | string;
+  rate_percent: number | string | null;
+  total: number | string;
   notes: string | null;
 }
 
@@ -168,7 +168,7 @@ export interface ParsedCashMovement {
   type: string;
   description: string | null;
   ticker: string | null;
-  value: number;
+  value: number | string;
 }
 
 export interface ParsedDocumentData {
@@ -179,12 +179,12 @@ export interface ParsedDocumentData {
   fixed_income_positions?: ParsedFixedIncome[];
   stock_lending?: ParsedStockLending[];
   cash_movements?: ParsedCashMovement[];
-  summary: Record<string, number> | null;
+  summary: Record<string, number | string> | null;
   consolidated_position?: {
-    total_stocks: number | null;
-    total_fixed_income: number | null;
-    total_cash: number | null;
-    grand_total: number | null;
+    total_stocks: number | string | null;
+    total_fixed_income: number | string | null;
+    total_cash: number | string | null;
+    grand_total: number | string | null;
   };
 }
 
@@ -309,7 +309,7 @@ export interface CommitFixedIncomeItem {
   rate_percent?: number | null;
   acquisition_date?: string | null;
   maturity_date?: string | null;
-  reference_date: string;
+  reference_date?: string;
 }
 
 export interface CommitStockLendingItem {

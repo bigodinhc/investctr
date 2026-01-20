@@ -64,28 +64,34 @@ export function StockLendingTable({ items, onSelectionChange }: StockLendingTabl
 
   const selectedCount = lendings.filter((l) => l.isSelected).length;
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null) return "-";
+  const formatCurrency = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value);
+    }).format(num);
   };
 
-  const formatNumber = (value: number | null, decimals = 0) => {
-    if (value === null) return "-";
+  const formatNumber = (value: number | string | null | undefined, decimals = 0) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(value);
+    }).format(num);
   };
 
-  const formatPercent = (value: number | null) => {
-    if (value === null) return "-";
+  const formatPercent = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value) + "%";
+    }).format(num) + "%";
   };
 
   const getLendingType = (type: string) => {

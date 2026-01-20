@@ -9,12 +9,20 @@ interface DocumentSummaryProps {
 }
 
 export function DocumentSummary({ data }: DocumentSummaryProps) {
-  const formatCurrency = (value: number | null | undefined) => {
+  const toNumber = (value: number | string | null | undefined): number => {
+    if (value === null || value === undefined) return 0;
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    return isNaN(num) ? 0 : num;
+  };
+
+  const formatCurrency = (value: number | string | null | undefined) => {
     if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value);
+    }).format(num);
   };
 
   const transactionsCount = data.transactions?.length || 0;
@@ -27,7 +35,7 @@ export function DocumentSummary({ data }: DocumentSummaryProps) {
   // Calculate totals from transactions
   const transactionsTotals = data.transactions?.reduce(
     (acc, t) => {
-      const total = t.total || 0;
+      const total = toNumber(t.total);
       if (t.type === "buy" || t.type === "compra") {
         acc.buys += total;
       } else if (t.type === "sell" || t.type === "venda") {
@@ -42,23 +50,24 @@ export function DocumentSummary({ data }: DocumentSummaryProps) {
 
   // Calculate fixed income total
   const fixedIncomeTotal = data.fixed_income_positions?.reduce(
-    (acc, fi) => acc + (fi.total_value || 0),
+    (acc, fi) => acc + toNumber(fi.total_value),
     0
   ) || 0;
 
   // Calculate stock lending total
   const stockLendingTotal = data.stock_lending?.reduce(
-    (acc, sl) => acc + (sl.total || 0),
+    (acc, sl) => acc + toNumber(sl.total),
     0
   ) || 0;
 
   // Calculate cash movements totals
   const cashTotals = data.cash_movements?.reduce(
     (acc, cm) => {
-      if (cm.value >= 0) {
-        acc.inflows += cm.value;
+      const value = toNumber(cm.value);
+      if (value >= 0) {
+        acc.inflows += value;
       } else {
-        acc.outflows += Math.abs(cm.value);
+        acc.outflows += Math.abs(value);
       }
       return acc;
     },

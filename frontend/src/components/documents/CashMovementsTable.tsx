@@ -86,11 +86,14 @@ export function CashMovementsTable({ items, onSelectionChange }: CashMovementsTa
 
   const selectedCount = movements.filter((m) => m.isSelected).length;
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value);
+    }).format(num);
   };
 
   const getMovementType = (type: string) => {
@@ -103,10 +106,13 @@ export function CashMovementsTable({ items, onSelectionChange }: CashMovementsTa
     .filter((m) => m.isSelected)
     .reduce(
       (acc, m) => {
-        if (m.value > 0) {
-          acc.inflows += m.value;
-        } else {
-          acc.outflows += Math.abs(m.value);
+        const value = typeof m.value === "string" ? parseFloat(m.value) : m.value;
+        if (!isNaN(value)) {
+          if (value > 0) {
+            acc.inflows += value;
+          } else {
+            acc.outflows += Math.abs(value);
+          }
         }
         return acc;
       },
@@ -196,7 +202,8 @@ export function CashMovementsTable({ items, onSelectionChange }: CashMovementsTa
                 <TableBody>
                   {movements.map((movement) => {
                     const movementType = getMovementType(movement.type);
-                    const isPositive = movement.value >= 0;
+                    const numValue = typeof movement.value === "string" ? parseFloat(movement.value) : movement.value;
+                    const isPositive = !isNaN(numValue) && numValue >= 0;
 
                     return (
                       <TableRow

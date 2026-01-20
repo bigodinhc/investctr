@@ -128,6 +128,18 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Helper to convert string/number to number
+  const toNumber = (value: number | string | null | undefined): number | null => {
+    if (value === null || value === undefined) return null;
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    return isNaN(num) ? null : num;
+  };
+
+  const toNumberRequired = (value: number | string): number => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    return isNaN(num) ? 0 : num;
+  };
+
   const handleConfirm = () => {
     const selectedTransactions = transactions
       .filter((t) => t.isSelected)
@@ -138,21 +150,21 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
         date: t.date,
         type: t.type,
         ticker: t.ticker,
-        quantity: t.quantity,
-        price: t.price,
-        total: t.total,
-        fees: t.fees,
+        quantity: toNumber(t.quantity),
+        price: toNumber(t.price),
+        total: toNumber(t.total),
+        fees: toNumber(t.fees),
         notes: t.notes,
       })),
       fixed_income: selectedFixedIncome.map((fi) => ({
         asset_name: fi.asset_name,
         asset_type: fi.asset_type,
         issuer: fi.issuer,
-        quantity: fi.quantity,
-        unit_price: fi.unit_price,
-        total_value: fi.total_value,
+        quantity: toNumberRequired(fi.quantity),
+        unit_price: toNumber(fi.unit_price),
+        total_value: toNumberRequired(fi.total_value),
         indexer: fi.indexer,
-        rate_percent: fi.rate_percent,
+        rate_percent: toNumber(fi.rate_percent),
         acquisition_date: fi.acquisition_date,
         maturity_date: fi.maturity_date,
         reference_date: fi.reference_date,
@@ -161,9 +173,9 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
         date: sl.date,
         type: sl.type,
         ticker: sl.ticker,
-        quantity: sl.quantity,
-        rate_percent: sl.rate_percent,
-        total: sl.total,
+        quantity: toNumberRequired(sl.quantity),
+        rate_percent: toNumber(sl.rate_percent),
+        total: toNumberRequired(sl.total),
         notes: sl.notes,
       })),
       cash_movements: selectedCashMovements.map((cm) => ({
@@ -171,7 +183,7 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
         type: cm.type,
         description: cm.description,
         ticker: cm.ticker,
-        value: cm.value,
+        value: toNumberRequired(cm.value),
       })),
     });
   };
@@ -204,20 +216,24 @@ export function ParsePreview({ data, onConfirm, onCancel, isLoading }: ParsePrev
     selectedStockLending.length +
     selectedCashMovements.length;
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null) return "-";
+  const formatCurrency = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value);
+    }).format(num);
   };
 
-  const formatNumber = (value: number | null) => {
-    if (value === null) return "-";
+  const formatNumber = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 6,
-    }).format(value);
+    }).format(num);
   };
 
   // Determine which tabs to show

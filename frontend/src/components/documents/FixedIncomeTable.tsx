@@ -81,20 +81,24 @@ export function FixedIncomeTable({ items, onSelectionChange }: FixedIncomeTableP
 
   const selectedCount = positions.filter((p) => p.isSelected).length;
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null) return "-";
+  const formatCurrency = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value);
+    }).format(num);
   };
 
-  const formatNumber = (value: number | null, decimals = 2) => {
-    if (value === null) return "-";
+  const formatNumber = (value: number | string | null | undefined, decimals = 2) => {
+    if (value === null || value === undefined) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return "-";
     return new Intl.NumberFormat("pt-BR", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }).format(value);
+    }).format(num);
   };
 
   const formatDate = (date: string | null) => {
@@ -106,7 +110,7 @@ export function FixedIncomeTable({ items, onSelectionChange }: FixedIncomeTableP
     return FIXED_INCOME_TYPES[type.toLowerCase()] || FIXED_INCOME_TYPES.other;
   };
 
-  const formatRate = (indexer: string | null, rate: number | null) => {
+  const formatRate = (indexer: string | null, rate: number | string | null | undefined) => {
     if (!indexer && !rate) return "-";
     const indexerLabel = indexer ? (INDEXER_LABELS[indexer.toLowerCase()] || indexer) : "";
     const rateValue = rate ? formatNumber(rate, 2) + "%" : "";
