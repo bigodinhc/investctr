@@ -25,6 +25,8 @@ class BTGStatementPrompt(BasePrompt):
     def prompt_template(self) -> str:
         return """You are a financial document parser specialized in Brazilian BTG Pactual monthly statements (Extrato Mensal).
 
+**IMPORTANT: This statement likely contains FUNDOS DE INVESTIMENTO (mutual funds) which represent a significant portion of the portfolio value. You MUST extract the investment_funds array if any funds are present. Look for sections titled "FUNDO DE INVESTIMENTO" or tables containing fund names with "FI", "FIC", "RF" in the name and CNPJ numbers.**
+
 Analyze this BTG Pactual statement PDF and extract ALL data from the following sections:
 
 ## SECTIONS TO EXTRACT:
@@ -128,14 +130,24 @@ ALL cash movements including:
     },
     "investment_funds": [
         {
-            "fund_name": "BTG PACTUAL YIELD DI FI RF",
-            "cnpj": "00.000.000/0000-00",
-            "quota_quantity": 1000.00000000,
-            "quota_price": 10.50000000,
-            "gross_balance": 10500.00,
-            "ir_provision": 50.00,
-            "net_balance": 10450.00,
-            "performance_pct": 0.85
+            "fund_name": "BTG PACTUAL CRED CORP I FIC FI RF CP LP",
+            "cnpj": "14.171.644/0001-57",
+            "quota_quantity": 99.123456,
+            "quota_price": 10500.123456,
+            "gross_balance": 1040000.00,
+            "ir_provision": 2500.00,
+            "net_balance": 1037500.00,
+            "performance_pct": 1.05
+        },
+        {
+            "fund_name": "BTG PACTUAL YIELD DI FI RF REF CRED PRIV",
+            "cnpj": "00.840.011/0001-80",
+            "quota_quantity": 120.654321,
+            "quota_price": 9650.789012,
+            "gross_balance": 1165000.00,
+            "ir_provision": 2800.00,
+            "net_balance": 1162200.00,
+            "performance_pct": 0.95
         }
     ],
     "fixed_income_positions": [
