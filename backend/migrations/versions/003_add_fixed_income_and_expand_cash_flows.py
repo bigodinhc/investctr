@@ -56,33 +56,98 @@ def upgrade() -> None:
     # Create fixed_income_positions table
     op.create_table(
         "fixed_income_positions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("uuid_generate_v4()"), primary_key=True),
-        sa.Column("account_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("document_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("documents.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            server_default=sa.text("uuid_generate_v4()"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "account_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("accounts.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "document_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("documents.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         # Identification
         sa.Column("asset_name", sa.String(255), nullable=False),
-        sa.Column("asset_type", postgresql.ENUM("cdb", "lca", "lci", "lft", "ntnb", "ntnf", "lf", "debenture", "cri", "cra", "other", name="fixed_income_type", create_type=False), nullable=False),
+        sa.Column(
+            "asset_type",
+            postgresql.ENUM(
+                "cdb",
+                "lca",
+                "lci",
+                "lft",
+                "ntnb",
+                "ntnf",
+                "lf",
+                "debenture",
+                "cri",
+                "cra",
+                "other",
+                name="fixed_income_type",
+                create_type=False,
+            ),
+            nullable=False,
+        ),
         sa.Column("issuer", sa.String(255), nullable=True),
         # Values
         sa.Column("quantity", sa.Numeric(18, 8), nullable=False),
         sa.Column("unit_price", sa.Numeric(18, 8), nullable=True),
         sa.Column("total_value", sa.Numeric(18, 2), nullable=False),
         # Rates
-        sa.Column("indexer", postgresql.ENUM("cdi", "selic", "ipca", "igpm", "prefixado", "other", name="indexer_type", create_type=False), nullable=True),
+        sa.Column(
+            "indexer",
+            postgresql.ENUM(
+                "cdi",
+                "selic",
+                "ipca",
+                "igpm",
+                "prefixado",
+                "other",
+                name="indexer_type",
+                create_type=False,
+            ),
+            nullable=True,
+        ),
         sa.Column("rate_percent", sa.Numeric(8, 4), nullable=True),
         # Dates
         sa.Column("acquisition_date", sa.Date, nullable=True),
         sa.Column("maturity_date", sa.Date, nullable=True),
         sa.Column("reference_date", sa.Date, nullable=False),
         # Timestamps
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=True),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+            nullable=True,
+        ),
     )
 
     # Create indexes
-    op.create_index("ix_fixed_income_positions_account_id", "fixed_income_positions", ["account_id"])
-    op.create_index("ix_fixed_income_positions_reference_date", "fixed_income_positions", ["reference_date"])
-    op.create_index("ix_fixed_income_positions_asset_type", "fixed_income_positions", ["asset_type"])
+    op.create_index(
+        "ix_fixed_income_positions_account_id", "fixed_income_positions", ["account_id"]
+    )
+    op.create_index(
+        "ix_fixed_income_positions_reference_date",
+        "fixed_income_positions",
+        ["reference_date"],
+    )
+    op.create_index(
+        "ix_fixed_income_positions_asset_type", "fixed_income_positions", ["asset_type"]
+    )
 
     # Enable RLS on fixed_income_positions
     op.execute("ALTER TABLE fixed_income_positions ENABLE ROW LEVEL SECURITY")
@@ -99,12 +164,20 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove fixed_income_positions table and related objects."""
     # Drop RLS policy
-    op.execute("DROP POLICY IF EXISTS fixed_income_positions_user_policy ON fixed_income_positions")
+    op.execute(
+        "DROP POLICY IF EXISTS fixed_income_positions_user_policy ON fixed_income_positions"
+    )
 
     # Drop indexes
-    op.drop_index("ix_fixed_income_positions_asset_type", table_name="fixed_income_positions")
-    op.drop_index("ix_fixed_income_positions_reference_date", table_name="fixed_income_positions")
-    op.drop_index("ix_fixed_income_positions_account_id", table_name="fixed_income_positions")
+    op.drop_index(
+        "ix_fixed_income_positions_asset_type", table_name="fixed_income_positions"
+    )
+    op.drop_index(
+        "ix_fixed_income_positions_reference_date", table_name="fixed_income_positions"
+    )
+    op.drop_index(
+        "ix_fixed_income_positions_account_id", table_name="fixed_income_positions"
+    )
 
     # Drop table
     op.drop_table("fixed_income_positions")

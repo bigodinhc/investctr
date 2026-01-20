@@ -164,7 +164,9 @@ class CommitCashMovementItem(BaseSchema):
         description="Type: deposit, withdrawal, dividend, jcp, interest, fee, tax, settlement, rental_income, other",
     )
     description: str | None = Field(None, description="Movement description")
-    ticker: str | None = Field(None, description="Related asset ticker (for dividends, etc)")
+    ticker: str | None = Field(
+        None, description="Related asset ticker (for dividends, etc)"
+    )
     value: Decimal = Field(..., description="Movement value (positive for inflows)")
 
 
@@ -172,7 +174,9 @@ class CommitFixedIncomeItem(BaseSchema):
     """Single fixed income item in commit request."""
 
     asset_name: str = Field(..., max_length=255, description="Asset name/identifier")
-    asset_type: str = Field(..., description="Type: cdb, lca, lci, lft, ntnb, ntnf, etc")
+    asset_type: str = Field(
+        ..., description="Type: cdb, lca, lci, lft, ntnb, ntnf, etc"
+    )
     issuer: str | None = Field(None, description="Issuing institution")
     quantity: Decimal = Field(..., description="Quantity/units")
     unit_price: Decimal | None = Field(None, description="Unit price")

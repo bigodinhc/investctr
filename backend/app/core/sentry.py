@@ -35,11 +35,9 @@ def init_sentry() -> bool:
             dsn=settings.sentry_dsn,
             environment=settings.environment,
             release=f"investctr-backend@{settings.app_version}",
-
             # Sample rates
             traces_sample_rate=1.0 if settings.is_development else 0.1,
             profiles_sample_rate=1.0 if settings.is_development else 0.1,
-
             # Integrations
             integrations=[
                 StarletteIntegration(
@@ -58,27 +56,26 @@ def init_sentry() -> bool:
                     event_level=logging.ERROR,
                 ),
             ],
-
             # Performance monitoring
             enable_tracing=True,
-
             # Data scrubbing - remove sensitive data
             send_default_pii=False,
-
             # Additional options
             attach_stacktrace=True,
             include_local_variables=settings.is_development,
-
             # Filter events before sending
             before_send=before_send_filter,
         )
 
         # Set user context (will be overwritten per-request)
-        sentry_sdk.set_context("app", {
-            "name": settings.app_name,
-            "version": settings.app_version,
-            "environment": settings.environment,
-        })
+        sentry_sdk.set_context(
+            "app",
+            {
+                "name": settings.app_name,
+                "version": settings.app_version,
+                "environment": settings.environment,
+            },
+        )
 
         logger.info(
             f"Sentry initialized successfully for environment: {settings.environment}"
@@ -90,7 +87,9 @@ def init_sentry() -> bool:
         return False
 
 
-def before_send_filter(event: dict[str, Any], hint: dict[str, Any]) -> dict[str, Any] | None:
+def before_send_filter(
+    event: dict[str, Any], hint: dict[str, Any]
+) -> dict[str, Any] | None:
     """
     Filter events before sending to Sentry.
 
@@ -182,10 +181,12 @@ def set_user_context(user_id: str, email: str | None = None) -> None:
     if not settings.sentry_dsn:
         return
 
-    sentry_sdk.set_user({
-        "id": user_id,
-        "email": email,
-    })
+    sentry_sdk.set_user(
+        {
+            "id": user_id,
+            "email": email,
+        }
+    )
 
 
 def clear_user_context() -> None:

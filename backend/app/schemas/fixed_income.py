@@ -21,7 +21,9 @@ class FixedIncomePositionBase(BaseSchema):
     quantity: Decimal = Field(..., description="Quantity/units")
     unit_price: Decimal | None = Field(None, description="Unit price")
     total_value: Decimal = Field(..., description="Total value")
-    indexer: IndexerType | None = Field(None, description="Index type (CDI, SELIC, etc)")
+    indexer: IndexerType | None = Field(
+        None, description="Index type (CDI, SELIC, etc)"
+    )
     rate_percent: Decimal | None = Field(None, description="Rate percentage")
     acquisition_date: date | None = Field(None, description="Acquisition date")
     maturity_date: date | None = Field(None, description="Maturity date")

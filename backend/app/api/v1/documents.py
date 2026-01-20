@@ -12,7 +12,14 @@ from sqlalchemy import select
 from app.api.deps import AuthenticatedUser, DBSession, Pagination
 from app.core.logging import get_logger
 from app.core.rate_limit import rate_limit
-from app.models import Account, Asset, CashFlow, Document, FixedIncomePosition, Transaction
+from app.models import (
+    Account,
+    Asset,
+    CashFlow,
+    Document,
+    FixedIncomePosition,
+    Transaction,
+)
 from app.schemas.document import (
     DocumentParseRequest,
     DocumentResponse,
@@ -279,6 +286,7 @@ async def parse_document(
 
     # Check if Celery/Redis is configured before attempting async mode
     from app.config import get_settings
+
     celery_configured = bool(get_settings().celery_broker_url)
 
     if async_mode and celery_configured:
@@ -451,6 +459,7 @@ async def reparse_document(
 
     # Check if Celery/Redis is configured
     from app.config import get_settings
+
     celery_configured = bool(get_settings().celery_broker_url)
 
     if celery_configured:
@@ -729,7 +738,9 @@ async def commit_document_transactions(
             maturity_date = None
 
             try:
-                reference_date = datetime.strptime(fi_data.reference_date, "%Y-%m-%d").date()
+                reference_date = datetime.strptime(
+                    fi_data.reference_date, "%Y-%m-%d"
+                ).date()
             except ValueError:
                 errors.append(
                     f"Fixed income {idx + 1}: Invalid reference_date format '{fi_data.reference_date}'"
@@ -738,13 +749,17 @@ async def commit_document_transactions(
 
             if fi_data.acquisition_date:
                 try:
-                    acquisition_date = datetime.strptime(fi_data.acquisition_date, "%Y-%m-%d").date()
+                    acquisition_date = datetime.strptime(
+                        fi_data.acquisition_date, "%Y-%m-%d"
+                    ).date()
                 except ValueError:
                     pass  # Optional field, ignore invalid
 
             if fi_data.maturity_date:
                 try:
-                    maturity_date = datetime.strptime(fi_data.maturity_date, "%Y-%m-%d").date()
+                    maturity_date = datetime.strptime(
+                        fi_data.maturity_date, "%Y-%m-%d"
+                    ).date()
                 except ValueError:
                     pass  # Optional field, ignore invalid
 

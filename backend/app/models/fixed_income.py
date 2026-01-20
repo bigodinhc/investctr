@@ -68,7 +68,9 @@ class FixedIncomePosition(Base, UUIDMixin, TimestampMixin):
     reference_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
 
     # Relationships
-    account: Mapped["Account"] = relationship("Account", back_populates="fixed_income_positions")
+    account: Mapped["Account"] = relationship(
+        "Account", back_populates="fixed_income_positions"
+    )
     document: Mapped["Document | None"] = relationship(
         "Document", back_populates="fixed_income_positions"
     )
