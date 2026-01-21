@@ -658,6 +658,8 @@ export interface PortfolioHistoryItem {
   total_cost: string;
   realized_pnl: string;
   unrealized_pnl: string;
+  share_value?: string;
+  cumulative_return?: string;
 }
 
 export interface PortfolioHistoryResponse {

@@ -728,76 +728,76 @@ async def get_portfolio_history(
     """
     Get portfolio history for charting.
 
-    Returns list of PortfolioSnapshot records for the selected period.
-    Used for rendering the NAV evolution chart.
+    Returns NAV history for the selected period.
+    Uses FundShare records (backfilled historical NAV) as primary source,
+    falls back to PortfolioSnapshot if available.
     """
+    from app.models import FundShare
+
     start_date = _get_period_start_date(period)
     today = date.today()
 
-    # Build query for snapshots
-    query = (
-        select(PortfolioSnapshot)
-        .where(PortfolioSnapshot.user_id == user.id)
-        .where(PortfolioSnapshot.date >= start_date)
-        .where(PortfolioSnapshot.date <= today)
-        .order_by(PortfolioSnapshot.date.asc())
-        .limit(limit)
-    )
+    items: list[PortfolioHistoryItem] = []
 
-    if account_id:
-        query = query.where(PortfolioSnapshot.account_id == account_id)
-    else:
-        # For consolidated view, get records with null account_id (total)
-        # or if none exist, get all records
-        query = query.where(PortfolioSnapshot.account_id.is_(None))
+    # First, try to get data from FundShare (backfilled historical NAV)
+    # This is the preferred source as it has complete historical data
+    if not account_id:  # FundShare is consolidated (no account breakdown)
+        fund_shares_query = (
+            select(FundShare)
+            .where(FundShare.user_id == user.id)
+            .where(FundShare.date >= start_date)
+            .where(FundShare.date <= today)
+            .order_by(FundShare.date.asc())
+            .limit(limit)
+        )
 
-    result = await db.execute(query)
-    snapshots = list(result.scalars().all())
+        fs_result = await db.execute(fund_shares_query)
+        fund_shares = list(fs_result.scalars().all())
 
-    # If no consolidated snapshots found, try getting consolidated snapshots aggregated by date
-    if not snapshots and not account_id:
-        # Get consolidated snapshots (account_id IS NULL) grouped by date
-        subquery = (
-            select(
-                PortfolioSnapshot.date,
-                func.sum(PortfolioSnapshot.nav).label("nav"),
-                func.sum(PortfolioSnapshot.total_cost).label("total_cost"),
-                func.sum(PortfolioSnapshot.realized_pnl).label("realized_pnl"),
-                func.sum(PortfolioSnapshot.unrealized_pnl).label("unrealized_pnl"),
-            )
+        if fund_shares:
+            items = [
+                PortfolioHistoryItem(
+                    date=fs.date,
+                    nav=fs.nav,
+                    total_cost=Decimal("0"),  # Not tracked in FundShare
+                    realized_pnl=Decimal("0"),  # Not tracked in FundShare
+                    unrealized_pnl=Decimal("0"),  # Not tracked in FundShare
+                    share_value=fs.share_value,
+                    cumulative_return=fs.cumulative_return,
+                )
+                for fs in fund_shares
+            ]
+
+    # If no FundShare data, fall back to PortfolioSnapshot
+    if not items:
+        query = (
+            select(PortfolioSnapshot)
             .where(PortfolioSnapshot.user_id == user.id)
-            .where(PortfolioSnapshot.account_id.is_(None))
             .where(PortfolioSnapshot.date >= start_date)
             .where(PortfolioSnapshot.date <= today)
-            .group_by(PortfolioSnapshot.date)
             .order_by(PortfolioSnapshot.date.asc())
             .limit(limit)
         )
 
-        agg_result = await db.execute(subquery)
-        rows = agg_result.fetchall()
+        if account_id:
+            query = query.where(PortfolioSnapshot.account_id == account_id)
+        else:
+            query = query.where(PortfolioSnapshot.account_id.is_(None))
 
-        items = [
-            PortfolioHistoryItem(
-                date=row.date,
-                nav=row.nav or Decimal("0"),
-                total_cost=row.total_cost or Decimal("0"),
-                realized_pnl=row.realized_pnl or Decimal("0"),
-                unrealized_pnl=row.unrealized_pnl or Decimal("0"),
-            )
-            for row in rows
-        ]
-    else:
-        items = [
-            PortfolioHistoryItem(
-                date=snap.date,
-                nav=snap.nav,
-                total_cost=snap.total_cost,
-                realized_pnl=snap.realized_pnl,
-                unrealized_pnl=snap.unrealized_pnl,
-            )
-            for snap in snapshots
-        ]
+        result = await db.execute(query)
+        snapshots = list(result.scalars().all())
+
+        if snapshots:
+            items = [
+                PortfolioHistoryItem(
+                    date=snap.date,
+                    nav=snap.nav,
+                    total_cost=snap.total_cost,
+                    realized_pnl=snap.realized_pnl,
+                    unrealized_pnl=snap.unrealized_pnl,
+                )
+                for snap in snapshots
+            ]
 
     # Calculate period return
     period_return: Decimal | None = None

@@ -169,9 +169,11 @@ class PortfolioHistoryItem(BaseSchema):
 
     date: dt.date = Field(..., description="Date of the snapshot")
     nav: Decimal = Field(..., description="Net Asset Value")
-    total_cost: Decimal = Field(..., description="Total cost basis")
-    realized_pnl: Decimal = Field(..., description="Realized P&L")
-    unrealized_pnl: Decimal = Field(..., description="Unrealized P&L")
+    total_cost: Decimal = Field(default=Decimal("0"), description="Total cost basis")
+    realized_pnl: Decimal = Field(default=Decimal("0"), description="Realized P&L")
+    unrealized_pnl: Decimal = Field(default=Decimal("0"), description="Unrealized P&L")
+    share_value: Decimal | None = Field(None, description="Value per share (from FundShare)")
+    cumulative_return: Decimal | None = Field(None, description="Cumulative return since inception")
 
     class Config:
         json_schema_extra = {
@@ -181,6 +183,8 @@ class PortfolioHistoryItem(BaseSchema):
                 "total_cost": "120000.00",
                 "realized_pnl": "5000.00",
                 "unrealized_pnl": "30000.00",
+                "share_value": "291.14",
+                "cumulative_return": "1.9114",
             }
         }
 
