@@ -21,7 +21,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils";
 import { usePortfolioSummary } from "@/hooks/use-portfolio";
 import { usePositions } from "@/hooks/use-positions";
 import { useLatestFundShare } from "@/hooks/use-fund";
-import { NavEvolutionChart, AllocationChart, ExposureCard } from "@/components/dashboard";
+import { PortfolioCharts, AllocationChart, ExposureCard } from "@/components/dashboard";
 import type { AssetType } from "@/lib/api/types";
 
 // Asset type display configuration
@@ -234,17 +234,15 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Chart - NAV Evolution */}
-        <NavEvolutionChart />
+      {/* Charts Section - NAV and Performance */}
+      <PortfolioCharts />
 
+      {/* Allocation and Exposure Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Allocation Chart */}
         <AllocationChart />
-      </div>
 
-      {/* Exposure Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Exposure Card */}
         <ExposureCard
           longValue={longValue}
           shortValue={shortValue}
