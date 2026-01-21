@@ -89,13 +89,30 @@ class AccountSummary(BaseModel):
     allocation_pct: Decimal | None = Field(None, description="% of total portfolio")
 
 
+class CategoryBreakdown(BaseModel):
+    """Category breakdown from brokerage statement (source of truth)."""
+
+    renda_fixa: Decimal = Field(default=Decimal("0"), description="Fixed income total")
+    fundos_investimento: Decimal = Field(
+        default=Decimal("0"), description="Investment funds total"
+    )
+    renda_variavel: Decimal = Field(
+        default=Decimal("0"), description="Variable income (stocks) total"
+    )
+    derivativos: Decimal = Field(default=Decimal("0"), description="Derivatives total")
+    conta_corrente: Decimal = Field(
+        default=Decimal("0"), description="Checking account balance"
+    )
+    coe: Decimal = Field(default=Decimal("0"), description="COE total")
+
+
 class PortfolioSummaryResponse(BaseModel):
     """Comprehensive portfolio summary response."""
 
-    # Totals
+    # Totals (from PortfolioSnapshot - source of truth)
     total_positions: int = Field(..., description="Total number of positions")
     total_value: Decimal = Field(
-        ..., description="Total market value (or cost if no prices)"
+        ..., description="Total portfolio value (from brokerage statement)"
     )
     total_cost: Decimal = Field(..., description="Total cost basis")
     total_unrealized_pnl: Decimal = Field(..., description="Total unrealized P&L")
@@ -104,6 +121,14 @@ class PortfolioSummaryResponse(BaseModel):
     )
     total_realized_pnl: Decimal = Field(
         ..., description="Total realized P&L (all time)"
+    )
+
+    # Category breakdown from statement (source of truth)
+    category_breakdown: CategoryBreakdown | None = Field(
+        None, description="Category breakdown from brokerage statement"
+    )
+    snapshot_date: date | None = Field(
+        None, description="Date of the latest portfolio snapshot"
     )
 
     # Position counts by type
@@ -166,7 +191,8 @@ async def get_portfolio_summary(
     Get comprehensive portfolio summary.
 
     Returns aggregated portfolio metrics including:
-    - Total value, cost, and unrealized P&L
+    - Total value from latest PortfolioSnapshot (source of truth from brokerage)
+    - Category breakdown from statement
     - Total realized P&L (from all sales)
     - Breakdown by asset type
     - Breakdown by account (if not filtered)
@@ -174,7 +200,35 @@ async def get_portfolio_summary(
     If account_id is provided, returns summary for that account only.
     Otherwise, returns consolidated summary across all user accounts.
     """
-    # Build base query for stock positions
+    # First, fetch the latest PortfolioSnapshot (source of truth from statement)
+    snapshot_query = (
+        select(PortfolioSnapshot)
+        .where(PortfolioSnapshot.user_id == user.id)
+        .order_by(PortfolioSnapshot.date.desc())
+        .limit(1)
+    )
+    if account_id:
+        snapshot_query = snapshot_query.where(PortfolioSnapshot.account_id == account_id)
+
+    snapshot_result = await db.execute(snapshot_query)
+    latest_snapshot = snapshot_result.scalar_one_or_none()
+
+    # Build category breakdown from snapshot if available
+    category_breakdown: CategoryBreakdown | None = None
+    snapshot_date: date | None = None
+
+    if latest_snapshot:
+        category_breakdown = CategoryBreakdown(
+            renda_fixa=latest_snapshot.renda_fixa or Decimal("0"),
+            fundos_investimento=latest_snapshot.fundos_investimento or Decimal("0"),
+            renda_variavel=latest_snapshot.renda_variavel or Decimal("0"),
+            derivativos=latest_snapshot.derivativos or Decimal("0"),
+            conta_corrente=latest_snapshot.conta_corrente or Decimal("0"),
+            coe=latest_snapshot.coe or Decimal("0"),
+        )
+        snapshot_date = latest_snapshot.date
+
+    # Build base query for stock positions (for position counts and breakdowns)
     base_query = (
         select(Position)
         .join(Position.account)
@@ -190,12 +244,19 @@ async def get_portfolio_summary(
     result = await db.execute(base_query)
     positions = list(result.scalars().all())
 
-    # Query fixed income positions
+    # Query fixed income positions - get only the latest by maturity date for each asset
+    # to avoid counting expired/duplicated positions
+    today = date.today()
     fi_query = (
         select(FixedIncomePosition)
         .join(FixedIncomePosition.account)
         .options(selectinload(FixedIncomePosition.account))
         .where(Account.user_id == user.id)
+        # Filter out matured positions
+        .where(
+            (FixedIncomePosition.maturity_date >= today) |
+            (FixedIncomePosition.maturity_date.is_(None))
+        )
     )
     if account_id:
         fi_query = fi_query.where(FixedIncomePosition.account_id == account_id)
@@ -219,7 +280,7 @@ async def get_portfolio_summary(
     # Check if we have any positions at all
     total_positions_count = len(positions) + len(fixed_income_positions) + len(investment_fund_positions)
 
-    if total_positions_count == 0:
+    if total_positions_count == 0 and not latest_snapshot:
         return PortfolioSummaryResponse(
             total_positions=0,
             total_value=Decimal("0"),
@@ -227,6 +288,8 @@ async def get_portfolio_summary(
             total_unrealized_pnl=Decimal("0"),
             total_unrealized_pnl_pct=None,
             total_realized_pnl=Decimal("0"),
+            category_breakdown=None,
+            snapshot_date=None,
             long_positions_count=0,
             short_positions_count=0,
             long_value=Decimal("0"),
@@ -263,31 +326,37 @@ async def get_portfolio_summary(
         entry.position_id: entry for entry in unrealized_summary.entries
     }
 
-    # Calculate totals from stock positions
-    total_cost = unrealized_summary.total_cost
-    # Use cost as fallback when no market quotes available for stocks
-    stock_market_value = unrealized_summary.total_market_value
-    if stock_market_value == 0 and unrealized_summary.total_cost > 0:
-        stock_market_value = unrealized_summary.total_cost
-    total_market_value = stock_market_value
+    # If we have a snapshot, use its NAV as total_value (source of truth)
+    # Otherwise, fall back to calculated values
+    if latest_snapshot and latest_snapshot.nav > 0:
+        # Use snapshot NAV as source of truth
+        total_value = latest_snapshot.nav
+        total_cost = latest_snapshot.total_cost or latest_snapshot.nav
+    else:
+        # Fall back to calculated values (legacy behavior)
+        total_cost = unrealized_summary.total_cost
+        stock_market_value = unrealized_summary.total_market_value
+        if stock_market_value == 0 and unrealized_summary.total_cost > 0:
+            stock_market_value = unrealized_summary.total_cost
+        total_market_value = stock_market_value
+
+        # Add fixed income totals (only unique positions)
+        fi_total_value = sum(fi.total_value for fi in fixed_income_positions)
+        total_cost += fi_total_value
+        total_market_value += fi_total_value
+
+        # Add investment fund totals
+        fund_total_value = sum(
+            fi.net_balance if fi.net_balance is not None else fi.gross_balance
+            for fi in investment_fund_positions
+        )
+        total_cost += fund_total_value
+        total_market_value += fund_total_value
+
+        total_value = total_market_value if total_market_value > 0 else total_cost
+
     total_unrealized_pnl = unrealized_summary.total_unrealized_pnl
     total_unrealized_pnl_pct = unrealized_summary.total_unrealized_pnl_pct
-
-    # Add fixed income totals
-    fi_total_value = sum(fi.total_value for fi in fixed_income_positions)
-    total_cost += fi_total_value
-    total_market_value += fi_total_value  # Fixed income uses total_value as market value
-
-    # Add investment fund totals (use net_balance if available, otherwise gross_balance)
-    fund_total_value = sum(
-        fi.net_balance if fi.net_balance is not None else fi.gross_balance
-        for fi in investment_fund_positions
-    )
-    total_cost += fund_total_value
-    total_market_value += fund_total_value
-
-    # Use market value if available, otherwise use cost
-    total_value = total_market_value if total_market_value > 0 else total_cost
 
     # Group by asset type
     by_asset_type_data: dict[AssetType, dict] = {}
@@ -429,14 +498,34 @@ async def get_portfolio_summary(
     unique_accounts.update(fi.account_id for fi in fixed_income_positions)
     unique_accounts.update(fund.account_id for fund in investment_fund_positions)
 
-    # Calculate exposure metrics from stock positions
-    # Fixed income and funds are always "long" equivalents - add to long_value
-    stock_long_value = unrealized_summary.long_value
-    stock_short_value = unrealized_summary.short_value
+    # Calculate exposure metrics
+    # When using snapshot, get values from category breakdown; otherwise use calculated
+    if latest_snapshot and category_breakdown:
+        # Use snapshot category values for exposure calculation
+        fi_value = category_breakdown.renda_fixa
+        fund_value = category_breakdown.fundos_investimento
+        rv_value = category_breakdown.renda_variavel
+        derivativos_value = category_breakdown.derivativos
 
-    # Fixed income and funds are long-only, add to long exposure
-    long_value = stock_long_value + fi_total_value + fund_total_value
-    short_value = stock_short_value
+        stock_long_value = rv_value  # RV is stocks
+        stock_short_value = abs(min(derivativos_value, Decimal("0")))  # Derivatives can be negative
+
+        long_value = stock_long_value + fi_value + fund_value
+        short_value = stock_short_value
+    else:
+        # Fall back to calculated values
+        stock_long_value = unrealized_summary.long_value
+        stock_short_value = unrealized_summary.short_value
+
+        # Calculate fixed income and fund values for positions
+        fi_value = sum(fi.total_value for fi in fixed_income_positions)
+        fund_value = sum(
+            f.net_balance if f.net_balance is not None else f.gross_balance
+            for f in investment_fund_positions
+        )
+
+        long_value = stock_long_value + fi_value + fund_value
+        short_value = stock_short_value
 
     gross_exposure = long_value + short_value
     net_exposure = long_value - short_value
@@ -456,6 +545,8 @@ async def get_portfolio_summary(
         total_unrealized_pnl=total_unrealized_pnl,
         total_unrealized_pnl_pct=total_unrealized_pnl_pct,
         total_realized_pnl=realized_summary.total_realized_pnl,
+        category_breakdown=category_breakdown,
+        snapshot_date=snapshot_date,
         long_positions_count=unrealized_summary.long_positions_count + len(fixed_income_positions) + len(investment_fund_positions),
         short_positions_count=unrealized_summary.short_positions_count,
         long_value=long_value,

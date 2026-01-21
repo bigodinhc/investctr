@@ -10,6 +10,10 @@ Usage:
 
 Or to process specific files:
     python -m scripts.batch_import_direct --files 11-2022.pdf 12-2022.pdf
+
+For other accounts:
+    python -m scripts.batch_import_direct --account "Alliance Investments" --start-date 2022-11
+    python -m scripts.batch_import_direct --account "BTG Cayman 36595" --parser cayman --base-dir ../Extratos-Cayman
 """
 
 import argparse
@@ -28,10 +32,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_session_maker
 from app.models import Account, Document
 from app.schemas.enums import DocumentType, ParsingStatus
-from app.integrations.claude.parsers import StatementParser
+from app.integrations.claude.parsers import StatementParser, CaymanStatementParser
 
 # Configuration
 BASE_DIR = Path(__file__).parent.parent.parent / "Extratos"
+
+# Parser type mapping
+PARSER_TYPES = {
+    "btg": StatementParser,
+    "cayman": CaymanStatementParser,
+}
 
 
 def get_pdf_files(
@@ -79,14 +89,14 @@ def get_pdf_files(
     return pdf_files
 
 
-async def get_account(db: AsyncSession) -> Account:
-    """Get the BTG account."""
-    account_query = select(Account).where(Account.name == "BTG Pactual")
+async def get_account(db: AsyncSession, account_name: str = "BTG Pactual") -> Account:
+    """Get an account by name."""
+    account_query = select(Account).where(Account.name == account_name)
     result = await db.execute(account_query)
     account = result.scalar_one_or_none()
 
     if not account:
-        raise ValueError("BTG Pactual account not found")
+        raise ValueError(f"Account '{account_name}' not found")
 
     return account
 
@@ -132,6 +142,9 @@ async def commit_parsed_data(
     from app.schemas.enums import TransactionType, CashFlowType, PositionType
     from app.services.position_service import PositionService
 
+    # Use account's currency
+    currency = account.currency
+
     results = {
         "transactions_created": 0,
         "assets_created": 0,
@@ -139,6 +152,8 @@ async def commit_parsed_data(
         "fixed_income_created": 0,
         "cash_flows_created": 0,
         "investment_funds_created": 0,
+        "equities_processed": 0,
+        "derivatives_processed": 0,
         "errors": [],
     }
 
@@ -153,11 +168,21 @@ async def commit_parsed_data(
 
         if not asset:
             from app.schemas.enums import AssetType
+            # Map asset type string to enum, handling various formats
+            asset_type_lower = asset_type.lower() if asset_type else "stock"
+            asset_type_enum = AssetType.STOCK
+            if asset_type_lower in [e.value for e in AssetType]:
+                asset_type_enum = AssetType(asset_type_lower)
+            elif asset_type_lower in ("future", "futures"):
+                asset_type_enum = AssetType.FUTURE
+            elif asset_type_lower in ("option", "options"):
+                asset_type_enum = AssetType.OPTION
+
             asset = Asset(
                 ticker=ticker,
                 name=name or ticker,
-                type=AssetType(asset_type) if asset_type in [e.value for e in AssetType] else AssetType.OTHER,
-                currency="BRL",
+                type=asset_type_enum,
+                currency=currency,
             )
             db.add(asset)
             await db.flush()
@@ -175,13 +200,14 @@ async def commit_parsed_data(
 
             asset = await get_or_create_asset(
                 ticker=ticker,
-                name=txn_data.get("asset_name"),
+                name=txn_data.get("asset_name") or txn_data.get("description"),
                 asset_type=txn_data.get("asset_type", "stock"),
             )
 
-            # Map transaction type
+            # Map transaction type (both PT-BR and English)
             txn_type_str = (txn_data.get("type") or "other").lower()
             type_mapping = {
+                # Portuguese
                 "buy": TransactionType.BUY,
                 "compra": TransactionType.BUY,
                 "sell": TransactionType.SELL,
@@ -195,6 +221,13 @@ async def commit_parsed_data(
                 "desdobramento": TransactionType.SPLIT,
                 "subscription": TransactionType.SUBSCRIPTION,
                 "subscricao": TransactionType.SUBSCRIPTION,
+                # English
+                "purchase": TransactionType.BUY,
+                "sale": TransactionType.SELL,
+                "interest": TransactionType.INCOME,
+                "fee": TransactionType.FEE,
+                "transfer_in": TransactionType.TRANSFER_IN,
+                "transfer_out": TransactionType.TRANSFER_OUT,
             }
             txn_type = type_mapping.get(txn_type_str, TransactionType.OTHER)
 
@@ -211,7 +244,7 @@ async def commit_parsed_data(
                 quantity=quantity,
                 price=price,
                 fees=fees,
-                currency="BRL",
+                currency=currency,
                 exchange_rate=Decimal("1"),
                 executed_at=datetime.strptime(txn_data["date"], "%Y-%m-%d"),
                 notes=txn_data.get("notes"),
@@ -232,6 +265,7 @@ async def commit_parsed_data(
         try:
             cm_type_str = (cm_data.get("type") or "other").lower()
             type_mapping = {
+                # Portuguese
                 "deposit": CashFlowType.DEPOSIT,
                 "deposito": CashFlowType.DEPOSIT,
                 "aporte": CashFlowType.DEPOSIT,
@@ -252,6 +286,11 @@ async def commit_parsed_data(
                 "ir": CashFlowType.TAX,
                 "settlement": CashFlowType.SETTLEMENT,
                 "liquidacao": CashFlowType.SETTLEMENT,
+                # English
+                "transfer_in": CashFlowType.DEPOSIT,
+                "wire_in": CashFlowType.DEPOSIT,
+                "transfer_out": CashFlowType.WITHDRAWAL,
+                "wire_out": CashFlowType.WITHDRAWAL,
             }
             cf_type = type_mapping.get(cm_type_str, CashFlowType.OTHER)
 
@@ -261,7 +300,7 @@ async def commit_parsed_data(
                 account_id=account.id,
                 type=cf_type,
                 amount=amount,
-                currency="BRL",
+                currency=currency,
                 exchange_rate=Decimal("1"),
                 executed_at=datetime.strptime(cm_data["date"], "%Y-%m-%d"),
                 notes=cm_data.get("description"),
@@ -351,11 +390,13 @@ async def process_statement(
     db: AsyncSession,
     account: Account,
     pdf_path: Path,
+    parser_type: str = "btg",
 ) -> dict:
     """Process a single statement."""
 
     print(f"\n{'='*60}")
     print(f"Processing: {pdf_path.name}")
+    print(f"Parser: {parser_type}")
     print(f"{'='*60}")
 
     # Check if already imported
@@ -375,8 +416,9 @@ async def process_statement(
         with open(pdf_path, "rb") as f:
             pdf_content = f.read()
 
-        # Parse using the statement parser directly
-        parser = StatementParser()
+        # Get the appropriate parser
+        parser_class = PARSER_TYPES.get(parser_type, StatementParser)
+        parser = parser_class()
         parse_result = await parser.parse(pdf_content)
 
         if not parse_result.success:
@@ -396,11 +438,20 @@ async def process_statement(
         fixed_income = parsed_data.get("fixed_income_positions", [])
         cash_movements = parsed_data.get("cash_movements", {}).get("movements", [])
         investment_funds = parsed_data.get("investment_funds", [])
+        equities = parsed_data.get("equities", [])
+        derivatives = parsed_data.get("derivatives", [])
 
-        print(f"    Found: {len(transactions)} transactions, "
-              f"{len(fixed_income)} fixed income, "
-              f"{len(cash_movements)} cash movements, "
-              f"{len(investment_funds)} investment funds")
+        # Show summary based on parser type
+        if parser_type == "cayman":
+            print(f"    Found: {len(transactions)} transactions, "
+                  f"{len(equities)} equities, "
+                  f"{len(derivatives)} derivatives, "
+                  f"{len(cash_movements)} cash movements")
+        else:
+            print(f"    Found: {len(transactions)} transactions, "
+                  f"{len(fixed_income)} fixed income, "
+                  f"{len(cash_movements)} cash movements, "
+                  f"{len(investment_funds)} investment funds")
 
     except Exception as e:
         document.parsing_status = ParsingStatus.FAILED
@@ -442,35 +493,56 @@ async def process_statement(
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="Batch import PDF statements directly")
-    parser.add_argument(
+    arg_parser = argparse.ArgumentParser(description="Batch import PDF statements directly")
+    arg_parser.add_argument(
         "--start-date",
         type=str,
         default="2022-11",
         help="Start month in YYYY-MM format (default: 2022-11)",
     )
-    parser.add_argument(
+    arg_parser.add_argument(
         "--end-date",
         type=str,
         help="End month in YYYY-MM format (inclusive)",
     )
-    parser.add_argument(
+    arg_parser.add_argument(
         "--files",
         nargs="+",
         help="Specific files to process (e.g., 11-2022.pdf 12-2022.pdf)",
     )
-    parser.add_argument(
+    arg_parser.add_argument(
+        "--account",
+        type=str,
+        default="BTG Pactual",
+        help="Account name to import to (default: 'BTG Pactual')",
+    )
+    arg_parser.add_argument(
+        "--parser",
+        type=str,
+        choices=list(PARSER_TYPES.keys()),
+        default="btg",
+        help="Parser type: 'btg' for BTG Brasil, 'cayman' for BTG Cayman (default: btg)",
+    )
+    arg_parser.add_argument(
+        "--base-dir",
+        type=str,
+        help="Base directory for PDF files (default: ../Extratos)",
+    )
+    arg_parser.add_argument(
         "--dry-run",
         action="store_true",
         help="List files without processing",
     )
-    parser.add_argument(
+    arg_parser.add_argument(
         "--continue-on-error",
         action="store_true",
         help="Continue processing even if a file fails",
     )
 
-    args = parser.parse_args()
+    args = arg_parser.parse_args()
+
+    # Set base directory
+    base_dir = Path(args.base_dir) if args.base_dir else BASE_DIR
 
     # Get list of files
     pdf_files = get_pdf_files(
@@ -479,10 +551,17 @@ async def main():
         specific_files=args.files,
     )
 
+    # If custom base dir, find files there instead
+    if args.base_dir:
+        # Simple file finding for custom directory
+        pdf_files = sorted(Path(args.base_dir).glob("**/*.pdf"))
+
     print("=" * 70)
     print("BATCH IMPORT STATEMENTS (Direct)")
     print("=" * 70)
-    print(f"Source directory: {BASE_DIR}")
+    print(f"Account: {args.account}")
+    print(f"Parser: {args.parser}")
+    print(f"Source directory: {base_dir}")
     print(f"Files to process: {len(pdf_files)}")
     print()
 
@@ -492,7 +571,10 @@ async def main():
 
     print("Files:")
     for pdf_file in pdf_files:
-        print(f"  - {pdf_file.relative_to(BASE_DIR)}")
+        try:
+            print(f"  - {pdf_file.relative_to(base_dir)}")
+        except ValueError:
+            print(f"  - {pdf_file.name}")
 
     if args.dry_run:
         print("\n[DRY RUN] No files were processed.")
@@ -509,8 +591,9 @@ async def main():
 
     async with session_maker() as db:
         # Get account
-        account = await get_account(db)
+        account = await get_account(db, args.account)
         print(f"Account: {account.name} ({account.id})")
+        print(f"Currency: {account.currency}")
         print(f"User ID: {account.user_id}")
         print()
 
@@ -520,6 +603,7 @@ async def main():
                     db=db,
                     account=account,
                     pdf_path=pdf_file,
+                    parser_type=args.parser,
                 )
                 results.append(result)
 

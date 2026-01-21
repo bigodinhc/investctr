@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """
-Backfill historical NAV and FundShare records.
+Backfill historical NAV and FundShare records using PortfolioSnapshot as source of truth.
 
-This script reconstructs position history and calculates daily NAV values
-from May 2021 to today, creating FundShare records for fund performance tracking.
+This script creates FundShare records for fund performance tracking by:
+1. Using PortfolioSnapshot NAV (from statements) as the source of truth for end-of-month dates
+2. Interpolating daily NAV between snapshots by adjusting only the renda_variavel (stocks)
+   portion with market prices, keeping fixed income and funds constant
+
+The interpolation formula for days between snapshots:
+    NAV(date) = Previous_snapshot.nav - Previous_snapshot.renda_variavel + RV_market_value(date)
+
+Where RV_market_value(date) = sum of stock positions × market prices on that date.
 
 Usage:
     python -m scripts.backfill_nav
@@ -33,6 +40,7 @@ from app.models import (
     Asset,
     CashFlow,
     FundShare,
+    PortfolioSnapshot,
     Quote,
     Transaction,
 )
@@ -58,16 +66,17 @@ class PositionState:
 
 
 @dataclass
-class DailyNAV:
-    """Daily NAV calculation result."""
+class SnapshotData:
+    """Snapshot data for interpolation."""
 
     date: date
     nav: Decimal
-    market_value: Decimal
-    long_value: Decimal
-    short_value: Decimal
-    cash_balance: Decimal
-    positions_count: int
+    renda_fixa: Decimal
+    fundos_investimento: Decimal
+    renda_variavel: Decimal
+    derivativos: Decimal
+    conta_corrente: Decimal
+    coe: Decimal
 
 
 async def get_user_id(db: AsyncSession) -> UUID | None:
@@ -84,6 +93,34 @@ async def get_user_id(db: AsyncSession) -> UUID | None:
         print("Using first user")
 
     return user_ids[0]
+
+
+async def get_portfolio_snapshots(
+    db: AsyncSession, user_id: UUID
+) -> dict[date, SnapshotData]:
+    """Get all portfolio snapshots ordered by date."""
+    query = (
+        select(PortfolioSnapshot)
+        .where(PortfolioSnapshot.user_id == user_id)
+        .order_by(PortfolioSnapshot.date)
+    )
+    result = await db.execute(query)
+    snapshots = list(result.scalars().all())
+
+    snapshot_map: dict[date, SnapshotData] = {}
+    for snap in snapshots:
+        snapshot_map[snap.date] = SnapshotData(
+            date=snap.date,
+            nav=snap.nav,
+            renda_fixa=snap.renda_fixa or Decimal("0"),
+            fundos_investimento=snap.fundos_investimento or Decimal("0"),
+            renda_variavel=snap.renda_variavel or Decimal("0"),
+            derivativos=snap.derivativos or Decimal("0"),
+            conta_corrente=snap.conta_corrente or Decimal("0"),
+            coe=snap.coe or Decimal("0"),
+        )
+
+    return snapshot_map
 
 
 async def get_trading_days(db: AsyncSession, start: date, end: date) -> list[date]:
@@ -264,59 +301,14 @@ def apply_transaction_to_positions(
                 pos.avg_price = pos.total_cost / pos.quantity
 
 
-def calculate_cash_balance(
-    cash_flows: list[CashFlow],
-    transactions: list[Transaction],
-    as_of: date
-) -> Decimal:
-    """
-    Calculate cash balance from cash flows and transactions up to a given date.
-
-    Cash balance = deposits - withdrawals - buy_costs + sell_proceeds
-    """
-    balance = Decimal("0")
-
-    # Process cash flows (deposits/withdrawals)
-    for cf in cash_flows:
-        cf_date = cf.executed_at.date() if isinstance(cf.executed_at, datetime) else cf.executed_at
-        if cf_date > as_of:
-            break
-
-        amount = cf.amount * cf.exchange_rate
-        if cf.type == CashFlowType.DEPOSIT:
-            balance += amount
-        elif cf.type == CashFlowType.WITHDRAWAL:
-            balance -= amount
-
-    # Process transactions (buys reduce cash, sells increase cash)
-    for txn in transactions:
-        txn_date = txn.executed_at.date() if isinstance(txn.executed_at, datetime) else txn.executed_at
-        if txn_date > as_of:
-            break
-
-        # Calculate transaction value including fees
-        txn_value = txn.quantity * txn.price
-        fees = txn.fees or Decimal("0")
-
-        if txn.type == TransactionType.BUY:
-            # Buying uses cash
-            balance -= (txn_value + fees)
-        elif txn.type == TransactionType.SELL:
-            # Selling generates cash
-            balance += (txn_value - fees)
-
-    return balance
-
-
-def calculate_nav(
+def calculate_stock_market_value(
     positions: dict[UUID, PositionState],
     prices: dict[UUID, Decimal],
-    cash_balance: Decimal,
-) -> tuple[Decimal, Decimal, Decimal, Decimal]:
+) -> Decimal:
     """
-    Calculate NAV from positions and prices.
+    Calculate total market value of stock positions (renda variavel only).
 
-    Returns: (nav, market_value, long_value, short_value)
+    Returns: total market value of long positions minus short positions
     """
     long_value = Decimal("0")
     short_value = Decimal("0")
@@ -337,10 +329,21 @@ def calculate_nav(
         else:
             long_value += market_value
 
-    total_market_value = long_value - short_value
-    nav = total_market_value + cash_balance
+    return long_value - short_value
 
-    return nav, total_market_value, long_value, short_value
+
+def find_previous_snapshot(
+    snapshot_dates: list[date],
+    current_date: date,
+) -> date | None:
+    """Find the most recent snapshot date on or before current_date."""
+    result = None
+    for snap_date in snapshot_dates:
+        if snap_date <= current_date:
+            result = snap_date
+        else:
+            break
+    return result
 
 
 async def upsert_fund_share(
@@ -394,13 +397,54 @@ async def update_cash_flow_shares(
     cash_flow.shares_affected = shares_affected
 
 
+def get_cash_flows_between_snapshots(
+    cash_flows_by_date: dict[date, list[CashFlow]],
+    prev_snap_date: date | None,
+    current_snap_date: date,
+) -> tuple[Decimal, Decimal]:
+    """
+    Calculate total deposits and withdrawals between two snapshot dates.
+
+    Returns (total_deposits, total_withdrawals) in BRL.
+    """
+    total_deposits = Decimal("0")
+    total_withdrawals = Decimal("0")
+
+    start_date = prev_snap_date + timedelta(days=1) if prev_snap_date else date(1900, 1, 1)
+
+    for cf_date, flows in cash_flows_by_date.items():
+        if start_date <= cf_date <= current_snap_date:
+            for cf in flows:
+                amount_brl = cf.amount * cf.exchange_rate
+                if cf.type == CashFlowType.DEPOSIT:
+                    total_deposits += amount_brl
+                elif cf.type == CashFlowType.WITHDRAWAL:
+                    total_withdrawals += amount_brl
+
+    return total_deposits, total_withdrawals
+
+
 async def backfill_nav():
-    """Backfill historical NAV and FundShare records."""
+    """
+    Backfill historical NAV and FundShare records using PortfolioSnapshot as source of truth.
+
+    Key insight: The share_value should only change with market movements, NOT with deposits/withdrawals.
+
+    Formula for TWR (Time-Weighted Return):
+    - When deposit occurs: new_shares = deposit / current_share_value
+    - NAV increases by deposit amount, shares increase, share_value stays same
+    - share_value only changes with market returns
+
+    For snapshots that include deposits:
+    - NAV_market = NAV_snapshot - net_deposits_in_period
+    - share_value = NAV_market / shares_before_deposits
+    - Then issue new shares for deposits at this share_value
+    """
     session_maker = get_session_maker()
 
     async with session_maker() as db:
         print("=" * 70)
-        print("BACKFILL HISTORICAL NAV")
+        print("BACKFILL HISTORICAL NAV (Time-Weighted Return Method)")
         print("=" * 70)
         print(f"Start date: {START_DATE}")
         print(f"End date: {date.today()}")
@@ -414,6 +458,21 @@ async def backfill_nav():
 
         print(f"User ID: {user_id}")
         print()
+
+        # Get portfolio snapshots (source of truth from statements)
+        snapshots = await get_portfolio_snapshots(db, user_id)
+        snapshot_dates = sorted(snapshots.keys())
+
+        print(f"Found {len(snapshots)} portfolio snapshots (from statements)")
+        if snapshot_dates:
+            print(f"  First: {snapshot_dates[0]}")
+            print(f"  Last: {snapshot_dates[-1]}")
+        print()
+
+        if not snapshots:
+            print("No portfolio snapshots found.")
+            print("Run backfill_portfolio_snapshots.py first.")
+            return
 
         # Get all trading days
         trading_days = await get_trading_days(db, START_DATE, date.today())
@@ -447,12 +506,17 @@ async def backfill_nav():
         # Track fund share state
         shares_outstanding = Decimal("0")
         prev_share_value: Decimal | None = None
+        prev_snap_date: date | None = None
 
         # Process each trading day
         fund_shares_created = 0
         cash_flows_updated = 0
+        snapshot_used = 0
+        interpolated = 0
 
         print("Processing trading days...")
+        print("  Legend: [S] = Snapshot used, [I] = Interpolated")
+        print()
 
         for i, current_date in enumerate(trading_days):
             # Apply all transactions up to and including current_date
@@ -466,53 +530,113 @@ async def backfill_nav():
                 apply_transaction_to_positions(positions, txn)
                 txn_index += 1
 
-            # Calculate cash balance up to current_date
-            cash_balance = calculate_cash_balance(cash_flows, transactions, current_date)
+            # Find the applicable snapshot
+            applicable_snap_date = find_previous_snapshot(snapshot_dates, current_date)
 
-            # Get prices for all positions
-            asset_ids = [
-                asset_id for asset_id, pos in positions.items()
-                if pos.quantity > 0
-            ]
-            prices = await get_asset_prices_at_date(db, asset_ids, current_date)
+            # Calculate NAV for this day
+            if current_date in snapshots:
+                # This is a snapshot day - use snapshot NAV as source of truth
+                snap = snapshots[current_date]
+                nav_snapshot = snap.nav
+                snapshot_used += 1
+                source = "S"
 
-            # Calculate NAV
-            nav, market_value, long_value, short_value = calculate_nav(
-                positions, prices, cash_balance
-            )
+                # Get cash flows that occurred since last snapshot (or from beginning)
+                deposits, withdrawals = get_cash_flows_between_snapshots(
+                    cash_flows_by_date, prev_snap_date, current_date
+                )
+                net_cash_flow = deposits - withdrawals
 
-            # Skip days with zero NAV
-            if nav <= 0:
+                # Calculate NAV excluding new cash flows (market performance only)
+                # NAV_market = NAV_snapshot - net_deposits_in_period
+                nav_market = nav_snapshot - net_cash_flow
+
+                # If this is the first snapshot
+                if shares_outstanding <= 0:
+                    # First snapshot: initialize shares
+                    # 1. Create shares from deposits at initial value
+                    if deposits > 0:
+                        shares_outstanding = deposits / INITIAL_SHARE_VALUE
+
+                    # 2. Redeem shares for withdrawals at initial value
+                    if withdrawals > 0 and shares_outstanding > 0:
+                        shares_to_redeem = withdrawals / INITIAL_SHARE_VALUE
+                        shares_outstanding -= shares_to_redeem
+
+                    # 3. Calculate share_value from remaining shares
+                    if shares_outstanding > 0:
+                        share_value = nav_snapshot / shares_outstanding
+                    else:
+                        shares_outstanding = nav_snapshot / INITIAL_SHARE_VALUE
+                        share_value = INITIAL_SHARE_VALUE
+                else:
+                    # Calculate share_value from market NAV (before adding new deposits' shares)
+                    share_value = nav_market / shares_outstanding if shares_outstanding > 0 else INITIAL_SHARE_VALUE
+
+                    # Now issue new shares for deposits at this share_value
+                    if deposits > 0:
+                        new_shares = deposits / share_value
+                        shares_outstanding += new_shares
+
+                    # Redeem shares for withdrawals at this share_value
+                    if withdrawals > 0:
+                        shares_to_redeem = withdrawals / share_value
+                        shares_outstanding -= shares_to_redeem
+
+                # Update cash flow records with shares_affected
+                for cf_date_iter, flows in cash_flows_by_date.items():
+                    if (prev_snap_date is None or cf_date_iter > prev_snap_date) and cf_date_iter <= current_date:
+                        for cf in flows:
+                            amount_brl = cf.amount * cf.exchange_rate
+                            shares_affected = amount_brl / share_value
+                            if cf.type == CashFlowType.WITHDRAWAL:
+                                shares_affected = -shares_affected
+                            await update_cash_flow_shares(db, cf, shares_affected)
+                            cash_flows_updated += 1
+
+                # NAV for record is the full snapshot NAV (includes deposits)
+                nav = nav_snapshot
+                prev_snap_date = current_date
+
+            elif applicable_snap_date:
+                # Interpolate between snapshots
+                prev_snap = snapshots[applicable_snap_date]
+
+                # Get current market prices for stock positions
+                asset_ids = [
+                    asset_id for asset_id, pos in positions.items()
+                    if pos.quantity > 0
+                ]
+                prices = await get_asset_prices_at_date(db, asset_ids, current_date)
+
+                # Calculate current stock market value
+                current_rv = calculate_stock_market_value(positions, prices)
+
+                # Interpolate NAV: keep fixed parts constant, update only RV
+                # NAV = (renda_fixa + fundos + derivativos + conta_corrente + coe) + current_RV
+                fixed_portion = (
+                    prev_snap.renda_fixa +
+                    prev_snap.fundos_investimento +
+                    prev_snap.derivativos +
+                    prev_snap.conta_corrente +
+                    prev_snap.coe
+                )
+                nav = fixed_portion + current_rv
+                interpolated += 1
+                source = "I"
+
+                # For interpolated days, share_value changes with market
+                if shares_outstanding > 0:
+                    share_value = nav / shares_outstanding
+                else:
+                    share_value = INITIAL_SHARE_VALUE
+            else:
+                # No snapshot available yet, skip this day
                 continue
 
-            # Process cash flows for this day (issue/redeem shares)
-            day_cash_flows = cash_flows_by_date.get(current_date, [])
-
-            for cf in day_cash_flows:
-                if cf.type == CashFlowType.DEPOSIT:
-                    # Issue new shares
-                    share_value_for_issue = prev_share_value or INITIAL_SHARE_VALUE
-                    new_shares = (cf.amount * cf.exchange_rate) / share_value_for_issue
-                    shares_outstanding += new_shares
-
-                    await update_cash_flow_shares(db, cf, new_shares)
-                    cash_flows_updated += 1
-
-                elif cf.type == CashFlowType.WITHDRAWAL:
-                    # Redeem shares
-                    share_value_for_redeem = prev_share_value or INITIAL_SHARE_VALUE
-                    shares_to_redeem = (cf.amount * cf.exchange_rate) / share_value_for_redeem
-                    shares_outstanding -= shares_to_redeem
-
-                    await update_cash_flow_shares(db, cf, -shares_to_redeem)
-                    cash_flows_updated += 1
-
-            # If no shares outstanding yet, initialize from NAV
-            if shares_outstanding <= 0:
-                shares_outstanding = nav / INITIAL_SHARE_VALUE
-
-            # Calculate share value
-            share_value = nav / shares_outstanding if shares_outstanding > 0 else INITIAL_SHARE_VALUE
+            # Skip days with zero or negative NAV
+            if nav <= 0:
+                continue
 
             # Calculate returns
             daily_return: Decimal | None = None
@@ -537,9 +661,10 @@ async def backfill_nav():
             # Update previous share value for next iteration
             prev_share_value = share_value
 
-            # Progress indicator
-            if (i + 1) % 100 == 0:
-                print(f"  Processed {i + 1}/{len(trading_days)} days...")
+            # Progress indicator (show milestones)
+            if (i + 1) % 200 == 0:
+                print(f"  Processed {i + 1}/{len(trading_days)} days... "
+                      f"(Snapshots: {snapshot_used}, Interpolated: {interpolated})")
 
         # Commit all changes
         await db.commit()
@@ -549,6 +674,8 @@ async def backfill_nav():
         print("=" * 70)
         print(f"Trading days processed: {len(trading_days)}")
         print(f"FundShare records created/updated: {fund_shares_created}")
+        print(f"  - From snapshots (source of truth): {snapshot_used}")
+        print(f"  - Interpolated (between snapshots): {interpolated}")
         print(f"CashFlow records updated with shares: {cash_flows_updated}")
 
         # Verify counts
@@ -576,8 +703,18 @@ async def backfill_nav():
             print(f"  NAV: R$ {latest.nav:,.2f}")
             print(f"  Shares Outstanding: {latest.shares_outstanding:,.8f}")
             print(f"  Share Value: R$ {latest.share_value:,.8f}")
-            print(f"  Daily Return: {latest.daily_return * 100 if latest.daily_return else 'N/A':.4f}%")
-            print(f"  Cumulative Return: {latest.cumulative_return * 100 if latest.cumulative_return else 'N/A':.2f}%")
+            if latest.daily_return:
+                print(f"  Daily Return: {latest.daily_return * 100:.4f}%")
+            if latest.cumulative_return:
+                print(f"  Cumulative Return: {latest.cumulative_return * 100:.2f}%")
+
+        # Show first and last snapshots used
+        if snapshot_dates:
+            first_snap = snapshots[snapshot_dates[0]]
+            last_snap = snapshots[snapshot_dates[-1]]
+            print("\nSnapshot Summary (Source of Truth):")
+            print(f"  First: {first_snap.date} - NAV: R$ {first_snap.nav:,.2f}")
+            print(f"  Last:  {last_snap.date} - NAV: R$ {last_snap.nav:,.2f}")
 
         print("=" * 70)
 

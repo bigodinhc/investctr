@@ -1,1 +1,4 @@
-Extratos/
+# Extratos - ignore main folder but allow specific accounts
+Extratos/*
+!Extratos/BTG Alliance/
+!Extratos/BTG Minerals Cayman/
