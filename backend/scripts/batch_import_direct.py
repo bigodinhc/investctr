@@ -26,10 +26,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session_maker
-from app.models import Account, Document, User
+from app.models import Account, Document
 from app.schemas.enums import DocumentType, ParsingStatus
 from app.integrations.claude.parsers import StatementParser
-from app.services.validation import ValidationService
 
 # Configuration
 BASE_DIR = Path(__file__).parent.parent.parent / "Extratos"
@@ -80,9 +79,8 @@ def get_pdf_files(
     return pdf_files
 
 
-async def get_user_and_account(db: AsyncSession) -> tuple[User, Account]:
-    """Get the user and BTG account."""
-    # Get account
+async def get_account(db: AsyncSession) -> Account:
+    """Get the BTG account."""
     account_query = select(Account).where(Account.name == "BTG Pactual")
     result = await db.execute(account_query)
     account = result.scalar_one_or_none()
@@ -90,15 +88,7 @@ async def get_user_and_account(db: AsyncSession) -> tuple[User, Account]:
     if not account:
         raise ValueError("BTG Pactual account not found")
 
-    # Get user
-    user_query = select(User).where(User.id == account.user_id)
-    result = await db.execute(user_query)
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise ValueError("User not found")
-
-    return user, account
+    return account
 
 
 async def check_if_already_imported(db: AsyncSession, filename: str) -> bool:
@@ -134,7 +124,6 @@ async def commit_parsed_data(
     db: AsyncSession,
     document: Document,
     account: Account,
-    user: User,
     parsed_data: dict,
 ) -> dict:
     """Commit parsed data to the database using the documents endpoint logic."""
@@ -350,7 +339,6 @@ async def commit_parsed_data(
 
 async def process_statement(
     db: AsyncSession,
-    user: User,
     account: Account,
     pdf_path: Path,
 ) -> dict:
@@ -367,7 +355,7 @@ async def process_statement(
 
     # Step 1: Create document record
     print("  [1/3] Creating document record...")
-    document = await create_document_record(db, user.id, account.id, pdf_path)
+    document = await create_document_record(db, account.user_id, account.id, pdf_path)
     print(f"    Document ID: {document.id}")
 
     # Step 2: Parse document
@@ -417,7 +405,6 @@ async def process_statement(
             db=db,
             document=document,
             account=account,
-            user=user,
             parsed_data=parsed_data,
         )
 
@@ -511,17 +498,16 @@ async def main():
     all_new_tickers: set[str] = set()
 
     async with session_maker() as db:
-        # Get user and account
-        user, account = await get_user_and_account(db)
-        print(f"User: {user.email}")
+        # Get account
+        account = await get_account(db)
         print(f"Account: {account.name} ({account.id})")
+        print(f"User ID: {account.user_id}")
         print()
 
         for pdf_file in pdf_files:
             try:
                 result = await process_statement(
                     db=db,
-                    user=user,
                     account=account,
                     pdf_path=pdf_file,
                 )
