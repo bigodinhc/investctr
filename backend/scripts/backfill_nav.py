@@ -264,10 +264,19 @@ def apply_transaction_to_positions(
                 pos.avg_price = pos.total_cost / pos.quantity
 
 
-def calculate_cash_balance(cash_flows: list[CashFlow], as_of: date) -> Decimal:
-    """Calculate cash balance from cash flows up to a given date."""
+def calculate_cash_balance(
+    cash_flows: list[CashFlow],
+    transactions: list[Transaction],
+    as_of: date
+) -> Decimal:
+    """
+    Calculate cash balance from cash flows and transactions up to a given date.
+
+    Cash balance = deposits - withdrawals - buy_costs + sell_proceeds
+    """
     balance = Decimal("0")
 
+    # Process cash flows (deposits/withdrawals)
     for cf in cash_flows:
         cf_date = cf.executed_at.date() if isinstance(cf.executed_at, datetime) else cf.executed_at
         if cf_date > as_of:
@@ -278,6 +287,23 @@ def calculate_cash_balance(cash_flows: list[CashFlow], as_of: date) -> Decimal:
             balance += amount
         elif cf.type == CashFlowType.WITHDRAWAL:
             balance -= amount
+
+    # Process transactions (buys reduce cash, sells increase cash)
+    for txn in transactions:
+        txn_date = txn.executed_at.date() if isinstance(txn.executed_at, datetime) else txn.executed_at
+        if txn_date > as_of:
+            break
+
+        # Calculate transaction value including fees
+        txn_value = txn.quantity * txn.price
+        fees = txn.fees or Decimal("0")
+
+        if txn.type == TransactionType.BUY:
+            # Buying uses cash
+            balance -= (txn_value + fees)
+        elif txn.type == TransactionType.SELL:
+            # Selling generates cash
+            balance += (txn_value - fees)
 
     return balance
 
@@ -441,7 +467,7 @@ async def backfill_nav():
                 txn_index += 1
 
             # Calculate cash balance up to current_date
-            cash_balance = calculate_cash_balance(cash_flows, current_date)
+            cash_balance = calculate_cash_balance(cash_flows, transactions, current_date)
 
             # Get prices for all positions
             asset_ids = [
