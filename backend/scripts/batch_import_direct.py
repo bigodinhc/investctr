@@ -281,16 +281,26 @@ async def commit_parsed_data(
                 period = parsed_data.get("period", {})
                 ref_date = period.get("end_date") or datetime.now().strftime("%Y-%m-%d")
 
+            # Normalize asset_type to lowercase for enum compatibility
+            asset_type_raw = (fi_data.get("asset_type") or "other").lower()
+            valid_types = {"cdb", "lca", "lci", "lft", "ntnb", "ntnf", "lf", "debenture", "cri", "cra", "other"}
+            asset_type = asset_type_raw if asset_type_raw in valid_types else "other"
+
+            # Normalize indexer to lowercase
+            indexer_raw = (fi_data.get("indexer") or "").lower()
+            valid_indexers = {"cdi", "selic", "ipca", "igpm", "prefixado", "other"}
+            indexer = indexer_raw if indexer_raw in valid_indexers else ("other" if indexer_raw else None)
+
             fi_position = FixedIncomePosition(
                 account_id=account.id,
                 document_id=document.id,
                 asset_name=fi_data.get("asset_name", "Unknown"),
-                asset_type=fi_data.get("asset_type", "other"),
+                asset_type=asset_type,
                 issuer=fi_data.get("issuer"),
                 quantity=Decimal(str(fi_data.get("quantity") or 1)),
                 unit_price=Decimal(str(fi_data.get("unit_price") or 0)) if fi_data.get("unit_price") else None,
                 total_value=Decimal(str(fi_data.get("total_value") or 0)),
-                indexer=fi_data.get("indexer"),
+                indexer=indexer,
                 rate_percent=Decimal(str(fi_data.get("rate_percent"))) if fi_data.get("rate_percent") else None,
                 acquisition_date=datetime.strptime(fi_data["acquisition_date"], "%Y-%m-%d").date() if fi_data.get("acquisition_date") else None,
                 maturity_date=datetime.strptime(fi_data["maturity_date"], "%Y-%m-%d").date() if fi_data.get("maturity_date") else None,
