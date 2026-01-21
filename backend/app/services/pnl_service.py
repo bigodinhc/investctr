@@ -18,7 +18,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.logging import get_logger
 from app.models import Account, Position, Transaction
-from app.schemas.enums import TransactionType
+from app.schemas.enums import PositionType, TransactionType
 
 logger = get_logger(__name__)
 
@@ -84,6 +84,7 @@ class UnrealizedPnLEntry:
     position_id: UUID
     asset_id: UUID
     ticker: str | None
+    position_type: PositionType  # LONG or SHORT
     quantity: Decimal
     avg_price: Decimal
     total_cost: Decimal
@@ -104,6 +105,14 @@ class UnrealizedPnLSummary:
     positions_count: int
     positions_with_prices: int
     entries: list[UnrealizedPnLEntry]
+
+    # Exposure metrics (for long/short portfolios)
+    long_positions_count: int = 0
+    short_positions_count: int = 0
+    long_value: Decimal = Decimal("0")  # Market value of long positions
+    short_value: Decimal = Decimal("0")  # Market value of short positions
+    gross_exposure: Decimal = Decimal("0")  # |Long| + |Short|
+    net_exposure: Decimal = Decimal("0")  # Long - Short
 
 
 class PnLService:
@@ -510,6 +519,10 @@ class PnLService:
         """
         Calculate unrealized P&L for open positions.
 
+        Handles both LONG and SHORT positions:
+        - LONG: profit when price rises (market_value - total_cost)
+        - SHORT: profit when price falls (total_cost - market_value)
+
         Args:
             positions: List of Position objects
             current_prices: Dictionary mapping asset_id -> current price
@@ -524,10 +537,13 @@ class PnLService:
                 continue
 
             current_price = current_prices.get(pos.asset_id)
+            position_type = getattr(pos, "position_type", PositionType.LONG)
+
             if current_price is None:
                 result[pos.id] = {
                     "position_id": pos.id,
                     "asset_id": pos.asset_id,
+                    "position_type": position_type,
                     "quantity": pos.quantity,
                     "avg_price": pos.avg_price,
                     "total_cost": pos.total_cost,
@@ -539,7 +555,15 @@ class PnLService:
                 continue
 
             market_value = pos.quantity * current_price
-            unrealized_pnl = market_value - pos.total_cost
+
+            # Calculate unrealized P&L based on position type
+            if position_type == PositionType.SHORT:
+                # SHORT: profit when price falls (we sold high, buy back low)
+                unrealized_pnl = pos.total_cost - market_value
+            else:
+                # LONG: profit when price rises (we bought low, sell high)
+                unrealized_pnl = market_value - pos.total_cost
+
             unrealized_pnl_pct = (
                 (unrealized_pnl / pos.total_cost * 100)
                 if pos.total_cost > 0
@@ -549,6 +573,7 @@ class PnLService:
             result[pos.id] = {
                 "position_id": pos.id,
                 "asset_id": pos.asset_id,
+                "position_type": position_type,
                 "quantity": pos.quantity,
                 "avg_price": pos.avg_price,
                 "total_cost": pos.total_cost,
@@ -568,15 +593,20 @@ class PnLService:
         """
         Calculate unrealized P&L summary for open positions.
 
-        Uses formula: unrealized_pnl = (current_price - avg_price) * quantity
-        Which is equivalent to: market_value - total_cost
+        Handles both LONG and SHORT positions:
+        - LONG: unrealized_pnl = market_value - total_cost (profit when price rises)
+        - SHORT: unrealized_pnl = total_cost - market_value (profit when price falls)
+
+        Also calculates exposure metrics:
+        - gross_exposure = |long_value| + |short_value|
+        - net_exposure = long_value - short_value
 
         Args:
             positions: List of Position objects with asset relationship loaded
             current_prices: Dictionary mapping asset_id -> current price
 
         Returns:
-            UnrealizedPnLSummary with detailed entries and totals
+            UnrealizedPnLSummary with detailed entries, totals, and exposure metrics
         """
         logger.info(
             "calculate_unrealized_pnl_start",
@@ -587,7 +617,14 @@ class PnLService:
         entries: list[UnrealizedPnLEntry] = []
         total_market_value = Decimal("0")
         total_cost = Decimal("0")
+        total_unrealized_pnl = Decimal("0")
         positions_with_prices = 0
+
+        # Exposure tracking
+        long_positions_count = 0
+        short_positions_count = 0
+        long_value = Decimal("0")
+        short_value = Decimal("0")
 
         for pos in positions:
             if pos.quantity <= 0:
@@ -595,16 +632,34 @@ class PnLService:
 
             ticker = pos.asset.ticker if hasattr(pos, "asset") and pos.asset else None
             current_price = current_prices.get(pos.asset_id)
+            position_type = getattr(pos, "position_type", PositionType.LONG)
+
+            # Track position counts
+            if position_type == PositionType.SHORT:
+                short_positions_count += 1
+            else:
+                long_positions_count += 1
 
             if current_price is not None:
                 market_value = pos.quantity * current_price
-                unrealized_pnl = market_value - pos.total_cost
+
+                # Calculate unrealized P&L based on position type
+                if position_type == PositionType.SHORT:
+                    # SHORT: profit when price falls (we sold high, buy back low)
+                    unrealized_pnl = pos.total_cost - market_value
+                    short_value += market_value
+                else:
+                    # LONG: profit when price rises (we bought low, sell high)
+                    unrealized_pnl = market_value - pos.total_cost
+                    long_value += market_value
+
                 unrealized_pnl_pct = (
                     (unrealized_pnl / pos.total_cost * 100)
                     if pos.total_cost > 0
                     else Decimal("0")
                 )
                 total_market_value += market_value
+                total_unrealized_pnl += unrealized_pnl
                 positions_with_prices += 1
             else:
                 market_value = None
@@ -617,6 +672,7 @@ class PnLService:
                 position_id=pos.id,
                 asset_id=pos.asset_id,
                 ticker=ticker,
+                position_type=position_type,
                 quantity=pos.quantity,
                 avg_price=pos.avg_price,
                 total_cost=pos.total_cost,
@@ -627,12 +683,11 @@ class PnLService:
             )
             entries.append(entry)
 
-        # Calculate totals
-        total_unrealized_pnl = (
-            total_market_value - total_cost
-            if positions_with_prices > 0
-            else Decimal("0")
-        )
+        # Calculate exposure metrics
+        gross_exposure = long_value + short_value  # Both are positive absolute values
+        net_exposure = long_value - short_value  # Directional exposure
+
+        # Calculate total unrealized P&L percentage
         total_unrealized_pnl_pct = (
             (total_unrealized_pnl / total_cost * 100)
             if total_cost > 0 and positions_with_prices > 0
@@ -647,6 +702,12 @@ class PnLService:
             positions_count=len(entries),
             positions_with_prices=positions_with_prices,
             entries=entries,
+            long_positions_count=long_positions_count,
+            short_positions_count=short_positions_count,
+            long_value=long_value,
+            short_value=short_value,
+            gross_exposure=gross_exposure,
+            net_exposure=net_exposure,
         )
 
         logger.info(
@@ -654,6 +715,8 @@ class PnLService:
             positions_count=len(entries),
             positions_with_prices=positions_with_prices,
             total_unrealized_pnl=str(total_unrealized_pnl),
+            long_value=str(long_value),
+            short_value=str(short_value),
         )
 
         return summary

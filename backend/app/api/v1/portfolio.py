@@ -106,6 +106,34 @@ class PortfolioSummaryResponse(BaseModel):
         ..., description="Total realized P&L (all time)"
     )
 
+    # Position counts by type
+    long_positions_count: int = Field(
+        default=0, description="Number of long positions"
+    )
+    short_positions_count: int = Field(
+        default=0, description="Number of short positions"
+    )
+
+    # Exposure metrics (for long/short portfolios)
+    long_value: Decimal = Field(
+        default=Decimal("0"), description="Market value of long positions"
+    )
+    short_value: Decimal = Field(
+        default=Decimal("0"), description="Market value of short positions"
+    )
+    gross_exposure: Decimal = Field(
+        default=Decimal("0"), description="Long + Short (absolute, total risk)"
+    )
+    net_exposure: Decimal = Field(
+        default=Decimal("0"), description="Long - Short (directional risk)"
+    )
+    gross_exposure_pct: Decimal | None = Field(
+        None, description="Gross exposure as % of NAV (>100% = leveraged)"
+    )
+    net_exposure_pct: Decimal | None = Field(
+        None, description="Net exposure as % of NAV (market direction bias)"
+    )
+
     # Breakdowns
     by_asset_type: list[AssetTypeSummary] = Field(
         default_factory=list,
@@ -199,6 +227,14 @@ async def get_portfolio_summary(
             total_unrealized_pnl=Decimal("0"),
             total_unrealized_pnl_pct=None,
             total_realized_pnl=Decimal("0"),
+            long_positions_count=0,
+            short_positions_count=0,
+            long_value=Decimal("0"),
+            short_value=Decimal("0"),
+            gross_exposure=Decimal("0"),
+            net_exposure=Decimal("0"),
+            gross_exposure_pct=None,
+            net_exposure_pct=None,
             by_asset_type=[],
             by_account=[],
             accounts_count=0,
@@ -393,6 +429,26 @@ async def get_portfolio_summary(
     unique_accounts.update(fi.account_id for fi in fixed_income_positions)
     unique_accounts.update(fund.account_id for fund in investment_fund_positions)
 
+    # Calculate exposure metrics from stock positions
+    # Fixed income and funds are always "long" equivalents - add to long_value
+    stock_long_value = unrealized_summary.long_value
+    stock_short_value = unrealized_summary.short_value
+
+    # Fixed income and funds are long-only, add to long exposure
+    long_value = stock_long_value + fi_total_value + fund_total_value
+    short_value = stock_short_value
+
+    gross_exposure = long_value + short_value
+    net_exposure = long_value - short_value
+
+    # Calculate exposure percentages (relative to total value/NAV)
+    gross_exposure_pct = (
+        (gross_exposure / total_value * 100) if total_value > 0 else None
+    )
+    net_exposure_pct = (
+        (net_exposure / total_value * 100) if total_value > 0 else None
+    )
+
     return PortfolioSummaryResponse(
         total_positions=total_positions_count,
         total_value=total_value,
@@ -400,6 +456,14 @@ async def get_portfolio_summary(
         total_unrealized_pnl=total_unrealized_pnl,
         total_unrealized_pnl_pct=total_unrealized_pnl_pct,
         total_realized_pnl=realized_summary.total_realized_pnl,
+        long_positions_count=unrealized_summary.long_positions_count + len(fixed_income_positions) + len(investment_fund_positions),
+        short_positions_count=unrealized_summary.short_positions_count,
+        long_value=long_value,
+        short_value=short_value,
+        gross_exposure=gross_exposure,
+        net_exposure=net_exposure,
+        gross_exposure_pct=gross_exposure_pct,
+        net_exposure_pct=net_exposure_pct,
         by_asset_type=by_asset_type,
         by_account=by_account,
         accounts_count=len(unique_accounts),
