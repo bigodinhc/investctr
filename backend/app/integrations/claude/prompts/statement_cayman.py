@@ -148,15 +148,32 @@ For each derivative position:
 - Maturity date
 - Interest rate/coupon if applicable
 
-### 6. TRANSACTIONS
-All account transactions during the period:
-- Date
-- Type (BUY, SELL, DIVIDEND, INTEREST, FEE, TRANSFER_IN, TRANSFER_OUT, etc.)
-- Security/Description
-- Quantity
-- Price
-- Total amount
-- Fees/commissions
+### 6. TRANSACTIONS (CRITICAL - Trading transactions go in "transactions" array)
+**IMPORTANT: Trading transactions are listed inside the "Cash Accounts > Transactions" table, NOT in a separate section.**
+
+**YOU MUST extract trading transactions and put them in the "transactions" array, NOT in "cash_movements"!**
+
+Look for these patterns in the Cash Accounts transactions table:
+- `Purchase: Trade ID XXXXX - TICKER` → Extract as type "buy" in transactions array
+- `Sale: Trade ID XXXXX - TICKER` → Extract as type "sell" in transactions array
+- `Futures: Trade ID XXXXX - CONTRACT` → Extract as type "buy" or "sell" in transactions array
+- `Dividends: Trade ID XXXXX - TICKER` → Extract as type "dividend" in transactions array
+
+Also check the "Derivatives > Transactions" section for futures/options trades with columns:
+- Trade Date, Settlement Date, Description, Trade Id, Transaction (Purchase/Sale), Quantity, Price, Notional
+
+For each trading transaction, extract:
+- **date**: Trade Date (convert to YYYY-MM-DD)
+- **type**: "buy" for Purchase, "sell" for Sale, "dividend" for Dividends
+- **ticker**: Extract from description (e.g., "TKA GR" from "Purchase: Trade ID 78035610 - TKA GR")
+- **quantity**: Number of shares/contracts (may be in a Quantity column)
+- **price**: Price per share/contract
+- **total**: Total settlement amount (from Credit/Debit column)
+- **fees**: Any commissions (usually 0 or included in price)
+
+**REMEMBER**:
+- Trading transactions (buy, sell, dividend) → "transactions" array
+- Cash movements (wire in, wire out, interest, fees) → "cash_movements" array
 
 ## RETURN FORMAT:
 
@@ -228,15 +245,15 @@ All account transactions during the period:
     "transactions": [
         {
             "date": "YYYY-MM-DD",
-            "type": "buy|sell|dividend|interest|fee|transfer_in|transfer_out|other",
-            "ticker": "SYMBOL or null",
-            "description": "string or null",
-            "quantity": 0.00,
-            "price": 0.00,
-            "total": 0.00,
+            "type": "buy|sell|dividend",
+            "ticker": "AAPL",
+            "description": "Purchase: Trade ID 12345 - AAPL",
+            "quantity": 100.00,
+            "price": 150.00,
+            "total": 15000.00,
             "fees": 0.00,
             "currency": "USD",
-            "notes": "string or null"
+            "notes": "Example: Extracted from Cash Accounts table"
         }
     ],
     "cash_movements": {
@@ -245,8 +262,8 @@ All account transactions during the period:
         "movements": [
             {
                 "date": "YYYY-MM-DD",
-                "type": "deposit|withdrawal|interest|dividend|fee|transfer_in|transfer_out|other",
-                "description": "string",
+                "type": "deposit|withdrawal|interest|fee|other",
+                "description": "Wire transfer or interest payment",
                 "value": 0.00,
                 "currency": "USD"
             }
@@ -272,7 +289,19 @@ All account transactions during the period:
    - Market value for shorts may be shown as negative (debt to return shares)
    - Common indicators: "SHORT", "SHT", negative quantity, "(SHORT)" annotation
 
-4. **Transaction Types Mapping**:
+4. **CRITICAL: transactions vs cash_movements separation**:
+   - **transactions array**: Trading activity (buy, sell, dividends)
+     - "Purchase: Trade ID..." → type "buy" in transactions
+     - "Sale: Trade ID..." → type "sell" in transactions
+     - "Futures: Trade ID..." → type "buy" or "sell" in transactions
+     - "Dividends: Trade ID..." → type "dividend" in transactions
+   - **cash_movements array**: Cash flow activity (deposits, withdrawals, interest, fees)
+     - "Wire In", "TED In" → type "deposit" in cash_movements
+     - "Wire Out", "TED Out" → type "withdrawal" in cash_movements
+     - "Interest" → type "interest" in cash_movements
+     - "Fee", "Commission" → type "fee" in cash_movements
+
+5. **Transaction Types Mapping**:
    - BUY, PURCHASE → "buy"
    - SELL, SALE → "sell"
    - DIVIDEND → "dividend"
@@ -281,22 +310,22 @@ All account transactions during the period:
    - WIRE IN, DEPOSIT, TRANSFER IN → "transfer_in"
    - WIRE OUT, WITHDRAWAL, TRANSFER OUT → "transfer_out"
 
-5. **Values**:
+6. **Values**:
    - Positive values for credits/inflows
    - Negative values for debits/outflows
    - Use 2 decimal places for USD amounts
    - Use up to 8 decimal places for quantities
 
-6. **Tickers**:
+7. **Tickers**:
    - US stock tickers: Uppercase, typically 1-5 letters (AAPL, MSFT, NVDA, etc.)
    - May include exchange suffix (e.g., "AAPL.US") - remove the suffix
 
-7. **Total Net Worth Calculation**:
+8. **Total Net Worth Calculation**:
    - total = cash + equities_long - equities_short + derivatives + structured_products
    - For shorts: the value shown may be negative (liability)
 
-8. **Do NOT skip any data** - extract everything visible in the document.
+9. **Do NOT skip any data** - extract everything visible in the document.
 
-9. **MANDATORY fields**: equities, derivatives, cash_movements, transactions - ALWAYS include these keys (use empty arrays if no data).
+10. **MANDATORY fields**: equities, derivatives, cash_movements, transactions - ALWAYS include these keys (use empty arrays if no data).
 
 """ + self.get_json_instruction()
