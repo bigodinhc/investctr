@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.models import Account, CashFlow, FundShare
-from app.schemas.enums import CashFlowType
+from app.schemas.enums import CashFlowType, PositionType
 from app.services.position_service import PositionService
 from app.services.quote_service import QuoteService
 
@@ -107,21 +107,34 @@ class NAVService:
         current_prices = await quote_service.get_prices_at_date(asset_ids, target_date)
 
         # 3. Calculate market value per position
+        # For Long/Short portfolios: NAV = Long_Value - Short_Value + Cash
         total_market_value = Decimal("0")
+        long_value = Decimal("0")
+        short_value = Decimal("0")
         positions_with_prices = 0
 
         for pos in positions:
             if pos.quantity <= 0:
                 continue
 
+            position_type = getattr(pos, "position_type", PositionType.LONG)
             price = current_prices.get(pos.asset_id)
+
             if price is not None:
                 market_value = pos.quantity * price
-                total_market_value += market_value
                 positions_with_prices += 1
             else:
                 # Use cost basis if no price available
-                total_market_value += pos.total_cost
+                market_value = pos.total_cost
+
+            # SHORT positions reduce NAV (liability to buy back)
+            # LONG positions increase NAV (asset value)
+            if position_type == PositionType.SHORT:
+                short_value += market_value
+                total_market_value -= market_value
+            else:
+                long_value += market_value
+                total_market_value += market_value
 
         # 4. Get cash balance from CashFlow aggregation
         total_cash = await self._get_cash_balance(user_id, target_date)
@@ -135,6 +148,8 @@ class NAVService:
             date=target_date.isoformat(),
             nav=str(nav),
             market_value=str(total_market_value),
+            long_value=str(long_value),
+            short_value=str(short_value),
             cash=str(total_cash),
             positions=len(positions),
             positions_with_prices=positions_with_prices,
