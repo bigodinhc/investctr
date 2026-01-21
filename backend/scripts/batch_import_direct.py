@@ -181,7 +181,7 @@ async def commit_parsed_data(
             asset = Asset(
                 ticker=ticker,
                 name=name or ticker,
-                type=asset_type_enum,
+                asset_type=asset_type_enum,
                 currency=currency,
             )
             db.add(asset)
@@ -553,8 +553,12 @@ async def main():
 
     # If custom base dir, find files there instead
     if args.base_dir:
-        # Simple file finding for custom directory
-        pdf_files = sorted(Path(args.base_dir).glob("**/*.pdf"))
+        if args.files:
+            # Specific files in custom directory
+            pdf_files = [Path(args.base_dir) / f for f in args.files if (Path(args.base_dir) / f).exists()]
+        else:
+            # All files in custom directory
+            pdf_files = sorted(Path(args.base_dir).glob("**/*.pdf"))
 
     print("=" * 70)
     print("BATCH IMPORT STATEMENTS (Direct)")
