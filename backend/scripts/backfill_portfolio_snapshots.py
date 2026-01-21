@@ -156,18 +156,48 @@ async def backfill_portfolio_snapshots():
                 existing_result = await db.execute(existing_query)
                 existing = existing_result.scalar_one_or_none()
 
+                # Get currency from account
+                currency = account.currency or "BRL"
+                currency_symbol = "$" if currency == "USD" else "R$"
+
+                # Handle both BTG Brasil and BTG Cayman formats
+                # BTG Brasil: renda_fixa, fundos_investimento, renda_variavel, derivativos, conta_corrente, coe
+                # BTG Cayman: cash, equities_long, equities_short, derivatives, structured_products
+                renda_fixa = parse_decimal(consolidated.get("renda_fixa", 0))
+                fundos = parse_decimal(consolidated.get("fundos_investimento", 0))
+                renda_variavel = parse_decimal(consolidated.get("renda_variavel", 0))
+                derivativos = parse_decimal(consolidated.get("derivativos", 0))
+                conta_corrente = parse_decimal(consolidated.get("conta_corrente", 0))
+                coe = parse_decimal(consolidated.get("coe", 0))
+
+                # Map Cayman fields to Brasil fields if needed
+                if currency == "USD":
+                    # Cayman format
+                    cash = parse_decimal(consolidated.get("cash", 0))
+                    equities_long = parse_decimal(consolidated.get("equities_long", 0))
+                    equities_short = parse_decimal(consolidated.get("equities_short", 0))
+                    derivatives = parse_decimal(consolidated.get("derivatives", 0))
+                    structured = parse_decimal(consolidated.get("structured_products", 0))
+
+                    # Map to standard fields
+                    conta_corrente = cash
+                    renda_variavel = equities_long + equities_short  # short is negative
+                    derivativos = derivatives
+                    renda_fixa = structured  # structured products are like fixed income
+
                 if existing:
                     # Update existing snapshot
                     existing.nav = nav
-                    existing.renda_fixa = parse_decimal(consolidated.get("renda_fixa"))
-                    existing.fundos_investimento = parse_decimal(consolidated.get("fundos_investimento"))
-                    existing.renda_variavel = parse_decimal(consolidated.get("renda_variavel"))
-                    existing.derivativos = parse_decimal(consolidated.get("derivativos"))
-                    existing.conta_corrente = parse_decimal(consolidated.get("conta_corrente"))
-                    existing.coe = parse_decimal(consolidated.get("coe"))
+                    existing.currency = currency
+                    existing.renda_fixa = renda_fixa
+                    existing.fundos_investimento = fundos
+                    existing.renda_variavel = renda_variavel
+                    existing.derivativos = derivativos
+                    existing.conta_corrente = conta_corrente
+                    existing.coe = coe
                     existing.document_id = doc.id
                     snapshots_updated += 1
-                    print(f"  Updated: {end_date} - NAV: R$ {nav:,.2f}")
+                    print(f"  Updated: {end_date} - NAV: {currency_symbol} {nav:,.2f} ({currency})")
                 else:
                     # Create new snapshot
                     snapshot = PortfolioSnapshot(
@@ -176,19 +206,20 @@ async def backfill_portfolio_snapshots():
                         date=end_date,
                         document_id=doc.id,
                         nav=nav,
+                        currency=currency,
                         total_cost=nav,  # Use NAV as cost since we don't track cost separately
                         realized_pnl=Decimal("0"),
                         unrealized_pnl=Decimal("0"),
-                        renda_fixa=parse_decimal(consolidated.get("renda_fixa")),
-                        fundos_investimento=parse_decimal(consolidated.get("fundos_investimento")),
-                        renda_variavel=parse_decimal(consolidated.get("renda_variavel")),
-                        derivativos=parse_decimal(consolidated.get("derivativos")),
-                        conta_corrente=parse_decimal(consolidated.get("conta_corrente")),
-                        coe=parse_decimal(consolidated.get("coe")),
+                        renda_fixa=renda_fixa,
+                        fundos_investimento=fundos,
+                        renda_variavel=renda_variavel,
+                        derivativos=derivativos,
+                        conta_corrente=conta_corrente,
+                        coe=coe,
                     )
                     db.add(snapshot)
                     snapshots_created += 1
-                    print(f"  Created: {end_date} - NAV: R$ {nav:,.2f}")
+                    print(f"  Created: {end_date} - NAV: {currency_symbol} {nav:,.2f} ({currency})")
 
             except Exception as e:
                 errors.append(f"{doc.file_name}: {str(e)}")
@@ -229,15 +260,16 @@ async def backfill_portfolio_snapshots():
 
         if latest_snapshots:
             print("\nLatest snapshots:")
-            print("-" * 70)
-            print(f"{'Date':<12} {'NAV':>15} {'Renda Fixa':>15} {'Fundos':>15} {'RV':>12}")
-            print("-" * 70)
+            print("-" * 80)
+            print(f"{'Date':<12} {'Currency':<6} {'NAV':>18} {'Cash/RF':>15} {'RV':>15}")
+            print("-" * 80)
             for snap in latest_snapshots:
-                nav_str = f"R$ {snap.nav:,.2f}" if snap.nav else "N/A"
-                rf_str = f"R$ {snap.renda_fixa:,.2f}" if snap.renda_fixa else "-"
-                fund_str = f"R$ {snap.fundos_investimento:,.2f}" if snap.fundos_investimento else "-"
-                rv_str = f"R$ {snap.renda_variavel:,.2f}" if snap.renda_variavel else "-"
-                print(f"{snap.date!s:<12} {nav_str:>15} {rf_str:>15} {fund_str:>15} {rv_str:>12}")
+                currency = getattr(snap, 'currency', 'BRL') or 'BRL'
+                symbol = "$" if currency == "USD" else "R$"
+                nav_str = f"{symbol} {snap.nav:,.2f}" if snap.nav else "N/A"
+                rf_str = f"{snap.renda_fixa or snap.conta_corrente or 0:,.2f}" if (snap.renda_fixa or snap.conta_corrente) else "-"
+                rv_str = f"{snap.renda_variavel or 0:,.2f}" if snap.renda_variavel else "-"
+                print(f"{snap.date!s:<12} {currency:<6} {nav_str:>18} {rf_str:>15} {rv_str:>15}")
 
         print("\n" + "=" * 70)
         print("NEXT STEPS")
