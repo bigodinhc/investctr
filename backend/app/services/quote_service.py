@@ -214,6 +214,8 @@ class QuoteService:
             return result.scalar_one_or_none()
 
         except Exception as e:
+            # Rollback to recover from transaction error state
+            await self.db.rollback()
             logger.error(
                 "quote_service_upsert_error",
                 asset_id=str(asset_id),

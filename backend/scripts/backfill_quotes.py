@@ -86,15 +86,15 @@ async def get_assets_by_type(db) -> dict[str, list[Asset]]:
     return result
 
 
-async def backfill_stocks_yfinance(db, assets: list[Asset], quote_service: QuoteService) -> int:
-    """Backfill stock quotes from Yahoo Finance."""
+async def backfill_stocks_yfinance(session_maker, assets: list[Asset]) -> int:
+    """Backfill stock quotes from Yahoo Finance using separate sessions per batch."""
     if not assets:
         return 0
 
     tickers = [a.ticker for a in assets if a.ticker]
     print(f"\n[YFINANCE] Processing {len(tickers)} stocks/FIIs/ETFs...")
 
-    # Process in batches
+    # Process in batches - each batch gets its own session
     batch_size = 10
     total_quotes = 0
     failed = []
@@ -106,17 +106,22 @@ async def backfill_stocks_yfinance(db, assets: list[Asset], quote_service: Quote
 
         print(f"  Batch {batch_num}/{total_batches}: {batch}")
 
-        try:
-            quotes = await quote_service.fetch_and_save_quotes(
-                tickers=batch,
-                start_date=START_DATE,
-                end_date=date.today(),
-            )
-            total_quotes += len(quotes)
-            print(f"    Saved {len(quotes)} quotes")
-        except Exception as e:
-            print(f"    Error: {e}")
-            failed.extend(batch)
+        # Create a new session for each batch to isolate transactions
+        async with session_maker() as db:
+            try:
+                quote_service = QuoteService(db)
+                quotes = await quote_service.fetch_and_save_quotes(
+                    tickers=batch,
+                    start_date=START_DATE,
+                    end_date=date.today(),
+                )
+                await db.commit()
+                total_quotes += len(quotes)
+                print(f"    Saved {len(quotes)} quotes")
+            except Exception as e:
+                await db.rollback()
+                print(f"    Error (rolled back): {e}")
+                failed.extend(batch)
 
         if i + batch_size < len(tickers):
             await asyncio.sleep(1)
@@ -292,49 +297,65 @@ async def backfill_quotes():
     """Backfill historical quotes for all assets from multiple sources."""
     session_maker = get_session_maker()
 
-    async with session_maker() as db:
-        print("=" * 70)
-        print("BACKFILL HISTORICAL QUOTES (Multi-Source)")
-        print("=" * 70)
-        print(f"Start date: {START_DATE}")
-        print(f"End date: {date.today()}")
-        print()
+    print("=" * 70)
+    print("BACKFILL HISTORICAL QUOTES (Multi-Source)")
+    print("=" * 70)
+    print(f"Start date: {START_DATE}")
+    print(f"End date: {date.today()}")
+    print()
 
-        # Get assets grouped by type
+    # Get assets grouped by type (using a session just for this query)
+    async with session_maker() as db:
         assets_by_type = await get_assets_by_type(db)
 
-        print("Assets found:")
-        print(f"  Stocks/FIIs/ETFs: {len(assets_by_type['stocks'])}")
-        print(f"  Treasury bonds: {len(assets_by_type['treasury'])}")
-        print(f"  Investment funds: {len(assets_by_type['funds'])}")
-        print(f"  CDBs/Bonds: {len(assets_by_type['bonds'])}")
+    print("Assets found:")
+    print(f"  Stocks/FIIs/ETFs: {len(assets_by_type['stocks'])}")
+    print(f"  Treasury bonds: {len(assets_by_type['treasury'])}")
+    print(f"  Investment funds: {len(assets_by_type['funds'])}")
+    print(f"  CDBs/Bonds: {len(assets_by_type['bonds'])}")
 
-        # Initialize QuoteService for yfinance
-        quote_service = QuoteService(db)
+    # Process each type
+    total = 0
 
-        # Process each type
-        total = 0
+    # 1. Stocks via yfinance (uses session_maker to create sessions per batch)
+    total += await backfill_stocks_yfinance(session_maker, assets_by_type["stocks"])
 
-        # 1. Stocks via yfinance
-        total += await backfill_stocks_yfinance(db, assets_by_type["stocks"], quote_service)
+    # 2. Treasury via Tesouro Direto
+    async with session_maker() as db:
+        try:
+            count = await backfill_treasury_tesouro(db, assets_by_type["treasury"])
+            await db.commit()
+            total += count
+        except Exception as e:
+            await db.rollback()
+            print(f"  Treasury error (rolled back): {e}")
 
-        # 2. Treasury via Tesouro Direto
-        total += await backfill_treasury_tesouro(db, assets_by_type["treasury"])
+    # 3. Funds via CVM
+    async with session_maker() as db:
+        try:
+            count = await backfill_funds_cvm(db, assets_by_type["funds"])
+            await db.commit()
+            total += count
+        except Exception as e:
+            await db.rollback()
+            print(f"  Funds error (rolled back): {e}")
 
-        # 3. Funds via CVM
-        total += await backfill_funds_cvm(db, assets_by_type["funds"])
+    # 4. Bonds (CDBs) - skip for now
+    async with session_maker() as db:
+        try:
+            count = await backfill_bonds_cdi(db, assets_by_type["bonds"])
+            await db.commit()
+            total += count
+        except Exception as e:
+            await db.rollback()
+            print(f"  Bonds error (rolled back): {e}")
 
-        # 4. Bonds (CDBs) - skip for now
-        total += await backfill_bonds_cdi(db, assets_by_type["bonds"])
+    # Summary
+    print("\n" + "=" * 70)
+    print("SUMMARY")
+    print("=" * 70)
 
-        # Commit all changes
-        await db.commit()
-
-        # Summary
-        print("\n" + "=" * 70)
-        print("SUMMARY")
-        print("=" * 70)
-
+    async with session_maker() as db:
         from sqlalchemy import func
 
         count_query = select(func.count()).select_from(Quote)
@@ -350,7 +371,7 @@ async def backfill_quotes():
             if asset.ticker not in FUND_CNPJS:
                 print(f"  - {asset.ticker}: Need CNPJ configuration")
 
-        print("=" * 70)
+    print("=" * 70)
 
 
 if __name__ == "__main__":
