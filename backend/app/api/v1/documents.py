@@ -637,6 +637,7 @@ async def commit_document_transactions(
     cash_flows_created = 0
     investment_funds_created = 0
     asset_ids_to_recalculate: set[UUID] = set()
+    new_tickers_created: set[str] = set()  # Track new tickers for quote backfill
 
     # Extract default reference date from document period (fallback for positions)
     default_reference_date = None
@@ -663,6 +664,7 @@ async def commit_document_transactions(
             )
             if was_created:
                 assets_created += 1
+                new_tickers_created.add(asset.ticker)
 
             # Map transaction type
             txn_type = _map_transaction_type(txn_data.type)
@@ -727,6 +729,7 @@ async def commit_document_transactions(
             )
             if was_created:
                 assets_created += 1
+                new_tickers_created.add(asset.ticker)
 
             # Parse date
             try:
@@ -1049,6 +1052,39 @@ async def commit_document_transactions(
             )
 
     await db.commit()
+
+    # =====================================================================
+    # Trigger background task to fetch historical quotes for new assets
+    # =====================================================================
+    if new_tickers_created:
+        try:
+            from app.workers.tasks.quote_tasks import sync_quotes_for_tickers
+            from datetime import date, timedelta
+
+            # Fetch historical quotes (last 2 years by default)
+            start_date = (date.today() - timedelta(days=730)).isoformat()
+            end_date = date.today().isoformat()
+
+            # Queue background task
+            sync_quotes_for_tickers.delay(
+                tickers=list(new_tickers_created),
+                start_date=start_date,
+                end_date=end_date,
+            )
+
+            logger.info(
+                "queued_historical_quotes_fetch",
+                tickers=list(new_tickers_created),
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except Exception as e:
+            # Log but don't fail the commit - quotes can be synced later
+            logger.warning(
+                "failed_to_queue_quotes_fetch",
+                tickers=list(new_tickers_created),
+                error=str(e),
+            )
 
     logger.info(
         "commit_document_complete",
