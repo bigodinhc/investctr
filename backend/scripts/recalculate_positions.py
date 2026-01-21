@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
 
-from app.database import AsyncSessionLocal
+from app.database import get_session_maker
 from app.models import Account, Asset
 from app.services.position_service import PositionService
 from app.services.pnl_service import PnLService, PnLType
@@ -27,7 +27,7 @@ from app.services.pnl_service import PnLService, PnLType
 async def recalculate_and_report():
     """Recalculate all positions and display P&L summary."""
 
-    async with AsyncSessionLocal() as db:
+    async with get_session_maker()() as db:
         print("=" * 70)
         print("RECALCULATING POSITIONS WITH LONG/SHORT NETTING MODEL")
         print("=" * 70)

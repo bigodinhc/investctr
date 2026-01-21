@@ -39,6 +39,7 @@ from app.schemas.enums import (
 )
 from app.schemas.transaction import CommitDocumentRequest, CommitDocumentResponse
 from app.services.position_service import PositionService
+from app.services.nav_service import NAVService
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -952,7 +953,7 @@ async def commit_document_transactions(
                 error=str(e),
             )
 
-    # Commit all records
+    # Commit all records (first commit to get IDs)
     await db.commit()
 
     # Recalculate positions for affected assets
@@ -972,6 +973,78 @@ async def commit_document_transactions(
                 "position_recalc_error",
                 document_id=str(document_id),
                 asset_id=str(asset_id),
+                error=str(e),
+            )
+
+    # =====================================================================
+    # Calculate shares for deposit/withdrawal cash flows (fund share system)
+    # =====================================================================
+    shares_updated = 0
+    nav_service = NAVService(db)
+
+    # Get newly created cash flows for this document that are deposits/withdrawals
+    cf_query = (
+        select(CashFlow)
+        .join(Account, CashFlow.account_id == Account.id)
+        .where(
+            Account.user_id == user.id,
+            CashFlow.type.in_([CashFlowType.DEPOSIT, CashFlowType.WITHDRAWAL]),
+            CashFlow.shares_affected.is_(None),
+        )
+        .order_by(CashFlow.executed_at)
+    )
+    cf_result = await db.execute(cf_query)
+    pending_cash_flows = cf_result.scalars().all()
+
+    for cf in pending_cash_flows:
+        try:
+            cf_date = cf.executed_at.date() if hasattr(cf.executed_at, 'date') else cf.executed_at
+            amount = cf.amount * cf.exchange_rate
+
+            if cf.type == CashFlowType.DEPOSIT:
+                # Issue shares for deposit
+                result = await nav_service.issue_shares(
+                    user_id=user.id,
+                    cash_flow_id=cf.id,
+                    amount=amount,
+                    executed_date=cf_date,
+                )
+                shares_updated += 1
+                logger.info(
+                    "issued_shares_for_deposit",
+                    cash_flow_id=str(cf.id),
+                    amount=str(amount),
+                    shares=str(result.shares_affected),
+                )
+            elif cf.type == CashFlowType.WITHDRAWAL:
+                # Redeem shares for withdrawal
+                try:
+                    result = await nav_service.redeem_shares(
+                        user_id=user.id,
+                        cash_flow_id=cf.id,
+                        amount=amount,
+                        executed_date=cf_date,
+                    )
+                    shares_updated += 1
+                    logger.info(
+                        "redeemed_shares_for_withdrawal",
+                        cash_flow_id=str(cf.id),
+                        amount=str(amount),
+                        shares=str(result.shares_affected),
+                    )
+                except ValueError as e:
+                    # Insufficient shares - log but don't fail commit
+                    logger.warning(
+                        "insufficient_shares_for_withdrawal",
+                        cash_flow_id=str(cf.id),
+                        amount=str(amount),
+                        error=str(e),
+                    )
+        except Exception as e:
+            # Log but don't fail the commit - shares can be calculated later by backfill
+            logger.warning(
+                "share_calculation_skipped",
+                cash_flow_id=str(cf.id),
                 error=str(e),
             )
 
