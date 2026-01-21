@@ -30,11 +30,11 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session_maker
-from app.models import Account, PortfolioSnapshot, CashFlow
+from app.models import Account, PortfolioSnapshot, CashFlow, ExchangeRate
 from app.schemas.enums import CashFlowType
 
 
-# Default exchange rate USD/BRL (can be overridden)
+# Default exchange rate USD/BRL (used only if no rate found in database)
 DEFAULT_EXCHANGE_RATE = Decimal("6.0")
 
 
@@ -88,15 +88,58 @@ async def get_cash_flows(db: AsyncSession) -> list[CashFlow]:
     return list(result.scalars().all())
 
 
-def get_exchange_rate(snapshot_date: date, default_rate: Decimal) -> Decimal:
+async def get_exchange_rates_from_db(
+    db: AsyncSession,
+    from_currency: str = "USD",
+    to_currency: str = "BRL",
+) -> dict[date, Decimal]:
+    """
+    Get all exchange rates from database.
+
+    Returns dict mapping date -> rate
+    """
+    query = (
+        select(ExchangeRate)
+        .where(
+            and_(
+                ExchangeRate.from_currency == from_currency,
+                ExchangeRate.to_currency == to_currency,
+            )
+        )
+        .order_by(ExchangeRate.date)
+    )
+    result = await db.execute(query)
+    rates = result.scalars().all()
+
+    return {r.date: r.rate for r in rates}
+
+
+def get_exchange_rate(
+    snapshot_date: date,
+    rates_cache: dict[date, Decimal],
+    default_rate: Decimal,
+) -> Decimal:
     """
     Get USD/BRL exchange rate for a given date.
 
-    For now, uses a fixed rate. In production, this should fetch PTAX rates
-    from BCB API or stored historical rates.
+    Uses rates from database. If exact date not found, uses closest previous date.
+    Falls back to default_rate if no rates available.
     """
-    # TODO: Implement PTAX rate fetching from BCB API
-    # https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia
+    # Try exact date
+    if snapshot_date in rates_cache:
+        return rates_cache[snapshot_date]
+
+    # Find closest previous date
+    closest_date = None
+    for rate_date in sorted(rates_cache.keys(), reverse=True):
+        if rate_date <= snapshot_date:
+            closest_date = rate_date
+            break
+
+    if closest_date:
+        return rates_cache[closest_date]
+
+    # Fallback to default
     return default_rate
 
 
@@ -307,7 +350,16 @@ async def main():
         # Get user_id
         user_id = await get_user_id(db)
         print(f"\nUser ID: {user_id}")
-        print(f"Exchange rate (USD/BRL): {exchange_rate}")
+
+        # Load exchange rates from database
+        rates_cache = await get_exchange_rates_from_db(db, "USD", "BRL")
+        print(f"Exchange rates loaded from DB: {len(rates_cache)}")
+        if rates_cache:
+            min_date = min(rates_cache.keys())
+            max_date = max(rates_cache.keys())
+            print(f"  Range: {min_date} to {max_date}")
+        else:
+            print(f"  Using fallback rate: {exchange_rate}")
 
         # Get snapshots by date
         snapshots_by_date = await get_portfolio_snapshots_by_date(db)
@@ -335,13 +387,13 @@ async def main():
             snapshots = snapshots_by_date[snapshot_date]
 
             # Calculate consolidated NAV
-            rate = get_exchange_rate(snapshot_date, exchange_rate)
+            rate = get_exchange_rate(snapshot_date, rates_cache, exchange_rate)
             nav_data = calculate_consolidated_nav(snapshots, rate)
 
             nav_series.append((snapshot_date, nav_data["nav_total_brl"]))
 
             if args.verbose:
-                print(f"\n{snapshot_date}:")
+                print(f"\n{snapshot_date}: (USD/BRL = {rate:.4f})")
                 print(f"  NAV BRL: R$ {nav_data['nav_brl']:,.2f}")
                 print(f"  NAV USD: $ {nav_data['nav_usd']:,.2f}")
                 print(f"  NAV USD→BRL: R$ {nav_data['nav_usd_in_brl']:,.2f}")
