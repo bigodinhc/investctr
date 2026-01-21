@@ -583,6 +583,19 @@ export interface PortfolioSummaryResponse {
   total_unrealized_pnl: string;
   total_unrealized_pnl_pct: string | null;
   total_realized_pnl: string;
+
+  // Position counts by type
+  long_positions_count: number;
+  short_positions_count: number;
+
+  // Exposure metrics (for long/short portfolios)
+  long_value: string;
+  short_value: string;
+  gross_exposure: string;
+  net_exposure: string;
+  gross_exposure_pct: string | null;
+  net_exposure_pct: string | null;
+
   by_asset_type: AssetTypeSummary[];
   by_account: AccountSummary[];
   accounts_count: number;

@@ -21,7 +21,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils";
 import { usePortfolioSummary } from "@/hooks/use-portfolio";
 import { usePositions } from "@/hooks/use-positions";
 import { useLatestFundShare } from "@/hooks/use-fund";
-import { NavEvolutionChart, AllocationChart } from "@/components/dashboard";
+import { NavEvolutionChart, AllocationChart, ExposureCard } from "@/components/dashboard";
 import type { AssetType } from "@/lib/api/types";
 
 // Asset type display configuration
@@ -65,6 +65,20 @@ export default function DashboardPage() {
 
   // Calculate daily change (approximation - would need historical data for accurate calculation)
   const dailyChange = totalUnrealizedPnlPct !== null ? totalUnrealizedPnlPct : 0;
+
+  // Parse exposure metrics
+  const longValue = portfolioSummary ? parseFloat(portfolioSummary.long_value) : 0;
+  const shortValue = portfolioSummary ? parseFloat(portfolioSummary.short_value) : 0;
+  const longPositionsCount = portfolioSummary?.long_positions_count ?? 0;
+  const shortPositionsCount = portfolioSummary?.short_positions_count ?? 0;
+  const grossExposure = portfolioSummary ? parseFloat(portfolioSummary.gross_exposure) : 0;
+  const netExposure = portfolioSummary ? parseFloat(portfolioSummary.net_exposure) : 0;
+  const grossExposurePct = portfolioSummary?.gross_exposure_pct
+    ? parseFloat(portfolioSummary.gross_exposure_pct)
+    : null;
+  const netExposurePct = portfolioSummary?.net_exposure_pct
+    ? parseFloat(portfolioSummary.net_exposure_pct)
+    : null;
 
   // Positions from API
   const positions = positionsData?.items || [];
@@ -227,6 +241,21 @@ export default function DashboardPage() {
 
         {/* Allocation Chart */}
         <AllocationChart />
+      </div>
+
+      {/* Exposure Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <ExposureCard
+          longValue={longValue}
+          shortValue={shortValue}
+          longPositionsCount={longPositionsCount}
+          shortPositionsCount={shortPositionsCount}
+          grossExposure={grossExposure}
+          netExposure={netExposure}
+          grossExposurePct={grossExposurePct}
+          netExposurePct={netExposurePct}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Positions Table */}
