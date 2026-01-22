@@ -33,13 +33,14 @@ class NAVResult:
     user_id: UUID
     date: date
     total_market_value: Decimal
-    total_market_value_brl: Decimal  # Always in BRL
     total_cash: Decimal
-    total_cash_brl: Decimal  # Always in BRL
     nav: Decimal
-    nav_brl: Decimal  # Always in BRL
     positions_count: int
     positions_with_prices: int
+    # BRL-converted values (optional, for multi-currency support)
+    total_market_value_brl: Decimal | None = None
+    total_cash_brl: Decimal | None = None
+    nav_brl: Decimal | None = None
     ptax_rate: Decimal | None = None  # USD/BRL rate used
 
 
@@ -195,13 +196,13 @@ class NAVService:
             user_id=user_id,
             date=target_date,
             total_market_value=total_market_value,
-            total_market_value_brl=total_market_value_brl,
             total_cash=total_cash,
-            total_cash_brl=total_cash_brl,
             nav=nav,
-            nav_brl=nav_brl,
             positions_count=len([p for p in positions if p.quantity > 0]),
             positions_with_prices=positions_with_prices,
+            total_market_value_brl=total_market_value_brl,
+            total_cash_brl=total_cash_brl,
+            nav_brl=nav_brl,
             ptax_rate=ptax_rate,
         )
 
