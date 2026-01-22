@@ -733,4 +733,8 @@ export interface ConsolidatedPortfolioResponse {
   ptax_rate: string | null;
   last_update: string | null;
   positions_count: number;
+  fixed_income_count: number;
+  investment_funds_count: number;
+  derivatives_count: number;
+  total_positions_count: number;
 }

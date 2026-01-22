@@ -995,7 +995,11 @@ class ConsolidatedPortfolioResponse(BaseModel):
 
     # Metadata
     last_update: datetime | None = None
-    positions_count: int = 0
+    positions_count: int = Field(default=0, description="Number of stock positions")
+    fixed_income_count: int = Field(default=0, description="Number of fixed income positions")
+    investment_funds_count: int = Field(default=0, description="Number of investment fund positions")
+    derivatives_count: int = Field(default=0, description="Number of derivative positions")
+    total_positions_count: int = Field(default=0, description="Total number of all positions")
 
 
 @router.get("/consolidated", response_model=ConsolidatedPortfolioResponse)
@@ -1239,4 +1243,12 @@ async def get_consolidated_portfolio(
         ptax_rate=ptax_rate,
         last_update=datetime.utcnow(),
         positions_count=len(consolidated_positions),
+        fixed_income_count=len(fixed_income_positions),
+        investment_funds_count=len(investment_fund_positions),
+        derivatives_count=0,  # TODO: count derivatives when implemented
+        total_positions_count=(
+            len(consolidated_positions) +
+            len(fixed_income_positions) +
+            len(investment_fund_positions)
+        ),
     )

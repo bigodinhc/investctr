@@ -7,10 +7,9 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
-  Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePortfolioAllocation } from "@/hooks/use-portfolio";
+import { useConsolidatedPortfolio } from "@/hooks/use-portfolio";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { PieChart as PieChartIcon } from "lucide-react";
 
@@ -27,6 +26,35 @@ const COLORS = [
   "#5C5C5C", // Charcoal
   "#363636", // Near black
 ];
+
+// Category colors mapping
+const CATEGORY_COLORS: Record<string, string> = {
+  renda_fixa: "#22B573", // Green
+  fundos_investimento: "#A3A3A3", // Gray
+  renda_variavel: "#FAFAFA", // White
+  stock: "#FAFAFA", // White
+  etf: "#D4D4D4", // Light gray
+  bdr: "#8A8A8A", // Mid gray
+  derivativos: "#525252", // Dark gray
+  conta_corrente: "#737373", // Medium gray
+  coe: "#5C5C5C", // Charcoal
+};
+
+// Format category name for display
+function formatCategoryName(key: string): string {
+  const categoryNames: Record<string, string> = {
+    renda_fixa: "Renda Fixa",
+    fundos_investimento: "Fundos",
+    renda_variavel: "Renda Variável",
+    stock: "Ações",
+    etf: "ETFs",
+    bdr: "BDRs",
+    derivativos: "Derivativos",
+    conta_corrente: "Conta Corrente",
+    coe: "COE",
+  };
+  return categoryNames[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
+}
 
 interface ChartDataPoint {
   name: string;
@@ -92,22 +120,36 @@ function CustomLegend({ payload }: CustomLegendProps) {
 }
 
 export function AllocationChart() {
-  const { data: allocationData, isLoading, error } = usePortfolioAllocation();
+  const { data: consolidatedData, isLoading, error } = useConsolidatedPortfolio();
 
   const chartData = useMemo<ChartDataPoint[]>(() => {
-    if (!allocationData?.by_asset_type) return [];
+    if (!consolidatedData?.breakdown) return [];
 
-    return allocationData.by_asset_type.map((item, index) => ({
-      name: item.name,
-      value: parseFloat(item.value),
-      percentage: parseFloat(item.percentage),
-      color: item.color || COLORS[index % COLORS.length],
-    }));
-  }, [allocationData]);
+    const breakdown = consolidatedData.breakdown;
+    const total = Object.values(breakdown).reduce(
+      (sum, val) => sum + parseFloat(val),
+      0
+    );
+
+    if (total === 0) return [];
+
+    return Object.entries(breakdown)
+      .filter(([, value]) => parseFloat(value) > 0)
+      .map(([key, value], index) => {
+        const numValue = parseFloat(value);
+        return {
+          name: formatCategoryName(key),
+          value: numValue,
+          percentage: (numValue / total) * 100,
+          color: CATEGORY_COLORS[key] || COLORS[index % COLORS.length],
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [consolidatedData]);
 
   const hasData = chartData.length > 0;
-  const totalValue = allocationData?.total_value
-    ? parseFloat(allocationData.total_value)
+  const totalValue = consolidatedData?.nav_total_brl
+    ? parseFloat(consolidatedData.nav_total_brl)
     : 0;
 
   return (

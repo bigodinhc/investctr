@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Wallet,
   TrendingUp,
-  TrendingDown,
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
@@ -58,12 +57,14 @@ export default function DashboardPage() {
   const hasError = portfolioError || positionsError;
 
   // Fund share data
-  const shareValue = fundShareData ? parseFloat(fundShareData.share_value) : null;
-  const dailyReturn = fundShareData?.daily_return ? parseFloat(fundShareData.daily_return) : null;
-  const sharesOutstanding = fundShareData ? parseFloat(fundShareData.shares_outstanding) : null;
+  const cumulativeReturn = fundShareData?.cumulative_return
+    ? parseFloat(fundShareData.cumulative_return)
+    : null;
 
-  // Parse numeric values from API response
-  const totalValue = portfolioSummary ? parseFloat(portfolioSummary.total_value) : 0;
+  // Use NAV total from /consolidated endpoint (sum of all accounts)
+  const totalValue = consolidatedData?.nav_total_brl
+    ? parseFloat(consolidatedData.nav_total_brl)
+    : 0;
   const totalUnrealizedPnl = portfolioSummary ? parseFloat(portfolioSummary.total_unrealized_pnl) : 0;
   const totalUnrealizedPnlPct = portfolioSummary?.total_unrealized_pnl_pct
     ? parseFloat(portfolioSummary.total_unrealized_pnl_pct)
@@ -92,7 +93,7 @@ export default function DashboardPage() {
   const positions = positionsData?.items || [];
 
   // Check if user has no data
-  const hasNoData = !isLoading && portfolioSummary?.total_positions === 0;
+  const hasNoData = !isLoading && (consolidatedData?.total_positions_count ?? portfolioSummary?.total_positions ?? 0) === 0;
 
   if (hasError) {
     return (
@@ -204,20 +205,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <DataCard
-          title="Valor da Cota"
-          value={shareValue !== null ? formatCurrency(shareValue) : "R$ --"}
-          change={dailyReturn !== null ? dailyReturn * 100 : undefined}
-          icon={Coins}
+          title="Rentabilidade Acumulada"
+          value={cumulativeReturn !== null ? formatPercent(cumulativeReturn * 100) : "--"}
+          icon={TrendingUp}
           variant="highlight"
           isLoading={isLoading || isLoadingFundShare}
-        />
-        <DataCard
-          title="Custo Total"
-          value={formatCurrency(totalCost)}
-          icon={TrendingUp}
-          isLoading={isLoading}
         />
         <DataCard
           title="P&L Nao Realizado"
@@ -236,8 +230,8 @@ export default function DashboardPage() {
         />
         <DataCard
           title="Posicoes Ativas"
-          value={portfolioSummary?.total_positions.toString() || "0"}
-          icon={TrendingDown}
+          value={consolidatedData?.total_positions_count?.toString() || portfolioSummary?.total_positions.toString() || "0"}
+          icon={Coins}
           isLoading={isLoading}
         />
       </div>
