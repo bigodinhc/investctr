@@ -6,6 +6,7 @@ import { api } from "./client";
 import type {
   AllocationFilters,
   AllocationResponse,
+  ConsolidatedPortfolioResponse,
   PeriodType,
   PortfolioHistoryFilters,
   PortfolioHistoryResponse,
@@ -42,8 +43,13 @@ export async function getPortfolioAllocation(
   return api.get<AllocationResponse>("/api/v1/portfolio/allocation", queryParams);
 }
 
+export async function getConsolidatedPortfolio(): Promise<ConsolidatedPortfolioResponse> {
+  return api.get<ConsolidatedPortfolioResponse>("/api/v1/portfolio/consolidated");
+}
+
 export const portfolioApi = {
   summary: getPortfolioSummary,
   history: getPortfolioHistory,
   allocation: getPortfolioAllocation,
+  consolidated: getConsolidatedPortfolio,
 };

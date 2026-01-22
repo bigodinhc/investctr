@@ -16,9 +16,11 @@ import {
   Calendar,
   AlertCircle,
   Coins,
+  DollarSign,
+  Building2,
 } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/utils";
-import { usePortfolioSummary } from "@/hooks/use-portfolio";
+import { usePortfolioSummary, useConsolidatedPortfolio } from "@/hooks/use-portfolio";
 import { usePositions } from "@/hooks/use-positions";
 import { useLatestFundShare } from "@/hooks/use-fund";
 import { PortfolioCharts, AllocationChart, ExposureCard } from "@/components/dashboard";
@@ -45,8 +47,14 @@ export default function DashboardPage() {
   const { data: portfolioSummary, isLoading: isLoadingPortfolio, error: portfolioError } = usePortfolioSummary();
   const { data: positionsData, isLoading: isLoadingPositions, error: positionsError } = usePositions({ limit: 10 });
   const { data: fundShareData, isLoading: isLoadingFundShare } = useLatestFundShare();
+  const { data: consolidatedData } = useConsolidatedPortfolio();
 
   const isLoading = isLoadingPortfolio || isLoadingPositions;
+
+  // PTAX info from consolidated endpoint
+  const ptaxRate = consolidatedData?.ptax_rate ? parseFloat(consolidatedData.ptax_rate) : null;
+  const ptaxDate = consolidatedData?.ptax_date;
+  const navByAccount = consolidatedData?.nav_by_account || [];
   const hasError = portfolioError || positionsError;
 
   // Fund share data
@@ -233,6 +241,64 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
       </div>
+
+      {/* NAV by Account Card */}
+      {navByAccount.length > 0 && (
+        <Card variant="elevated">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-foreground-muted" />
+              <CardTitle className="font-display text-xl">NAV POR CONTA</CardTitle>
+            </div>
+            {ptaxRate && ptaxDate && (
+              <Badge variant="outline" size="sm">
+                <DollarSign className="h-3 w-3 mr-1" />
+                PTAX {ptaxDate}: R$ {ptaxRate.toFixed(4)}
+              </Badge>
+            )}
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {navByAccount.map((account) => {
+                const nav = parseFloat(account.nav);
+                const navBrl = parseFloat(account.nav_brl);
+                const isUsd = account.currency === "USD";
+                const accountPtax = account.ptax_rate ? parseFloat(account.ptax_rate) : null;
+
+                return (
+                  <div
+                    key={account.account_id}
+                    className="p-4 rounded-lg bg-background-surface border border-border"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-foreground-muted">
+                        {account.account_name}
+                      </span>
+                      <Badge variant="muted" size="sm">
+                        {account.currency}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xl font-mono font-semibold">
+                        {isUsd ? (
+                          <>$ {nav.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                        ) : (
+                          formatCurrency(nav)
+                        )}
+                      </p>
+                      {isUsd && accountPtax && (
+                        <p className="text-sm text-foreground-muted">
+                          ≈ {formatCurrency(navBrl)} <span className="text-xs">(PTAX {accountPtax.toFixed(4)})</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts Section - NAV and Performance */}
       <PortfolioCharts />

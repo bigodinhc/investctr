@@ -7,6 +7,7 @@ import {
   getPortfolioSummary,
   getPortfolioHistory,
   getPortfolioAllocation,
+  getConsolidatedPortfolio,
 } from "@/lib/api/portfolio";
 import type {
   AllocationFilters,
@@ -18,6 +19,7 @@ export const portfolioKeys = {
   summary: (accountId?: string) => [...portfolioKeys.all, "summary", accountId] as const,
   history: (params?: PortfolioHistoryFilters) => [...portfolioKeys.all, "history", params] as const,
   allocation: (params?: AllocationFilters) => [...portfolioKeys.all, "allocation", params] as const,
+  consolidated: () => [...portfolioKeys.all, "consolidated"] as const,
 };
 
 export function usePortfolioSummary(accountId?: string) {
@@ -38,5 +40,12 @@ export function usePortfolioAllocation(params?: AllocationFilters) {
   return useQuery({
     queryKey: portfolioKeys.allocation(params),
     queryFn: () => getPortfolioAllocation(params),
+  });
+}
+
+export function useConsolidatedPortfolio() {
+  return useQuery({
+    queryKey: portfolioKeys.consolidated(),
+    queryFn: () => getConsolidatedPortfolio(),
   });
 }

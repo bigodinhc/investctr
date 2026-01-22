@@ -695,3 +695,42 @@ export interface AllocationFilters {
   account_id?: string;
   top_assets?: number;
 }
+
+// Consolidated Portfolio Types (Statement-based)
+export interface ConsolidatedPositionItem {
+  ticker: string;
+  asset_name: string | null;
+  asset_type: AssetType;
+  currency: string;
+  quantity: string;
+  avg_price: string;
+  total_cost: string;
+  current_price: string | null;
+  market_value: string | null;
+  market_value_brl: string | null;
+  unrealized_pnl: string | null;
+  unrealized_pnl_pct: string | null;
+  account_name: string | null;
+}
+
+export interface AccountNAVItem {
+  account_id: string;
+  account_name: string;
+  currency: string;
+  nav: string;
+  nav_brl: string;
+  ptax_rate: string | null;
+}
+
+export interface ConsolidatedPortfolioResponse {
+  nav_total_brl: string;
+  nav_by_account: AccountNAVItem[];
+  positions: ConsolidatedPositionItem[];
+  breakdown: Record<string, string>;
+  realized_pnl_ytd: string;
+  total_unrealized_pnl: string;
+  ptax_date: string | null;
+  ptax_rate: string | null;
+  last_update: string | null;
+  positions_count: number;
+}
