@@ -124,3 +124,10 @@ class ParsingStatus(str, Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+
+
+class PositionSource(str, Enum):
+    """Source of position data."""
+
+    CALCULATED = "calculated"  # Calculated from transactions
+    STATEMENT = "statement"  # Imported from brokerage statement (source of truth)

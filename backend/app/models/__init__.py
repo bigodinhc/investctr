@@ -13,6 +13,7 @@ from app.models.investment_fund import InvestmentFundPosition
 from app.models.portfolio_snapshot import PortfolioSnapshot
 from app.models.position import Position
 from app.models.quote import Quote
+from app.models.realized_trade import RealizedTrade
 from app.models.transaction import Transaction
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     "PortfolioSnapshot",
     "Position",
     "Quote",
+    "RealizedTrade",
     "Transaction",
 ]

@@ -57,3 +57,6 @@ class Account(Base, UUIDMixin, TimestampMixin):
     investment_fund_positions: Mapped[list["InvestmentFundPosition"]] = relationship(
         "InvestmentFundPosition", back_populates="account", cascade="all, delete-orphan"
     )
+    realized_trades: Mapped[list["RealizedTrade"]] = relationship(
+        "RealizedTrade", back_populates="account", cascade="all, delete-orphan"
+    )

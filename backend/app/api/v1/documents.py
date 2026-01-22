@@ -39,6 +39,7 @@ from app.schemas.enums import (
 )
 from app.schemas.transaction import CommitDocumentRequest, CommitDocumentResponse
 from app.services.position_service import PositionService
+from app.services.position_reconciliation_service import PositionReconciliationService
 from app.services.nav_service import NAVService
 
 logger = get_logger(__name__)
@@ -978,6 +979,49 @@ async def commit_document_transactions(
                 asset_id=str(asset_id),
                 error=str(e),
             )
+
+    # =====================================================================
+    # Reconcile positions from statement stock_positions (source of truth)
+    # =====================================================================
+    positions_reconciled = 0
+    if document.raw_extracted_data:
+        stock_positions = document.raw_extracted_data.get("stock_positions", [])
+
+        if stock_positions:
+            try:
+                reconciliation_service = PositionReconciliationService(db)
+                reconcile_result = await reconciliation_service.reconcile_positions(
+                    account_id=request.account_id,
+                    document_id=document_id,
+                    statement_positions=stock_positions,
+                    statement_date=default_reference_date,
+                )
+
+                positions_reconciled = (
+                    reconcile_result.positions_created
+                    + reconcile_result.positions_updated
+                )
+                positions_updated = positions_reconciled
+
+                if reconcile_result.errors:
+                    errors.extend(reconcile_result.errors)
+
+                logger.info(
+                    "positions_reconciled_from_statement",
+                    document_id=str(document_id),
+                    positions_created=reconcile_result.positions_created,
+                    positions_updated=reconcile_result.positions_updated,
+                    positions_closed=reconcile_result.positions_closed,
+                    realized_trades=reconcile_result.realized_trades_created,
+                )
+
+            except Exception as e:
+                errors.append(f"Position reconciliation failed: {str(e)}")
+                logger.error(
+                    "position_reconciliation_error",
+                    document_id=str(document_id),
+                    error=str(e),
+                )
 
     # =====================================================================
     # Calculate shares for deposit/withdrawal cash flows (fund share system)

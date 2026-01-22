@@ -44,3 +44,6 @@ class Asset(Base, UUIDMixin, TimestampMixin):
     positions: Mapped[list["Position"]] = relationship(
         "Position", back_populates="asset"
     )
+    realized_trades: Mapped[list["RealizedTrade"]] = relationship(
+        "RealizedTrade", back_populates="asset"
+    )

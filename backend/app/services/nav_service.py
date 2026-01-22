@@ -18,6 +18,7 @@ from app.models import Account, CashFlow, FundShare
 from app.schemas.enums import CashFlowType, PositionType
 from app.services.position_service import PositionService
 from app.services.quote_service import QuoteService
+from app.services.exchange_rate_service import ExchangeRateService
 
 logger = get_logger(__name__)
 
@@ -32,10 +33,14 @@ class NAVResult:
     user_id: UUID
     date: date
     total_market_value: Decimal
+    total_market_value_brl: Decimal  # Always in BRL
     total_cash: Decimal
+    total_cash_brl: Decimal  # Always in BRL
     nav: Decimal
+    nav_brl: Decimal  # Always in BRL
     positions_count: int
     positions_with_prices: int
+    ptax_rate: Decimal | None = None  # USD/BRL rate used
 
 
 @dataclass
@@ -75,18 +80,25 @@ class NAVService:
         self,
         user_id: UUID,
         target_date: date | None = None,
+        convert_to_brl: bool = True,
     ) -> NAVResult:
         """
         Calculate Net Asset Value for a user's portfolio.
 
         RN-01: NAV = Σ(positions × current_price) + cash_balance
 
+        Multi-currency support:
+        - Positions in USD are converted to BRL using PTAX rate
+        - Cash in USD is converted to BRL using PTAX rate
+        - NAV is returned in both original currency and BRL
+
         Args:
             user_id: User UUID
             target_date: Date for NAV calculation (defaults to today)
+            convert_to_brl: Whether to convert USD values to BRL (default True)
 
         Returns:
-            NAVResult with NAV components and totals
+            NAVResult with NAV components and totals (including BRL values)
         """
         if target_date is None:
             target_date = date.today()
@@ -96,6 +108,12 @@ class NAVService:
             user_id=str(user_id),
             date=target_date.isoformat(),
         )
+
+        # Get PTAX rate for currency conversion
+        ptax_rate: Decimal | None = None
+        if convert_to_brl:
+            exchange_service = ExchangeRateService(self.db)
+            ptax_rate = await exchange_service.get_ptax(target_date)
 
         # 1. Get all positions for user
         position_service = PositionService(self.db)
@@ -109,6 +127,7 @@ class NAVService:
         # 3. Calculate market value per position
         # For Long/Short portfolios: NAV = Long_Value - Short_Value + Cash
         total_market_value = Decimal("0")
+        total_market_value_brl = Decimal("0")
         long_value = Decimal("0")
         short_value = Decimal("0")
         positions_with_prices = 0
@@ -127,42 +146,63 @@ class NAVService:
                 # Use cost basis if no price available
                 market_value = pos.total_cost
 
+            # Get asset currency for conversion
+            asset_currency = getattr(pos.asset, "currency", "BRL") if pos.asset else "BRL"
+            if asset_currency == "USD" and ptax_rate:
+                market_value_brl = market_value * ptax_rate
+            else:
+                market_value_brl = market_value
+
             # SHORT positions reduce NAV (liability to buy back)
             # LONG positions increase NAV (asset value)
             if position_type == PositionType.SHORT:
                 short_value += market_value
                 total_market_value -= market_value
+                total_market_value_brl -= market_value_brl
             else:
                 long_value += market_value
                 total_market_value += market_value
+                total_market_value_brl += market_value_brl
 
         # 4. Get cash balance from CashFlow aggregation
         total_cash = await self._get_cash_balance(user_id, target_date)
 
+        # Cash flows already have exchange_rate applied for currency conversion
+        # The _get_cash_balance already multiplies by exchange_rate
+        total_cash_brl = total_cash
+
         # 5. Calculate NAV
         nav = total_market_value + total_cash
+        nav_brl = total_market_value_brl + total_cash_brl
 
         logger.info(
             "nav_calculation_complete",
             user_id=str(user_id),
             date=target_date.isoformat(),
             nav=str(nav),
+            nav_brl=str(nav_brl),
             market_value=str(total_market_value),
+            market_value_brl=str(total_market_value_brl),
             long_value=str(long_value),
             short_value=str(short_value),
             cash=str(total_cash),
             positions=len(positions),
             positions_with_prices=positions_with_prices,
+            ptax_rate=str(ptax_rate) if ptax_rate else None,
         )
 
         return NAVResult(
             user_id=user_id,
             date=target_date,
             total_market_value=total_market_value,
+            total_market_value_brl=total_market_value_brl,
             total_cash=total_cash,
+            total_cash_brl=total_cash_brl,
             nav=nav,
+            nav_brl=nav_brl,
             positions_count=len([p for p in positions if p.quantity > 0]),
             positions_with_prices=positions_with_prices,
+            ptax_rate=ptax_rate,
         )
 
     async def _get_cash_balance(

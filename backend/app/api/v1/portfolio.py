@@ -29,6 +29,7 @@ ACCOUNT_TYPE_BROKER_MAP: dict[AccountType, str] = {
 from app.schemas.fund import PortfolioHistoryItem, PortfolioHistoryResponse
 from app.services.pnl_service import PnLService
 from app.services.quote_service import QuoteService
+from app.services.exchange_rate_service import ExchangeRateService
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
@@ -907,4 +908,333 @@ async def get_portfolio_history(
         period_return=period_return,
         start_nav=start_nav,
         end_nav=end_nav,
+    )
+
+
+# -------------------------------------------------------------------------
+# Consolidated Portfolio Endpoint
+# -------------------------------------------------------------------------
+
+
+class ConsolidatedPositionItem(BaseModel):
+    """Individual position in consolidated view."""
+
+    ticker: str
+    asset_name: str | None = None
+    asset_type: AssetType
+    currency: str
+    quantity: Decimal
+    avg_price: Decimal
+    total_cost: Decimal
+    current_price: Decimal | None = None
+    market_value: Decimal | None = None
+    market_value_brl: Decimal | None = Field(None, description="Market value in BRL")
+    unrealized_pnl: Decimal | None = None
+    unrealized_pnl_pct: Decimal | None = None
+    account_name: str | None = None
+
+
+class AccountNAVItem(BaseModel):
+    """NAV summary for a single account."""
+
+    account_id: UUID
+    account_name: str
+    currency: str
+    nav: Decimal = Field(..., description="NAV in account currency")
+    nav_brl: Decimal = Field(..., description="NAV converted to BRL")
+    ptax_rate: Decimal | None = Field(None, description="PTAX rate used for conversion")
+
+
+class BreakdownItem(BaseModel):
+    """Asset type breakdown."""
+
+    category: str
+    value: Decimal
+    percentage: Decimal
+
+
+class ConsolidatedPortfolioResponse(BaseModel):
+    """Comprehensive consolidated portfolio response."""
+
+    # Totals
+    nav_total_brl: Decimal = Field(..., description="Total NAV in BRL")
+
+    # By account breakdown
+    nav_by_account: list[AccountNAVItem] = Field(
+        default_factory=list,
+        description="NAV breakdown by account",
+    )
+
+    # Positions
+    positions: list[ConsolidatedPositionItem] = Field(
+        default_factory=list,
+        description="All positions with current prices",
+    )
+
+    # Breakdown by asset type
+    breakdown: dict[str, Decimal] = Field(
+        default_factory=dict,
+        description="Value breakdown by asset type",
+    )
+
+    # P&L
+    realized_pnl_ytd: Decimal = Field(
+        default=Decimal("0"),
+        description="Realized P&L year-to-date",
+    )
+    total_unrealized_pnl: Decimal = Field(
+        default=Decimal("0"),
+        description="Total unrealized P&L",
+    )
+
+    # Exchange rate info
+    ptax_date: date | None = Field(None, description="Date of PTAX rate used")
+    ptax_rate: Decimal | None = Field(None, description="USD/BRL PTAX rate")
+
+    # Metadata
+    last_update: datetime | None = None
+    positions_count: int = 0
+
+
+@router.get("/consolidated", response_model=ConsolidatedPortfolioResponse)
+async def get_consolidated_portfolio(
+    user: AuthenticatedUser,
+    db: DBSession,
+) -> ConsolidatedPortfolioResponse:
+    """
+    Get fully consolidated portfolio view.
+
+    Returns:
+    - Total NAV in BRL (all accounts combined)
+    - NAV per account (with currency conversion)
+    - All positions with current prices and unrealized P&L
+    - Breakdown by asset type
+    - Year-to-date realized P&L
+    - PTAX rate used for USD/BRL conversion
+    """
+    today = date.today()
+
+    # Get exchange rate service for PTAX
+    exchange_service = ExchangeRateService(db)
+    ptax_result = await exchange_service.get_latest_ptax()
+    ptax_date: date | None = None
+    ptax_rate: Decimal | None = None
+
+    if ptax_result:
+        ptax_date, ptax_rate = ptax_result
+
+    # Get all user accounts
+    accounts_query = select(Account).where(Account.user_id == user.id).where(Account.is_active == True)
+    accounts_result = await db.execute(accounts_query)
+    accounts = {acc.id: acc for acc in accounts_result.scalars().all()}
+
+    # Get all positions with asset data
+    positions_query = (
+        select(Position)
+        .join(Position.account)
+        .join(Position.asset)
+        .options(selectinload(Position.asset), selectinload(Position.account))
+        .where(Account.user_id == user.id)
+        .where(Position.quantity > 0)
+    )
+    positions_result = await db.execute(positions_query)
+    positions = list(positions_result.scalars().all())
+
+    # Get fixed income positions
+    fi_query = (
+        select(FixedIncomePosition)
+        .join(FixedIncomePosition.account)
+        .options(selectinload(FixedIncomePosition.account))
+        .where(Account.user_id == user.id)
+        .where(
+            (FixedIncomePosition.maturity_date >= today) |
+            (FixedIncomePosition.maturity_date.is_(None))
+        )
+    )
+    fi_result = await db.execute(fi_query)
+    fixed_income_positions = list(fi_result.scalars().all())
+
+    # Get investment fund positions
+    fund_query = (
+        select(InvestmentFundPosition)
+        .join(InvestmentFundPosition.account)
+        .options(selectinload(InvestmentFundPosition.account))
+        .where(Account.user_id == user.id)
+    )
+    fund_result = await db.execute(fund_query)
+    investment_fund_positions = list(fund_result.scalars().all())
+
+    # Get latest snapshots per account for NAV values
+    snapshot_subquery = (
+        select(
+            PortfolioSnapshot.account_id,
+            func.max(PortfolioSnapshot.date).label("max_date"),
+        )
+        .where(PortfolioSnapshot.user_id == user.id)
+        .where(PortfolioSnapshot.account_id.isnot(None))
+        .group_by(PortfolioSnapshot.account_id)
+        .subquery()
+    )
+
+    snapshots_query = (
+        select(PortfolioSnapshot)
+        .join(
+            snapshot_subquery,
+            (PortfolioSnapshot.account_id == snapshot_subquery.c.account_id) &
+            (PortfolioSnapshot.date == snapshot_subquery.c.max_date)
+        )
+    )
+    snapshots_result = await db.execute(snapshots_query)
+    snapshots_by_account = {snap.account_id: snap for snap in snapshots_result.scalars().all()}
+
+    # Get current prices for stock assets
+    asset_ids = list(set(pos.asset_id for pos in positions))
+    quote_service = QuoteService(db)
+    current_prices = await quote_service.get_latest_prices(asset_ids) if asset_ids else {}
+
+    # Build consolidated positions list
+    consolidated_positions: list[ConsolidatedPositionItem] = []
+    breakdown_by_type: dict[str, Decimal] = {}
+    total_unrealized_pnl = Decimal("0")
+
+    for pos in positions:
+        asset = pos.asset
+        account = pos.account
+        currency = asset.currency or "BRL"
+
+        # Get current price
+        current_price = current_prices.get(pos.asset_id)
+
+        # Calculate market value and unrealized P&L
+        market_value: Decimal | None = None
+        market_value_brl: Decimal | None = None
+        unrealized_pnl: Decimal | None = None
+        unrealized_pnl_pct: Decimal | None = None
+
+        if current_price and current_price > 0:
+            market_value = pos.quantity * current_price
+
+            # Convert to BRL if needed
+            if currency == "USD" and ptax_rate:
+                market_value_brl = market_value * ptax_rate
+            else:
+                market_value_brl = market_value
+
+            if pos.total_cost > 0:
+                unrealized_pnl = market_value - pos.total_cost
+                unrealized_pnl_pct = (unrealized_pnl / pos.total_cost) * 100
+                total_unrealized_pnl += unrealized_pnl
+
+        # Track breakdown by asset type
+        asset_type_key = asset.asset_type.value if asset.asset_type else "other"
+        breakdown_by_type[asset_type_key] = (
+            breakdown_by_type.get(asset_type_key, Decimal("0"))
+            + (market_value_brl or pos.total_cost)
+        )
+
+        consolidated_positions.append(ConsolidatedPositionItem(
+            ticker=asset.ticker,
+            asset_name=asset.name,
+            asset_type=asset.asset_type,
+            currency=currency,
+            quantity=pos.quantity,
+            avg_price=pos.avg_price,
+            total_cost=pos.total_cost,
+            current_price=current_price,
+            market_value=market_value,
+            market_value_brl=market_value_brl,
+            unrealized_pnl=unrealized_pnl,
+            unrealized_pnl_pct=unrealized_pnl_pct,
+            account_name=account.name if account else None,
+        ))
+
+    # Add fixed income to breakdown
+    fi_total = sum(fi.total_value for fi in fixed_income_positions)
+    if fi_total > 0:
+        breakdown_by_type["renda_fixa"] = breakdown_by_type.get("renda_fixa", Decimal("0")) + fi_total
+
+    # Add investment funds to breakdown
+    fund_total = sum(
+        f.net_balance if f.net_balance is not None else f.gross_balance
+        for f in investment_fund_positions
+    )
+    if fund_total > 0:
+        breakdown_by_type["fundos_investimento"] = (
+            breakdown_by_type.get("fundos_investimento", Decimal("0")) + fund_total
+        )
+
+    # Build NAV by account using snapshots
+    nav_by_account: list[AccountNAVItem] = []
+    nav_total_brl = Decimal("0")
+
+    for account_id, account in accounts.items():
+        snapshot = snapshots_by_account.get(account_id)
+
+        if snapshot and snapshot.nav > 0:
+            nav = snapshot.nav
+        else:
+            # Fall back to calculated value
+            account_positions_value = sum(
+                (p.market_value_brl or p.total_cost)
+                for p in consolidated_positions
+                if p.account_name == account.name
+            )
+            account_fi_value = sum(
+                fi.total_value for fi in fixed_income_positions
+                if fi.account_id == account_id
+            )
+            account_fund_value = sum(
+                f.net_balance if f.net_balance is not None else f.gross_balance
+                for f in investment_fund_positions
+                if f.account_id == account_id
+            )
+            nav = account_positions_value + account_fi_value + account_fund_value
+
+        # Convert to BRL if needed
+        account_currency = account.currency or "BRL"
+        if account_currency == "USD" and ptax_rate:
+            nav_brl = nav * ptax_rate
+            used_ptax = ptax_rate
+        else:
+            nav_brl = nav
+            used_ptax = None
+
+        nav_total_brl += nav_brl
+
+        if nav > 0:  # Only include accounts with value
+            nav_by_account.append(AccountNAVItem(
+                account_id=account_id,
+                account_name=account.name,
+                currency=account_currency,
+                nav=nav,
+                nav_brl=nav_brl,
+                ptax_rate=used_ptax,
+            ))
+
+    # Get realized P&L YTD
+    pnl_service = PnLService(db)
+    ytd_start = today.replace(month=1, day=1)
+    realized_summary = await pnl_service.calculate_realized_pnl(
+        user_id=user.id,
+        start_date=ytd_start,
+        end_date=today,
+    )
+
+    # Sort positions by market value descending
+    consolidated_positions.sort(
+        key=lambda p: p.market_value_brl or p.total_cost,
+        reverse=True,
+    )
+
+    return ConsolidatedPortfolioResponse(
+        nav_total_brl=nav_total_brl,
+        nav_by_account=nav_by_account,
+        positions=consolidated_positions,
+        breakdown=breakdown_by_type,
+        realized_pnl_ytd=realized_summary.total_realized_pnl,
+        total_unrealized_pnl=total_unrealized_pnl,
+        ptax_date=ptax_date,
+        ptax_rate=ptax_rate,
+        last_update=datetime.utcnow(),
+        positions_count=len(consolidated_positions),
     )
