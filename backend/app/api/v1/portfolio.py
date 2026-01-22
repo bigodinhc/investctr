@@ -327,6 +327,13 @@ async def get_portfolio_summary(
         entry.position_id: entry for entry in unrealized_summary.entries
     }
 
+    # Calculate fixed income and fund totals (needed for both branches)
+    fi_total_value = sum(fi.total_value for fi in fixed_income_positions)
+    fund_total_value = sum(
+        fi.net_balance if fi.net_balance is not None else fi.gross_balance
+        for fi in investment_fund_positions
+    )
+
     # If we have a snapshot, use its NAV as total_value (source of truth)
     # Otherwise, fall back to calculated values
     if latest_snapshot and latest_snapshot.nav > 0:
@@ -342,15 +349,10 @@ async def get_portfolio_summary(
         total_market_value = stock_market_value
 
         # Add fixed income totals (only unique positions)
-        fi_total_value = sum(fi.total_value for fi in fixed_income_positions)
         total_cost += fi_total_value
         total_market_value += fi_total_value
 
         # Add investment fund totals
-        fund_total_value = sum(
-            fi.net_balance if fi.net_balance is not None else fi.gross_balance
-            for fi in investment_fund_positions
-        )
         total_cost += fund_total_value
         total_market_value += fund_total_value
 
