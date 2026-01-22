@@ -98,26 +98,49 @@ async def get_user_id(db: AsyncSession) -> UUID | None:
 async def get_portfolio_snapshots(
     db: AsyncSession, user_id: UUID
 ) -> dict[date, SnapshotData]:
-    """Get all portfolio snapshots ordered by date."""
+    """
+    Get all portfolio snapshots aggregated by date.
+
+    IMPORTANT: We sum snapshots from individual accounts (account_id IS NOT NULL)
+    to get the consolidated view with breakdowns. We do NOT use the consolidated
+    snapshots (account_id IS NULL) because they lack breakdown fields.
+    """
+    # Get only per-account snapshots (not consolidated ones)
     query = (
         select(PortfolioSnapshot)
         .where(PortfolioSnapshot.user_id == user_id)
+        .where(PortfolioSnapshot.account_id.isnot(None))  # Only per-account snapshots
         .order_by(PortfolioSnapshot.date)
     )
     result = await db.execute(query)
     snapshots = list(result.scalars().all())
 
+    # Aggregate snapshots by date (sum all accounts for each date)
     snapshot_map: dict[date, SnapshotData] = {}
     for snap in snapshots:
+        if snap.date not in snapshot_map:
+            snapshot_map[snap.date] = SnapshotData(
+                date=snap.date,
+                nav=Decimal("0"),
+                renda_fixa=Decimal("0"),
+                fundos_investimento=Decimal("0"),
+                renda_variavel=Decimal("0"),
+                derivativos=Decimal("0"),
+                conta_corrente=Decimal("0"),
+                coe=Decimal("0"),
+            )
+
+        # Add this account's values to the aggregate
+        existing = snapshot_map[snap.date]
         snapshot_map[snap.date] = SnapshotData(
             date=snap.date,
-            nav=snap.nav,
-            renda_fixa=snap.renda_fixa or Decimal("0"),
-            fundos_investimento=snap.fundos_investimento or Decimal("0"),
-            renda_variavel=snap.renda_variavel or Decimal("0"),
-            derivativos=snap.derivativos or Decimal("0"),
-            conta_corrente=snap.conta_corrente or Decimal("0"),
-            coe=snap.coe or Decimal("0"),
+            nav=existing.nav + snap.nav,
+            renda_fixa=existing.renda_fixa + (snap.renda_fixa or Decimal("0")),
+            fundos_investimento=existing.fundos_investimento + (snap.fundos_investimento or Decimal("0")),
+            renda_variavel=existing.renda_variavel + (snap.renda_variavel or Decimal("0")),
+            derivativos=existing.derivativos + (snap.derivativos or Decimal("0")),
+            conta_corrente=existing.conta_corrente + (snap.conta_corrente or Decimal("0")),
+            coe=existing.coe + (snap.coe or Decimal("0")),
         )
 
     return snapshot_map
