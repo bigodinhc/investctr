@@ -622,29 +622,11 @@ async def backfill_nav():
                 prev_snap_date = current_date
 
             elif applicable_snap_date:
-                # Interpolate between snapshots
+                # For days between snapshots, use the previous snapshot's NAV
+                # This is more accurate than trying to reconstruct from transactions
+                # because transaction data may not match statement data perfectly
                 prev_snap = snapshots[applicable_snap_date]
-
-                # Get current market prices for stock positions
-                asset_ids = [
-                    asset_id for asset_id, pos in positions.items()
-                    if pos.quantity > 0
-                ]
-                prices = await get_asset_prices_at_date(db, asset_ids, current_date)
-
-                # Calculate current stock market value
-                current_rv = calculate_stock_market_value(positions, prices)
-
-                # Interpolate NAV: keep fixed parts constant, update only RV
-                # NAV = (renda_fixa + fundos + derivativos + conta_corrente + coe) + current_RV
-                fixed_portion = (
-                    prev_snap.renda_fixa +
-                    prev_snap.fundos_investimento +
-                    prev_snap.derivativos +
-                    prev_snap.conta_corrente +
-                    prev_snap.coe
-                )
-                nav = fixed_portion + current_rv
+                nav = prev_snap.nav
                 interpolated += 1
                 source = "I"
 
